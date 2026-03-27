@@ -51,7 +51,7 @@ export function Layout({ children }: LayoutProps) {
       href: '/drop',
       icon: 'military_tech',
       subcategories: [],
-      badge: 'NOVO'
+      badge: 'new'
     },
     {
       label: 'Create a Class',
