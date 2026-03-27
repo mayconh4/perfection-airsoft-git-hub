@@ -75,6 +75,65 @@ export function Layout({ children }: LayoutProps) {
       badge: 'new'
     }
   ];
+
+  const fullCategoryMenu: NavigationItem[] = [
+    {
+      label: 'Rifles',
+      href: '/categoria/rifles',
+      icon: 'military_tech',
+      subcategories: [
+        { label: 'AEG (Elétricas)', href: '/categoria/rifles?tipo=aeg' },
+        { label: 'GBB (Gás)', href: '/categoria/rifles?tipo=gbb' },
+        { label: 'HPA', href: '/categoria/rifles?tipo=hpa' }
+      ]
+    },
+    {
+      label: 'Pistolas',
+      href: '/categoria/pistolas',
+      icon: 'handyman',
+      subcategories: [
+        { label: 'GBB (Blowback)', href: '/categoria/pistolas?tipo=gbb' },
+        { label: 'AEP (Elétricas)', href: '/categoria/pistolas?tipo=aep' },
+        { label: 'CO2', href: '/categoria/pistolas?tipo=co2' }
+      ]
+    },
+    {
+      label: 'Snipers',
+      href: '/categoria/snipers',
+      icon: 'target',
+      subcategories: []
+    },
+    {
+      label: 'Acessórios',
+      href: '/categoria/acessorios',
+      icon: 'build',
+      subcategories: []
+    },
+    {
+      label: 'Equipamentos',
+      href: '/categoria/equipamentos',
+      icon: 'shield',
+      subcategories: []
+    },
+    {
+      label: 'BBs & Gas',
+      href: '/categoria/bbs',
+      icon: 'science',
+      subcategories: []
+    },
+    {
+      label: 'Peças',
+      href: '/categoria/pecas',
+      icon: 'settings',
+      subcategories: []
+    },
+    {
+      label: 'Promoções',
+      href: '/promocoes',
+      icon: 'local_offer',
+      subcategories: []
+    }
+  ];
   const [searchQuery, setSearchQuery] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -252,7 +311,7 @@ export function Layout({ children }: LayoutProps) {
               {/* Desktop Hover Dropdown */}
               <div className="hidden sm:block absolute top-full left-0 w-[240px] sm:w-[280px] bg-[#1a1a15] border border-white/5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50">
                 <ul className="py-2 flex flex-col">
-                  {navigationMenu.map(cat => (
+                  {fullCategoryMenu.map(cat => (
                     <li key={cat.label} className="border-b border-white/5 last:border-0 relative group/item">
                       <Link to={cat.href} className="flex items-center justify-between px-6 py-4 text-[10px] text-white/70 font-bold uppercase tracking-widest hover:text-black hover:bg-primary transition-colors">
                         <div className="flex items-center gap-3">
@@ -340,8 +399,25 @@ export function Layout({ children }: LayoutProps) {
                       {renderIcon(cat.icon, true)}
                       {cat.label}
                     </div>
-                    {cat.badge === 'new' && (
-                      <span className="bg-primary text-black px-1.5 py-0.5 text-[8px] rounded-sm font-black uppercase">NEW</span>
+                    {cat.badge && (
+                      <span className="bg-primary text-black px-1.5 py-0.5 text-[8px] rounded-sm font-black uppercase">{cat.badge}</span>
+                    )}
+                    <span className="material-symbols-outlined text-sm opacity-30">chevron_right</span>
+                  </Link>
+                </li>
+              ))}
+
+              <li className="px-6 py-2 text-[8px] font-black uppercase tracking-[0.2em] text-primary/30 border-t border-white/5 bg-white/5">Categorias de Arsenal</li>
+
+              {fullCategoryMenu.map(cat => (
+                <li key={cat.label} className="border-t border-white/5">
+                  <Link to={cat.href} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-white/70 hover:bg-primary/10 hover:text-primary transition-all">
+                    <div className="flex items-center gap-4">
+                      {renderIcon(cat.icon, true)}
+                      {cat.label}
+                    </div>
+                    {cat.badge && (
+                      <span className="bg-primary text-black px-1.5 py-0.5 text-[8px] rounded-sm font-black uppercase">{cat.badge}</span>
                     )}
                     <span className="material-symbols-outlined text-sm opacity-30">chevron_right</span>
                   </Link>
