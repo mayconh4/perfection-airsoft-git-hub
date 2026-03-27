@@ -1,0 +1,117 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+
+const MERCADO_PAGO_TOKEN = Deno.env.get('MERCADO_PAGO_TOKEN') || '';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  try {
+    const { orderId, customerData, items, paymentMethod, total } = await req.json();
+
+    if (!MERCADO_PAGO_TOKEN) {
+      throw new Error('MERCADO_PAGO_TOKEN não configurado');
+    }
+
+    const payload: any = {
+      external_reference: orderId,
+      description: `Pedido #${orderId} - Perfection Airsoft`,
+      notification_url: "https://dtndhmsfmsvuvfowpcrw.supabase.co/functions/v1/mercadopago-webhook",
+      payer: {
+        email: customerData.email,
+        first_name: customerData.name.split(' ')[0],
+        last_name: customerData.name.split(' ').slice(1).join(' '),
+        identification: {
+          type: "CPF",
+          number: customerData.cpf.replace(/\D/g, '')
+        }
+      },
+      additional_info: {
+        items: items.map((item: any) => ({
+          id: item.product_id,
+          title: item.product_name,
+          quantity: item.quantity,
+          unit_price: item.product_price
+        }))
+      }
+    };
+
+    if (paymentMethod === 'pix') {
+      payload.payment_method_id = 'pix';
+      payload.transaction_amount = total;
+    } else {
+      // Para cartão de crédito via API transparente seria mais complexo.
+      // Por simplicidade inicial, vamos focar no Checkout Pro ou PIX.
+      // Se for Cartão, podemos criar uma Preferência e retornar o init_point.
+      
+      const preferenceResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${MERCADO_PAGO_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          items: items.map((item: any) => ({
+            title: item.product_name,
+            quantity: item.quantity,
+            unit_price: item.product_price,
+            currency_id: 'BRL'
+          })),
+          external_reference: orderId,
+          notification_url: payload.notification_url,
+          back_urls: {
+            success: `https://www.perfectionairsoft.com.br/sucesso/${orderId}`,
+            failure: `https://www.perfectionairsoft.com.br/checkout`,
+            pending: `https://www.perfectionairsoft.com.br/sucesso/${orderId}`
+          },
+          auto_return: "approved"
+        })
+      });
+      
+      const preference = await preferenceResponse.json();
+      return new Response(JSON.stringify({ checkout_url: preference.init_point }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Criar pagamento PIX
+    const response = await fetch('https://api.mercadopago.com/v1/payments', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${MERCADO_PAGO_TOKEN}`,
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': `order_${orderId}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const payment = await response.json();
+
+    if (payment.error || payment.status === 400) {
+      return new Response(JSON.stringify(payment), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(JSON.stringify({
+      id: payment.id,
+      status: payment.status,
+      qr_code: payment.point_of_interaction?.transaction_data?.qr_code,
+      qr_code_base64: payment.point_of_interaction?.transaction_data?.qr_code_base64,
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    return new Response(JSON.stringify({ error: String(error) }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+});
