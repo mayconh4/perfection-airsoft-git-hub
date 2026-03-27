@@ -7,7 +7,6 @@ export function LoginPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -29,11 +28,6 @@ export function LoginPage() {
       if (error) { setMessage('Credenciais inválidas. Tente novamente.'); }
       else { navigate('/'); }
     } else {
-      if (password !== confirmPassword) {
-        setMessage('As senhas não coincidem.');
-        setLoading(false);
-        return;
-      }
       const { error } = await signUp(email, password, name);
       if (error) { setMessage(error.message); }
       else { setMessage('Conta criada! Verifique seu e-mail para confirmar.'); }
@@ -86,30 +80,6 @@ export function LoginPage() {
               </span>
             </button>
           </div>
-
-          {!isLogin && (
-            <div className="relative">
-              <label className="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest uppercase">Confirmar Senha</label>
-              <input 
-                type={showPassword ? "text" : "password"} 
-                required 
-                value={confirmPassword} 
-                onChange={e => setConfirmPassword(e.target.value)}
-                className="w-full bg-background-dark border border-border-tactical text-white px-4 py-3 focus:ring-1 focus:ring-primary focus:border-primary text-xs tracking-tight pr-12"
-                placeholder="••••••••" 
-                minLength={6}
-              />
-               <button 
-                  type="button" 
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-[26px] text-slate-500 hover:text-primary transition-colors focus:outline-none"
-                >
-                  <span className="material-symbols-outlined text-sm">
-                    {showPassword ? 'visibility_off' : 'visibility'}
-                  </span>
-                </button>
-            </div>
-          )}
 
           {message && (
             <div className={`p-3 text-xs text-center uppercase tracking-widest border ${message.includes('criada') ? 'border-green-500/30 text-green-400 bg-green-500/5' : 'border-red-500/30 text-red-400 bg-red-500/5'}`}>
