@@ -361,7 +361,7 @@ export function Layout({ children }: LayoutProps) {
                   <li key={cat.label} className="relative group/nav flex-shrink-0">
                     <Link to={cat.href} className={`text-white/50 hover:text-primary transition-colors flex items-center gap-1.5 border-b-2 border-transparent hover:border-primary ${isScrolled ? 'py-2' : 'py-4'}`}>
                       {cat.label}
-                      {cat.badge === 'new' && (
+                      {(cat.badge === 'new' || cat.badge === 'hot') && (
                         <span className="size-1.5 rounded-full bg-primary animate-pulse ml-1.5 shadow-[0_0_8px_rgba(255,193,7,0.5)]"></span>
                       )}
                     </Link>
