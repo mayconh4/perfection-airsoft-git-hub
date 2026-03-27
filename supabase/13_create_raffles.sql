@@ -38,7 +38,8 @@ CREATE TABLE public.raffle_tickets (
 ALTER TABLE public.raffles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Raffles are viewable by everyone" ON public.raffles FOR SELECT USING (true);
 CREATE POLICY "Users can create raffles" ON public.raffles FOR INSERT WITH CHECK (auth.uid() = creator_id);
-CREATE POLICY "Users can update own raffles" ON public.raffles FOR UPDATE USING (auth.uid() = creator_id);
+CREATE POLICY "Users can update own raffles" ON public.raffles FOR UPDATE USING (auth.uid() = creator_id OR (auth.jwt() ->> 'email') = 'admin@perfectionairsoft.com.br');
+CREATE POLICY "Admin can delete any raffle" ON public.raffles FOR DELETE USING ((auth.jwt() ->> 'email') = 'admin@perfectionairsoft.com.br');
 
 ALTER TABLE public.raffle_tickets ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Tickets are viewable by everyone" ON public.raffle_tickets FOR SELECT USING (true);
