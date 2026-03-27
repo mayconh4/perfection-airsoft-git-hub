@@ -17,18 +17,6 @@ interface Raffle {
   rules?: string;
 }
 
-const MOCK_RAFFLE: Raffle = {
-  id: '1',
-  title: 'Rifle M4A1 CQBR GBB',
-  description: 'Rifle de alta performance com sistema Gas Blowback. Kit completo com 3 magazines extras, case rígido e red dot funcional.',
-  image_url: null,
-  ticket_price: 25,
-  total_tickets: 500,
-  sold_tickets: 342,
-  status: 'ativo',
-  draw_date: '2026-04-15T20:00:00',
-  rules: 'O sorteio será realizado assim que 100% dos tickets forem vendidos ou na data estipulada. O prêmio inclui envio para todo o território nacional.'
-};
 
 export default function RaffleDetailPage() {
   const { id } = useParams();
