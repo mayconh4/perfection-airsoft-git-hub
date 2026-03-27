@@ -43,6 +43,30 @@ export function AdminDashboard() {
         <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Status da Operação Perfection Airsoft</p>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <a href="/admin/produtos?action=new" className="bg-primary/10 border border-primary/30 p-8 flex items-center gap-6 hover:bg-primary/20 transition-all group">
+             <span className="material-symbols-outlined text-4xl text-primary group-hover:scale-110 transition-transform">add_box</span>
+             <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">Adicionar Produto</h3>
+                <p className="text-[9px] text-slate-500 uppercase tracking-widest mt-1">Incorporar novo item ao arsenal</p>
+             </div>
+          </a>
+          <a href="/drop/criar" className="bg-primary/10 border border-primary/30 p-8 flex items-center gap-6 hover:bg-primary/20 transition-all group">
+             <span className="material-symbols-outlined text-4xl text-primary group-hover:scale-110 transition-transform">military_tech</span>
+             <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">Criar Novo Drop</h3>
+                <p className="text-[9px] text-slate-500 uppercase tracking-widest mt-1">Iniciar nova missão de sorteio</p>
+             </div>
+          </a>
+          <a href="/admin/pedidos" className="bg-white/5 border border-white/10 p-8 flex items-center gap-6 hover:bg-white/10 transition-all group">
+             <span className="material-symbols-outlined text-4xl text-slate-400 group-hover:scale-110 transition-transform">assignment</span>
+             <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">Ver Pedidos</h3>
+                <p className="text-[9px] text-slate-500 uppercase tracking-widest mt-1">Gerenciar vendas e entregas</p>
+             </div>
+          </a>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map(card => (
           <div key={card.label} className="bg-surface border border-border-tactical p-6 relative overflow-hidden group">

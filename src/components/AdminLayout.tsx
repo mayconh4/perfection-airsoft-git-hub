@@ -8,11 +8,13 @@ export function AdminLayout() {
   const menuItems = [
     { path: '/admin', icon: 'dashboard', label: 'Dashboard' },
     { path: '/admin/produtos', icon: 'inventory_2', label: 'Arsenal' },
+    { path: '/drop/criar', icon: 'add_circle', label: 'Novo Drop' },
+    { path: '/drop', icon: 'military_tech', label: 'Sorteador' },
     { path: '/admin/pedidos', icon: 'assignment', label: 'Missões' },
     { path: '/admin/mensagens', icon: 'mail', label: 'Rádio' },
   ];
 
-  const isAdmin = user?.email === 'maycontuliofs@gmail.com';
+  const isAdmin = user?.email === 'maycontuliofs@gmail.com' || user?.email === 'admin@perfectionairsoft.com.br';
 
   if (!user || !isAdmin) {
     return (

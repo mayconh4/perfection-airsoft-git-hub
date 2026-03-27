@@ -82,8 +82,6 @@ export function HomePage() {
           
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
             {[
-              { label: 'Rifles de Assalto', slug: 'rifles', icon: 'my_location', count: 'AEG/GBB' },
-              { label: 'Pistolas & Sidearms', slug: 'pistolas', icon: 'architecture', count: 'SIDEARMS' },
               { label: 'Sniper de Precisão', slug: 'snipers', icon: 'gps_fixed', count: 'EXTREME' },
               { label: 'Equipamento Tático', slug: 'equipamentos', icon: 'shield', count: 'GEAR' },
             ].map((cat, i) => (

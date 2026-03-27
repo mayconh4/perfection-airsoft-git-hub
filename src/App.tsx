@@ -66,6 +66,7 @@ function App() {
               <Route path="/eventos/:id" element={<EventDetailPage />} />
               <Route path="/drop" element={<DropPage />} />
               <Route path="/drop/criar" element={<CreateRafflePage />} />
+              <Route path="/drop/editar/:id" element={<CreateRafflePage />} />
               <Route path="/drop/:id" element={<RaffleDetailPage />} />
               <Route path="/organizador" element={<OrganizerDashboard />} />
               

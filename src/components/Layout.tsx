@@ -10,21 +10,15 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
+interface NavigationItem {
+  label: string;
+  href: string;
+  icon: any;
+  subcategories: { label: string; href: string }[];
+  badge?: string;
+}
+
 export function Layout({ children }: LayoutProps) {
-  const PistolSVG = () => (
-    <svg width="22" height="20" viewBox="0 0 24 24" fill="currentColor" className="opacity-90 group-hover/item:opacity-100 transition-opacity">
-      <path d="M21 9H11c-.6 0-1 .4-1 1H9V9H4c-.6 0-1 .4-1 1v2.5c0 .6.4 1 1 1h2l1 4.5c.1.8.8 1.5 1.7 1.5h1.6c.9 0 1.6-.7 1.7-1.5l.5-4.5h8.5c.6 0 1-.4 1-1v-1.5c0-.6-.4-1-1-1zM9 11.5H8v-1h1v1z" />
-    </svg>
-  );
-
-  const RifleSVG = () => (
-    <svg width="24" height="20" viewBox="0 0 24 24" fill="currentColor" className="opacity-90 group-hover/item:opacity-100 transition-opacity">
-      <path d="M22 9h-4l-1-1H6l-1 2H2v1h3l.5 2.5h2L8 11h6l.8 5.5c.1.8.8 1.5 1.7 1.5h1.5c.8 0 1.5-.6 1.6-1.4l.9-5.6H22V9z" />
-    </svg>
-  );
-
-
-
   const renderIcon = (icon: any, isDropdown = false) => {
     if (!icon) return null;
     if (typeof icon === 'string') {
@@ -33,35 +27,17 @@ export function Layout({ children }: LayoutProps) {
     return icon;
   };
 
-  const navigationMenu = [
+  const { itemCount, showToast } = useCart();
+  const { user, signOut } = useAuth();
+  const { getEffectiveRate } = usePricing();
+  const navigate = useNavigate();
+
+  const navigationMenu: NavigationItem[] = [
     {
       label: 'Marcas',
       href: '/marcas',
       icon: 'storefront',
       subcategories: []
-    },
-    {
-      label: 'Rifles',
-      href: '/categoria/rifles',
-      icon: <RifleSVG />,
-      subcategories: [
-        { label: 'Rifles de Assault', href: '/categoria/rifles-assault' },
-        { label: 'SMG', href: '/categoria/smg' },
-        { label: 'LMG', href: '/categoria/lmg' },
-        { label: 'Shotguns', href: '/categoria/shotguns' },
-        { label: 'Sniper', href: '/categoria/sniper' },
-      ]
-    },
-    {
-      label: 'Pistolas',
-      href: '/categoria/pistolas',
-      icon: <PistolSVG />,
-      subcategories: [
-        { label: 'Pistolas a Gás', href: '/categoria/pistolas-gas' },
-        { label: 'Pistola Elétrica', href: '/categoria/pistola-eletrica' },
-        { label: 'Pistolas CO2', href: '/categoria/pistolas-co2' },
-        { label: 'Pistola Revólver', href: '/categoria/pistola-revolver' }
-      ]
     },
     {
       label: 'Eventos',
@@ -71,7 +47,7 @@ export function Layout({ children }: LayoutProps) {
       badge: 'new'
     },
     {
-      label: 'Drops & Sorteios',
+      label: 'Drop',
       href: '/drop',
       icon: 'military_tech',
       subcategories: [],
@@ -99,13 +75,9 @@ export function Layout({ children }: LayoutProps) {
       badge: 'new'
     }
   ];
-
-  const { itemCount, showToast } = useCart();
-  const { user } = useAuth();
-  const { getEffectiveRate } = usePricing();
-  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -177,10 +149,62 @@ export function Layout({ children }: LayoutProps) {
             {/* Actions */}
             <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
               {/* User Account */}
-              <Link to={user ? "/dashboard" : "/login"} className="flex flex-col items-center gap-1 group">
-                <span className="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors text-xl sm:text-2xl">person</span>
-                <span className="text-[7px] font-black text-white/20 uppercase tracking-widest group-hover:text-primary transition-colors hidden lg:block">Operador</span>
-              </Link>
+              <div className="relative group/profile">
+                {user ? (
+                  <button 
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="flex flex-col items-center gap-1 group"
+                  >
+                    <span className="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors text-xl sm:text-2xl">person</span>
+                    <span className="text-[7px] font-black text-white/20 uppercase tracking-widest group-hover:text-primary transition-colors hidden lg:block">Operador</span>
+                  </button>
+                ) : (
+                  <Link to="/login" className="flex flex-col items-center gap-1 group">
+                    <span className="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors text-xl sm:text-2xl">person</span>
+                    <span className="text-[7px] font-black text-white/20 uppercase tracking-widest group-hover:text-primary transition-colors hidden lg:block">Login</span>
+                  </Link>
+                )}
+
+                {/* Tactical Dropdown */}
+                {user && (
+                    <div className={`absolute top-full right-0 mt-4 w-48 bg-background-dark border border-primary/20 shadow-[0_10px_30px_rgba(0,0,0,0.8)] transition-all duration-300 z-[110] ${isProfileOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2'}`}>
+                        <div className="p-4 border-b border-white/5 bg-primary/5">
+                            <p className="text-[8px] text-primary/40 font-black uppercase tracking-widest mb-1">Status: Operacional</p>
+                            <p className="text-[10px] text-white font-black uppercase truncate">{user.email?.split('@')[0]}</p>
+                        </div>
+                        <nav className="p-2">
+                            <Link 
+                                to="/dashboard" 
+                                onClick={() => setIsProfileOpen(false)}
+                                className="flex items-center gap-3 px-4 py-3 text-[9px] font-black text-white/60 uppercase tracking-widest hover:bg-primary hover:text-background-dark transition-all rounded-sm"
+                            >
+                                <span className="material-symbols-outlined text-sm">account_circle</span>
+                                Minha Conta
+                            </Link>
+                            <button 
+                                onClick={() => {
+                                    signOut();
+                                    setIsProfileOpen(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-[9px] font-black text-red-400/60 uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all rounded-sm"
+                            >
+                                <span className="material-symbols-outlined text-sm">logout</span>
+                                Sair
+                            </button>
+                        </nav>
+                        {/* HUD Decoration */}
+                        <div className="absolute -top-1 right-4 w-2 h-2 bg-background-dark border-t border-l border-primary/20 rotate-45"></div>
+                    </div>
+                )}
+              </div>
+
+              {/* Admin Panel Link (Beside Operator) */}
+              {(user?.email === 'admin@perfectionairsoft.com.br' || user?.email === 'maycontuliofs@gmail.com') && (
+                <Link to="/admin" className="flex flex-col items-center gap-1 group">
+                   <span className="material-symbols-outlined text-primary/60 group-hover:text-primary transition-colors text-xl sm:text-2xl">admin_panel_settings</span>
+                   <span className="text-[7px] font-black text-primary/40 uppercase tracking-widest group-hover:text-primary transition-colors hidden lg:block">HQ Control</span>
+                </Link>
+              )}
 
               {/* Favorites (Hidden on small screens) */}
               <Link to="/favoritos" className="hidden xs:flex flex-col items-center gap-1 group">
@@ -265,9 +289,9 @@ export function Layout({ children }: LayoutProps) {
               </div>
             </div>
 
-            {/* Horizontal Links - Scrollable handling overflow */}
-            <div className="flex-1 overflow-x-auto no-scrollbar scroll-smooth flex items-center">
-              <ul className={`flex items-center gap-6 sm:gap-8 px-4 sm:px-8 font-bold tracking-[0.2em] uppercase whitespace-nowrap h-full ${isScrolled ? 'text-[8px] sm:text-[9px]' : 'text-[9px] sm:text-[10px]'}`}>
+            {/* Horizontal Links - Handling overflow without ugly scrollbar */}
+            <div className="flex-1 flex items-center justify-center">
+              <ul className={`flex items-center gap-6 sm:gap-10 px-4 sm:px-8 font-bold tracking-[0.2em] uppercase whitespace-nowrap h-full ${isScrolled ? 'text-[8px] sm:text-[9px]' : 'text-[9px] sm:text-[10px]'}`}>
                 <li>
                   <Link to="/" className={`text-primary hover:text-white transition-colors border-b-2 border-primary ${isScrolled ? 'py-2' : 'py-4'}`}>
                     Home
@@ -277,11 +301,6 @@ export function Layout({ children }: LayoutProps) {
                 {navigationMenu.map(cat => (
                   <li key={cat.label} className="relative group/nav flex-shrink-0">
                     <Link to={cat.href} className={`text-white/50 hover:text-primary transition-colors flex items-center gap-1.5 border-b-2 border-transparent hover:border-primary ${isScrolled ? 'py-2' : 'py-4'}`}>
-                      {!isScrolled && (
-                        <span className="hidden lg:inline-flex items-center">
-                          {renderIcon(cat.icon, false)}
-                        </span>
-                      )}
                       {cat.label}
                       {cat.badge === 'new' && (
                         <span className="size-1.5 rounded-full bg-primary animate-pulse ml-1.5 shadow-[0_0_8px_rgba(255,193,7,0.5)]"></span>
@@ -367,10 +386,8 @@ export function Layout({ children }: LayoutProps) {
               <h3 className="text-xs font-bold tracking-[0.3em] text-white uppercase mb-6">Arsenal</h3>
               <ul className="space-y-4">
                 <li><Link to="/marcas" className="text-[10px] text-white/50 hover:text-white uppercase tracking-widest transition-colors font-bold">Marcas</Link></li>
-                <li><Link to="/categoria/pistolas-airsoft" className="text-[10px] text-white/50 hover:text-white uppercase tracking-widest transition-colors font-bold">Pistolas</Link></li>
-                <li><Link to="/categoria/rifles-airsoft" className="text-[10px] text-white/50 hover:text-white uppercase tracking-widest transition-colors font-bold">Rifles</Link></li>
                 <li><Link to="/mapas" className="text-[10px] text-white/50 hover:text-white uppercase tracking-widest transition-colors font-bold flex items-center gap-2">Mapas de Treinamento</Link></li>
-                <li><Link to="/drop" className="text-[10px] text-primary/80 hover:text-primary uppercase tracking-widest transition-colors font-bold flex items-center gap-2"><span className="size-1.5 rounded-full bg-primary animate-pulse"></span>Drops & Sorteios</Link></li>
+                <li><Link to="/drop" className="text-[10px] text-primary/80 hover:text-primary uppercase tracking-widest transition-colors font-bold flex items-center gap-2"><span className="size-1.5 rounded-full bg-primary animate-pulse"></span>Drop</Link></li>
                 <li><Link to="/eventos" className="text-[10px] text-white/50 hover:text-white uppercase tracking-widest transition-colors font-bold flex items-center gap-2">Eventos & Missões</Link></li>
               </ul>
             </div>

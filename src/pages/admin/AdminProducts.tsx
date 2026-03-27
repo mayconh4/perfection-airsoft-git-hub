@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import type { Product } from '../../types/database';
 import { useCategories } from '../../hooks/useProducts';
@@ -40,6 +41,7 @@ const autoClassify = (name: string, desc: string) => {
 };
 
 export function AdminProducts() {
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const { categories } = useCategories();
   const [loading, setLoading] = useState(true);
@@ -77,7 +79,10 @@ export function AdminProducts() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+    if (searchParams.get('action') === 'new') {
+      setShowForm(true);
+    }
+  }, [searchParams]);
 
   // Cálculo em Tempo Real
   useEffect(() => {

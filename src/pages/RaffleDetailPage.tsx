@@ -15,6 +15,10 @@ interface Raffle {
   status: 'ativo' | 'finalizado' | 'cancelado';
   draw_date: string;
   rules?: string;
+  images: string[];
+  rules_title?: string;
+  logistics_title?: string;
+  logistics_description?: string;
 }
 
 
@@ -24,6 +28,9 @@ export default function RaffleDetailPage() {
   const [raffle, setRaffle] = useState<Raffle | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  const allImages = raffle ? [raffle.image_url, ...(raffle.images || [])].filter(Boolean) as string[] : [];
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -162,21 +169,38 @@ export default function RaffleDetailPage() {
         
         {/* Left Column: Intel & Media */}
         <div className="lg:col-span-7 flex flex-col gap-12">
-          <div className="aspect-video bg-surface overflow-hidden border border-white/5 relative group">
-              {raffle.image_url ? (
-                <img src={raffle.image_url} alt={raffle.title} className="w-full h-full object-cover" />
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 opacity-10">
-                  <span className="material-symbols-outlined text-9xl">photo_camera</span>
-                  <span className="text-xs font-black uppercase tracking-[0.4em]">Visual Feed Offline</span>
-                </div>
-              )}
-              {/* Overlay HUD indicators */}
-              <div className="absolute top-4 right-4 flex gap-2">
-                 <div className="size-2 rounded-full bg-primary animate-pulse" />
-                 <div className="size-2 rounded-full bg-primary/40" />
-                 <div className="size-2 rounded-full bg-primary/20" />
+          <div className="flex flex-col gap-4">
+              <div className="aspect-video bg-surface overflow-hidden border border-white/5 relative group">
+                  {allImages.length > 0 ? (
+                    <img src={allImages[activeImageIndex]} alt={raffle.title} className="w-full h-full object-cover transition-all duration-500" />
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 opacity-10">
+                      <span className="material-symbols-outlined text-9xl">photo_camera</span>
+                      <span className="text-xs font-black uppercase tracking-[0.4em]">Visual Feed Offline</span>
+                    </div>
+                  )}
+                  {/* Overlay HUD indicators */}
+                  <div className="absolute top-4 right-4 flex gap-2">
+                     <div className="size-2 rounded-full bg-primary animate-pulse" />
+                     <div className="size-2 rounded-full bg-primary/40" />
+                     <div className="size-2 rounded-full bg-primary/20" />
+                  </div>
               </div>
+
+              {/* Gallery Thumbnails */}
+              {allImages.length > 1 && (
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                      {allImages.map((img, idx) => (
+                          <button 
+                            key={idx}
+                            onClick={() => setActiveImageIndex(idx)}
+                            className={`aspect-video border-2 transition-all overflow-hidden ${activeImageIndex === idx ? 'border-primary' : 'border-white/5 hover:border-white/20'}`}
+                          >
+                            <img src={img} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+                          </button>
+                      ))}
+                  </div>
+              )}
           </div>
 
           <div className="bg-surface/20 border border-white/5 p-8">
@@ -190,15 +214,19 @@ export default function RaffleDetailPage() {
               
               <div className="grid grid-cols-2 gap-8 border-t border-white/5 pt-8">
                   <div>
-                    <h4 className="text-[9px] font-black text-white uppercase tracking-widest mb-4">RULES & ENGAGEMENT</h4>
+                    <h4 className="text-[9px] font-black text-white uppercase tracking-widest mb-4">
+                        {raffle.rules_title || 'RULES & ENGAGEMENT'}
+                    </h4>
                     <p className="text-[10px] text-slate-500 font-mono leading-relaxed uppercase">
                         {raffle.rules || 'Sorteio baseado na extração da Loteria Federal ou hash de rede blockchain verificado.'}
                     </p>
                   </div>
                   <div>
-                    <h4 className="text-[9px] font-black text-white uppercase tracking-widest mb-4">LOGISTICS</h4>
+                    <h4 className="text-[9px] font-black text-white uppercase tracking-widest mb-4">
+                        {raffle.logistics_title || 'LOGISTICS'}
+                    </h4>
                     <p className="text-[10px] text-slate-500 font-mono leading-relaxed uppercase">
-                        Envio segurado para todo o Brasil via transportadora tática especializada.
+                        {raffle.logistics_description || 'Envio segurado para todo o Brasil via transportadora tática especializada.'}
                     </p>
                   </div>
               </div>

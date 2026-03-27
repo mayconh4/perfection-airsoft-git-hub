@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 interface Raffle {
   id: string;
@@ -63,6 +64,8 @@ function getTimeRemaining(dateStr: string) {
 }
 
 function RaffleCard({ raffle }: { raffle: Raffle }) {
+  const { user } = useAuth();
+  const isAdmin = user?.email === 'admin@perfectionairsoft.com.br' || user?.email === 'maycontuliofs@gmail.com';
   const percentSold = (raffle.sold_tickets / raffle.total_tickets) * 100;
   const isEndingSoon = percentSold >= 90;
 
@@ -83,11 +86,20 @@ function RaffleCard({ raffle }: { raffle: Raffle }) {
         )}
         
         {/* HUD Badges */}
-        <div className="absolute top-4 left-4 flex flex-col gap-2">
+        <div className="absolute top-4 left-4 flex flex-col gap-2 z-20">
             <span className="bg-black/80 border border-white/10 text-[8px] font-black uppercase tracking-widest px-3 py-1 flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-primary animate-pulse" />
               LIVE OPS
             </span>
+            {isAdmin && (
+               <Link 
+                to={`/drop/editar/${raffle.id}`}
+                className="bg-primary hover:bg-white text-background-dark text-[8px] font-black uppercase tracking-widest px-3 py-1 flex items-center gap-1.5 transition-all shadow-lg"
+               >
+                 <span className="material-symbols-outlined text-[10px]">edit</span>
+                 EDIT OPS
+               </Link>
+            )}
             {isEndingSoon && (
                <span className="bg-red-900/80 border border-red-500/30 text-red-100 text-[8px] font-black uppercase tracking-widest px-3 py-1">
                  LAST UNITS
@@ -268,6 +280,7 @@ function TacticalDrafter() {
 }
 
 export default function DropPage() {
+  const { user } = useAuth();
   const [raffles, setRaffles] = useState<Raffle[]>(MOCK_RAFFLES);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'LIST' | 'DRAFTER'>('LIST');
@@ -396,12 +409,15 @@ export default function DropPage() {
                             ENCRYPTION ACTIVE
                         </span>
                     </div>
-                    <Link 
-                        to="/drop/criar"
-                        className="bg-white/5 border border-white/10 text-white font-black py-4 px-8 text-[10px] uppercase tracking-[0.3em] hover:bg-primary hover:text-background-dark transition-all"
-                    >
-                        CREATE DROP
-                    </Link>
+                    {user?.email === 'admin@perfectionairsoft.com.br' && (
+                        <Link 
+                            to="/drop/criar"
+                            className="bg-primary/20 border border-primary/40 text-primary font-black py-4 px-8 text-[10px] uppercase tracking-[0.3em] hover:bg-primary hover:text-background-dark transition-all flex items-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-sm">add_circle</span>
+                            NEW DROP MISSION
+                        </Link>
+                    )}
                 </div>
             </div>
 

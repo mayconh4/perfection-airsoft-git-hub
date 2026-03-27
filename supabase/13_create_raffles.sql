@@ -1,8 +1,10 @@
 -- ============================================
--- 13. RAFFLES & TICKETS (DROP SYSTEM)
+-- 1. CLEANUP & RESET (Optional)
 -- ============================================
+DROP TABLE IF EXISTS public.raffle_tickets;
+DROP TABLE IF EXISTS public.raffles CASCADE;
 
--- 1. RAFFLES
+-- 2. RAFFLES
 CREATE TABLE public.raffles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   creator_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -14,6 +16,11 @@ CREATE TABLE public.raffles (
   sold_tickets INT DEFAULT 0,
   status TEXT DEFAULT 'ativo' CHECK (status IN ('ativo', 'finalizado', 'cancelado')),
   draw_date TIMESTAMPTZ,
+  rules TEXT,
+  images TEXT[] DEFAULT '{}',
+  rules_title TEXT DEFAULT 'RULES & ENGAGEMENT',
+  logistics_title TEXT DEFAULT 'LOGISTICS',
+  logistics_description TEXT DEFAULT 'Envio segurado para todo o Brasil via transportadora tática especializada.',
   winner_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -52,3 +59,33 @@ CREATE POLICY "Users can view own tickets" ON public.raffle_tickets FOR SELECT U
 CREATE INDEX idx_raffles_creator ON public.raffles(creator_id);
 CREATE INDEX idx_raffle_tickets_raffle ON public.raffle_tickets(raffle_id);
 CREATE INDEX idx_raffle_tickets_user ON public.raffle_tickets(user_id);
+
+-- ============================================
+-- STORAGE CONFIGURATION (RAFFLES BUCKET)
+-- ============================================
+
+-- Create the bucket if it doesn't exist
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('raffles', 'raffles', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Policy: Allow public access to images
+CREATE POLICY "Public Access"
+ON storage.objects FOR SELECT
+USING ( bucket_id = 'raffles' );
+
+-- Policy: Allow authenticated users to upload
+CREATE POLICY "Authenticated users can upload images"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'raffles'
+);
+
+-- Policy: Allow admins/owners to delete
+CREATE POLICY "Admins can delete images"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'raffles'
+);
