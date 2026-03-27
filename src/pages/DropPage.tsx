@@ -158,9 +158,119 @@ function RaffleCard({ raffle }: { raffle: Raffle }) {
   );
 }
 
+
+function TacticalDrafter() {
+  const [maxNumber, setMaxNumber] = useState<number>(100);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [result, setResult] = useState<number | null>(null);
+  const [tempNumber, setTempNumber] = useState<number>(0);
+  const [status, setStatus] = useState<'IDLE' | 'SCANNING' | 'LOCKED'>('IDLE');
+
+  const startDraw = () => {
+    if (maxNumber < 1) return;
+    setIsSpinning(true);
+    setResult(null);
+    setStatus('SCANNING');
+    
+    let duration = 3000;
+    let startTime = Date.now();
+
+    const spin = () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < duration) {
+        setTempNumber(Math.floor(Math.random() * maxNumber) + 1);
+        requestAnimationFrame(spin);
+      } else {
+        const finalWinner = Math.floor(Math.random() * maxNumber) + 1;
+        setResult(finalWinner);
+        setIsSpinning(false);
+        setStatus('LOCKED');
+      }
+    };
+    
+    spin();
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="bg-surface/40 border border-primary/20 p-12 relative overflow-hidden">
+        {/* HUD Elements */}
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+        <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+        
+        <div className="flex flex-col items-center text-center">
+          <div className="flex items-center gap-4 mb-8">
+            <span className="h-px w-12 bg-primary/40" />
+            <span className={`text-[10px] font-black uppercase tracking-[0.4em] ${status === 'SCANNING' ? 'text-primary animate-pulse' : status === 'LOCKED' ? 'text-green-500' : 'text-slate-500'}`}>
+              {status === 'IDLE' ? 'SYSTEM READY' : status === 'SCANNING' ? 'SCANNING OPERATORS...' : 'TARGET ACQUIRED'}
+            </span>
+            <span className="h-px w-12 bg-primary/40" />
+          </div>
+
+          <div className="mb-12">
+            <h2 className="text-sm font-black text-white uppercase tracking-[0.3em] mb-4 italic">TOTAL POOL SIZE</h2>
+            <input 
+              type="number" 
+              value={maxNumber}
+              onChange={(e) => setMaxNumber(Number(e.target.value))}
+              disabled={isSpinning}
+              className="bg-black/40 border border-white/10 text-primary text-4xl font-black text-center w-48 py-4 focus:outline-none focus:border-primary/60 transition-colors font-mono"
+            />
+          </div>
+
+          {/* Randomizer Visual */}
+          <div className="relative mb-12 py-20 px-32 border border-white/5 bg-black/20">
+             {/* Reticle Visuals */}
+             <div className="absolute top-4 left-4 size-8 border-t-2 border-l-2 border-primary/40" />
+             <div className="absolute top-4 right-4 size-8 border-t-2 border-r-2 border-primary/40" />
+             <div className="absolute bottom-4 left-4 size-8 border-b-2 border-l-2 border-primary/40" />
+             <div className="absolute bottom-4 right-4 size-8 border-b-2 border-r-2 border-primary/40" />
+
+             <span className={`text-9xl font-black font-mono transition-all duration-75 ${status === 'LOCKED' ? 'text-white scale-110' : 'text-primary opacity-80'}`}>
+                {(isSpinning ? tempNumber : result || 0).toString().padStart(3, '0')}
+             </span>
+             
+             {status === 'LOCKED' && (
+                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-green-500 text-background-dark text-[8px] font-black px-4 py-1 uppercase tracking-widest whitespace-nowrap">
+                    MATCH CONFIRMED: SECTOR {result}
+                </div>
+             )}
+          </div>
+
+          <button 
+            disabled={isSpinning}
+            onClick={startDraw}
+            className="group relative overflow-hidden bg-primary text-background-dark font-black px-12 py-5 text-[12px] uppercase tracking-[0.5em] hover:bg-white transition-all disabled:opacity-50"
+          >
+            <span className="relative z-10 flex items-center gap-3">
+               {isSpinning ? 'SCANNING...' : 'INITIALIZE PROTOCOL'}
+               <span className="material-symbols-outlined text-sm">target</span>
+            </span>
+            <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-12 grid grid-cols-3 gap-6">
+          {[
+            { label: 'ALGORITHM', val: 'SECURE_RAND_V2' },
+            { label: 'SEED', val: Date.now().toString(16).toUpperCase() },
+            { label: 'INTEGRITY', val: 'ENCRYPTED' }
+          ].map(item => (
+            <div key={item.label} className="bg-white/5 p-4 border-l border-primary/20">
+               <span className="text-[8px] text-slate-600 font-black uppercase tracking-widest block mb-1">{item.label}</span>
+               <span className="text-[10px] text-white font-mono">{item.val}</span>
+            </div>
+          ))}
+      </div>
+    </div>
+  );
+}
+
 export default function DropPage() {
   const [raffles, setRaffles] = useState<Raffle[]>(MOCK_RAFFLES);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'LIST' | 'DRAFTER'>('LIST');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -199,7 +309,6 @@ export default function DropPage() {
       <div className="relative pt-12 pb-24 border-b border-primary/20 overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--gl-primary)_0%,_transparent_70%)] opacity-10" />
-            {/* Target Reticle Watermark */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-[2]">
                 <span className="material-symbols-outlined text-[400px] text-primary/10">target</span>
             </div>
@@ -219,24 +328,47 @@ export default function DropPage() {
                 TACTICAL<br />
                 <span className="text-primary drop-shadow-[0_0_15px_rgba(255,193,7,0.3)]">DROPS</span>
             </h1>
-            <p className="text-slate-500 text-sm font-mono leading-relaxed mb-12 uppercase tracking-wide">
-                Arsenal de elite via sistema de reserva tática. Alta probabilidade, transparência total e equipamentos certificados. Selecione sua missão e garanta seu ticket.
-            </p>
             
-            <div className="flex flex-wrap gap-12">
-                <div className="border-l-2 border-white/10 pl-6">
-                    <span className="text-4xl font-black text-white font-mono">{raffles.length}</span>
-                    <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mt-1">ACTIVE OPS</span>
-                </div>
-                <div className="border-l-2 border-white/10 pl-6">
-                    <span className="text-4xl font-black text-white font-mono">1.2k+</span>
-                    <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mt-1">OPERATORS JOINED</span>
-                </div>
-                <div className="border-l-2 border-primary pl-6">
-                    <span className="text-text-primary text-4xl font-black font-mono">100%</span>
-                    <span className="text-[9px] text-primary/60 font-black uppercase tracking-widest block mt-1">VERIFIED DRAWS</span>
-                </div>
+            {/* Tab Swticher HUD */}
+            <div className="flex gap-4 mb-12">
+               <button 
+                onClick={() => setActiveTab('LIST')}
+                className={`flex flex-col items-start px-8 py-4 border-l-2 transition-all ${activeTab === 'LIST' ? 'border-primary bg-primary/5' : 'border-white/10 hover:border-white/30'}`}
+               >
+                 <span className={`text-[8px] font-black uppercase tracking-widest mb-1 ${activeTab === 'LIST' ? 'text-primary' : 'text-slate-500'}`}>01 // SECTOR</span>
+                 <span className={`text-sm font-black uppercase tracking-widest ${activeTab === 'LIST' ? 'text-white' : 'text-slate-600'}`}>ACTIVE OPS</span>
+               </button>
+               <button 
+                onClick={() => setActiveTab('DRAFTER')}
+                className={`flex flex-col items-start px-8 py-4 border-l-2 transition-all ${activeTab === 'DRAFTER' ? 'border-primary bg-primary/5' : 'border-white/10 hover:border-white/30'}`}
+               >
+                 <span className={`text-[8px] font-black uppercase tracking-widest mb-1 ${activeTab === 'DRAFTER' ? 'text-primary' : 'text-slate-500'}`}>02 // MODULE</span>
+                 <span className={`text-sm font-black uppercase tracking-widest ${activeTab === 'DRAFTER' ? 'text-white' : 'text-slate-600'}`}>SORTEADOR TÁTICO</span>
+               </button>
             </div>
+
+            {activeTab === 'LIST' && (
+              <p className="text-slate-500 text-sm font-mono leading-relaxed mb-12 uppercase tracking-wide animate-in fade-in slide-in-from-left-4">
+                Arsenal de elite via sistema de reserva tática. Alta probabilidade, transparência total e equipamentos certificados. Selecione sua missão e garanta seu ticket.
+              </p>
+            )}
+            
+            {activeTab === 'LIST' && (
+              <div className="flex flex-wrap gap-12 animate-in fade-in slide-in-from-left-8">
+                  <div className="border-l-2 border-white/10 pl-6">
+                      <span className="text-4xl font-black text-white font-mono">{raffles.length}</span>
+                      <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mt-1">ACTIVE OPS</span>
+                  </div>
+                  <div className="border-l-2 border-white/10 pl-6">
+                      <span className="text-4xl font-black text-white font-mono">1.2k+</span>
+                      <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mt-1">OPERATORS JOINED</span>
+                  </div>
+                  <div className="border-l-2 border-primary pl-6">
+                      <span className="text-text-primary text-4xl font-black font-mono">100%</span>
+                      <span className="text-[9px] text-primary/60 font-black uppercase tracking-widest block mt-1">VERIFIED DRAWS</span>
+                  </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -244,45 +376,53 @@ export default function DropPage() {
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-6 py-20 relative z-20">
         
-        {/* Filter Bar HUD */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16 pb-8 border-b border-white/5">
-            <div className="flex gap-4">
-                {['ALL DROPS', 'HIGH STAKES', 'ENDING SOON'].map(f => (
-                    <button key={f} className={`px-6 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] border transition-all ${f === 'ALL DROPS' ? 'bg-primary text-background-dark border-primary' : 'bg-transparent text-slate-500 border-white/10 hover:border-primary/40'}`}>
-                        {f}
-                    </button>
-                ))}
-            </div>
-            
-            <div className="flex items-center gap-6">
-                <div className="text-right hidden sm:block">
-                    <span className="text-[8px] text-slate-600 font-black uppercase tracking-widest block">SYSTEM STATUS</span>
-                    <span className="text-[10px] text-green-500 font-black uppercase tracking-widest flex items-center gap-2">
-                        <span className="size-1.5 rounded-full bg-green-500 animate-pulse" />
-                        ENCRYPTION ACTIVE
-                    </span>
+        {activeTab === 'LIST' ? (
+          <>
+            {/* Filter Bar HUD */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16 pb-8 border-b border-white/5">
+                <div className="flex gap-4">
+                    {['ALL DROPS', 'HIGH STAKES', 'ENDING SOON'].map(f => (
+                        <button key={f} className={`px-6 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] border transition-all ${f === 'ALL DROPS' ? 'bg-primary text-background-dark border-primary' : 'bg-transparent text-slate-500 border-white/10 hover:border-primary/40'}`}>
+                            {f}
+                        </button>
+                    ))}
                 </div>
-                <Link 
-                    to="/drop/criar"
-                    className="bg-white/5 border border-white/10 text-white font-black py-4 px-8 text-[10px] uppercase tracking-[0.3em] hover:bg-primary hover:text-background-dark transition-all"
-                >
-                    CREATE DROP
-                </Link>
+                
+                <div className="flex items-center gap-6">
+                    <div className="text-right hidden sm:block">
+                        <span className="text-[8px] text-slate-600 font-black uppercase tracking-widest block">SYSTEM STATUS</span>
+                        <span className="text-[10px] text-green-500 font-black uppercase tracking-widest flex items-center gap-2">
+                            <span className="size-1.5 rounded-full bg-green-500 animate-pulse" />
+                            ENCRYPTION ACTIVE
+                        </span>
+                    </div>
+                    <Link 
+                        to="/drop/criar"
+                        className="bg-white/5 border border-white/10 text-white font-black py-4 px-8 text-[10px] uppercase tracking-[0.3em] hover:bg-primary hover:text-background-dark transition-all"
+                    >
+                        CREATE DROP
+                    </Link>
+                </div>
             </div>
-        </div>
 
-        {/* Grid */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[1,2,3].map(i => (
-              <div key={i} className="h-[500px] bg-surface/30 animate-pulse border border-white/5" />
-            ))}
-          </div>
+            {/* Grid */}
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[1,2,3].map(i => (
+                  <div key={i} className="h-[500px] bg-surface/30 animate-pulse border border-white/5" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {raffles.map(raffle => (
+                  <RaffleCard key={raffle.id} raffle={raffle} />
+                ))}
+              </div>
+            )}
+          </>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {raffles.map(raffle => (
-              <RaffleCard key={raffle.id} raffle={raffle} />
-            ))}
+          <div className="animate-in zoom-in-95 duration-500">
+             <TacticalDrafter />
           </div>
         )}
 
@@ -294,11 +434,11 @@ export default function DropPage() {
             <div className="max-w-2xl relative z-10">
                 <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-6">PROTOCOLO DE SEGURANÇA</h2>
                 <p className="text-xs text-slate-400 font-mono leading-relaxed uppercase mb-8">
-                    Todos os sorteios no Tactical Drop Hub são regidos por algoritmos de verificação pública. O vencedor é selecionado através do hash do primeiro bloco da rede Bitcoin gerado após a data do sorteio, garantindo 100% de imparcialidade.
+                    Todos os sorteios no Tactical Drop Hub são regidos por algoritmos de verificação pública. O vencedor é selecionado através de um sistema de semente randômica baseada em rede, garantindo 100% de imparcialidade e transparência em tempo real.
                 </p>
                 <div className="flex gap-4">
                     <span className="bg-primary/10 text-primary border border-primary/20 px-4 py-2 text-[9px] font-black uppercase tracking-widest">PROVABLY FAIR</span>
-                    <span className="bg-primary/10 text-primary border border-primary/20 px-4 py-2 text-[9px] font-black uppercase tracking-widest">BLOCKCHAIN VERIFIED</span>
+                    <span className="bg-primary/10 text-primary border border-primary/20 px-4 py-2 text-[9px] font-black uppercase tracking-widest">REAL-TIME SEEDING</span>
                 </div>
             </div>
         </div>
