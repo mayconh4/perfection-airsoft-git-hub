@@ -10,13 +10,37 @@ export function LoginPage() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, resendConfirmation, resetPassword, user } = useAuth();
   const navigate = useNavigate();
 
   if (user) {
     navigate('/dashboard');
     return null;
   }
+
+  const handleResendEmail = async () => {
+    if (!email) {
+      setMessage('Por favor, insira seu e-mail primeiro.');
+      return;
+    }
+    setLoading(true);
+    const { error } = await resendConfirmation(email);
+    if (error) setMessage(error.message);
+    else setMessage('E-mail de confirmação reenviado! Verifique sua caixa de entrada.');
+    setLoading(false);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setMessage('Insira seu e-mail para recuperar a senha.');
+      return;
+    }
+    setLoading(true);
+    const { error } = await resetPassword(email);
+    if (error) setMessage(error.message);
+    else setMessage('Link de recuperação enviado para seu e-mail.');
+    setLoading(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +49,13 @@ export function LoginPage() {
 
     if (isLogin) {
       const { error } = await signIn(email, password);
-      if (error) { setMessage('Credenciais inválidas. Tente novamente.'); }
+      if (error) { 
+        if (error.message.includes('confirmed')) {
+          setMessage('Seu e-mail ainda não foi confirmado.');
+        } else {
+          setMessage('Credenciais inválidas. Tente novamente.');
+        }
+      }
       else { navigate('/'); }
     } else {
       const { error } = await signUp(email, password, name);
@@ -60,7 +90,18 @@ export function LoginPage() {
                    placeholder="EMAIL@REDE.COM"/>
           </div>
           <div className="relative">
-            <label className="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest uppercase">Senha</label>
+            <div className="flex justify-between items-end mb-1">
+                <label className="block text-[10px] font-bold text-slate-500 tracking-widest uppercase">Senha</label>
+                {isLogin && (
+                    <button 
+                        type="button"
+                        onClick={handleForgotPassword}
+                        className="text-[9px] text-primary hover:underline uppercase font-black"
+                    >
+                        Esqueci minha senha
+                    </button>
+                )}
+            </div>
             <input 
               type={showPassword ? "text" : "password"} 
               required 
@@ -73,7 +114,7 @@ export function LoginPage() {
             <button 
               type="button" 
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-[26px] text-slate-500 hover:text-primary transition-colors focus:outline-none"
+              className="absolute right-3 bottom-3 text-slate-500 hover:text-primary transition-colors focus:outline-none"
             >
               <span className="material-symbols-outlined text-sm">
                 {showPassword ? 'visibility_off' : 'visibility'}
@@ -82,8 +123,17 @@ export function LoginPage() {
           </div>
 
           {message && (
-            <div className={`p-3 text-xs text-center uppercase tracking-widest border ${message.includes('criada') ? 'border-green-500/30 text-green-400 bg-green-500/5' : 'border-red-500/30 text-red-400 bg-red-500/5'}`}>
-              {message}
+            <div className={`p-3 text-xs text-center uppercase tracking-widest border ${message.includes('enviado') || message.includes('criada') ? 'border-green-500/30 text-green-400 bg-green-500/5' : 'border-red-500/30 text-red-400 bg-red-500/5'}`}>
+              <p>{message}</p>
+              {(message.includes('confirmado') || message.includes('exist')) && (
+                <button 
+                    type="button"
+                    onClick={handleResendEmail}
+                    className="mt-2 text-[10px] text-primary underline font-black block w-full"
+                >
+                    REENVIAR E-MAIL DE CONFIRMAÇÃO
+                </button>
+              )}
             </div>
           )}
 
