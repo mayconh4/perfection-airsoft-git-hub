@@ -9,6 +9,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
 
@@ -58,11 +59,26 @@ export function LoginPage() {
                    className="w-full bg-background-dark border border-border-tactical text-white px-4 py-3 focus:ring-1 focus:ring-primary focus:border-primary text-xs tracking-tight"
                    placeholder="EMAIL@REDE.COM"/>
           </div>
-          <div>
+          <div className="relative">
             <label className="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest uppercase">Senha</label>
-            <input type="password" required value={password} onChange={e => setPassword(e.target.value)}
-                   className="w-full bg-background-dark border border-border-tactical text-white px-4 py-3 focus:ring-1 focus:ring-primary focus:border-primary text-xs tracking-tight"
-                   placeholder="••••••••" minLength={6}/>
+            <input 
+              type={showPassword ? "text" : "password"} 
+              required 
+              value={password} 
+              onChange={e => setPassword(e.target.value)}
+              className="w-full bg-background-dark border border-border-tactical text-white px-4 py-3 focus:ring-1 focus:ring-primary focus:border-primary text-xs tracking-tight pr-12"
+              placeholder="••••••••" 
+              minLength={6}
+            />
+            <button 
+              type="button" 
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-[26px] text-slate-500 hover:text-primary transition-colors focus:outline-none"
+            >
+              <span className="material-symbols-outlined text-sm">
+                {showPassword ? 'visibility_off' : 'visibility'}
+              </span>
+            </button>
           </div>
 
           {message && (
