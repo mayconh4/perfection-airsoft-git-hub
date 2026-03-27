@@ -44,18 +44,33 @@ Deno.serve(async (req: Request) => {
       if (status === 'approved') finalStatus = 'pago';
       if (status === 'rejected' || status === 'cancelled') finalStatus = 'cancelado';
 
-      const { error } = await supabase
-        .from('orders')
-        .update({ 
-          payment_status: finalStatus,
-          mercadopago_id: String(paymentId),
-          payment_type: payment.payment_type_id
-        })
-        .eq('id', orderId);
+      if (orderId.startsWith('TICK_')) {
+        // Fluxo de Rifas/Drops
+        console.log(`Processando pagamento de Ticket: ${orderId}`);
+        const { error } = await supabase
+          .from('raffle_tickets')
+          .update({ 
+            payment_status: finalStatus,
+            purchased_at: finalStatus === 'pago' ? new Date().toISOString() : null
+          })
+          .eq('payment_id', orderId);
+        
+        if (error) throw error;
+      } else {
+        // Fluxo de Pedidos Normais
+        const { error } = await supabase
+          .from('orders')
+          .update({ 
+            payment_status: finalStatus,
+            mercadopago_id: String(paymentId),
+            payment_type: payment.payment_type_id
+          })
+          .eq('id', orderId);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
-      console.log(`Pedido #${orderId} atualizado para ${finalStatus}`);
+      console.log(`Referência #${orderId} atualizada para ${finalStatus}`);
     }
 
     return new Response(JSON.stringify({ received: true }), {

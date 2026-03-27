@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 interface Raffle {
   id: string;
@@ -31,7 +32,8 @@ const MOCK_RAFFLE: Raffle = {
 
 export default function RaffleDetailPage() {
   const { id } = useParams();
-  const [raffle, setRaffle] = useState<Raffle | null>(MOCK_RAFFLE);
+  const { user } = useAuth();
+  const [raffle, setRaffle] = useState<Raffle | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
 
@@ -67,6 +69,74 @@ export default function RaffleDetailPage() {
       setSelectedTickets(selectedTickets.filter(t => t !== num));
     } else {
       setSelectedTickets([...selectedTickets, num]);
+    }
+  };
+
+  const handlePurchase = async () => {
+    if (!user) {
+        alert('IDENTIDADE NÃO VERIFICADA: FAÇA LOGIN PARA PARTICIPAR.');
+        return;
+    }
+
+    if (selectedTickets.length === 0) {
+        alert('SELECIONE AO MENOS UM TICKET PARA INICIAR O PROTOCOLO.');
+        return;
+    }
+
+    setLoading(true);
+    try {
+        const ticketNumbers = selectedTickets;
+        const totalAmount = ticketNumbers.length * (raffle?.ticket_price || 0);
+        const paymentId = `TICK_${raffle?.id.slice(0, 8)}_${user.id.slice(0, 8)}_${Date.now()}`;
+
+        // 1. Criar tickets pendentes no Supabase
+        const { error: ticketError } = await supabase.from('raffle_tickets').insert(
+            ticketNumbers.map(num => ({
+                raffle_id: raffle?.id,
+                user_id: user.id,
+                ticket_number: num,
+                payment_status: 'pendente',
+                payment_id: paymentId
+            }))
+        );
+
+        if (ticketError) throw ticketError;
+
+        // 2. Chamar Edge Function do Mercado Pago
+        const { data, error: functionError } = await supabase.functions.invoke('mercadopago-payment', {
+            body: {
+                orderId: paymentId,
+                customerData: {
+                    email: user.email,
+                    name: user.user_metadata?.full_name || 'Operador Anônimo',
+                    cpf: '00000000000' // Placeholder
+                },
+                items: [{
+                    product_id: raffle?.id,
+                    product_name: `TICKETS: ${raffle?.title}`,
+                    quantity: ticketNumbers.length,
+                    product_price: raffle?.ticket_price
+                }],
+                paymentMethod: 'credit_card',
+                total: totalAmount
+            }
+        });
+
+        if (functionError) throw functionError;
+
+        if (data?.checkout_url) {
+            window.location.href = data.checkout_url;
+        } else if (data?.qr_code_base64) {
+            alert('PIX GERADO COM SUCESSO. VERIFIQUE SEU EMAIL.');
+        } else {
+            throw new Error('REPOSTA DO GATEWAY INVÁLIDA.');
+        }
+
+    } catch (err: any) {
+        console.error('FALHA NO PROTOCOLO DE COMPRA:', err);
+        alert(`FALHA NO PROTOCOLO: ${err.message}`);
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -201,7 +271,8 @@ export default function RaffleDetailPage() {
                   </div>
                   
                   <button 
-                    disabled={selectedTickets.length === 0}
+                    disabled={selectedTickets.length === 0 || loading}
+                    onClick={handlePurchase}
                     className="w-full bg-primary text-background-dark font-black py-4 text-[10px] uppercase tracking-[0.4em] hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all relative overflow-hidden group/btn"
                   >
                     <span className="relative z-10 flex items-center justify-center gap-3">
