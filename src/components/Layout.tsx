@@ -348,9 +348,9 @@ export function Layout({ children }: LayoutProps) {
               </div>
             </div>
 
-            {/* Horizontal Links - Handling overflow without ugly scrollbar */}
-            <div className="flex-1 flex items-center justify-center">
-              <ul className={`flex items-center gap-6 sm:gap-10 px-4 sm:px-8 font-bold tracking-[0.2em] uppercase whitespace-nowrap h-full ${isScrolled ? 'text-[8px] sm:text-[9px]' : 'text-[9px] sm:text-[10px]'}`}>
+            {/* Horizontal Links - Handling overflow with mobile scroll */}
+            <div className="flex-1 flex items-center justify-start sm:justify-center overflow-hidden">
+              <ul className={`flex items-center gap-6 sm:gap-10 px-4 sm:px-8 font-bold tracking-[0.2em] uppercase whitespace-nowrap h-full overflow-x-auto no-scrollbar ${isScrolled ? 'text-[8px] sm:text-[9px]' : 'text-[9px] sm:text-[10px]'}`}>
                 <li>
                   <Link to="/" className={`text-primary hover:text-white transition-colors border-b-2 border-primary ${isScrolled ? 'py-2' : 'py-4'}`}>
                     Home
