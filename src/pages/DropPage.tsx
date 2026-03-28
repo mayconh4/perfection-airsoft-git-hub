@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
 
 interface Raffle {
   id: string;
@@ -292,7 +291,6 @@ function TacticalDrafter() {
 }
 
 export default function DropPage() {
-  const { user } = useAuth();
   const [raffles, setRaffles] = useState<Raffle[]>(MOCK_RAFFLES);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'LIST' | 'DRAFTER'>('LIST');
@@ -421,15 +419,14 @@ export default function DropPage() {
                             ENCRYPTION ACTIVE
                         </span>
                     </div>
-                    {user?.email === 'admin@perfectionairsoft.com.br' && (
-                        <Link 
-                            to="/drop/criar"
-                            className="bg-primary/20 border border-primary/40 text-primary font-black py-4 px-8 text-[10px] uppercase tracking-[0.3em] hover:bg-primary hover:text-background-dark transition-all flex items-center gap-2"
-                        >
-                            <span className="material-symbols-outlined text-sm">add_circle</span>
-                            NEW DROP MISSION
-                        </Link>
-                    )}
+
+                    <Link 
+                        to="/eventos/criar"
+                        className="bg-primary text-background-dark font-black py-4 px-8 text-[10px] uppercase tracking-[0.3em] hover:bg-white transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(255,193,7,0.2)]"
+                    >
+                        <span className="material-symbols-outlined text-sm">rocket_launch</span>
+                        CRIAR NOVO DROP
+                    </Link>
                 </div>
             </div>
 
