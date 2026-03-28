@@ -177,7 +177,6 @@ export function CheckoutPage() {
       if (!response.ok) {
         const errBody = await response.json().catch(() => ({}));
         setError(`Erro Tático (${response.status}): ` + (errBody.error || errBody.details || 'Falha na Missão'));
-        setLoading(false);
         return;
       }
 
