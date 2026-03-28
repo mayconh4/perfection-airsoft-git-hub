@@ -76,12 +76,58 @@ Deno.serve(async (req: Request) => {
         console.error('Erro ao atualizar tabela raffle_tickets:', ticketError);
       }
 
-      // C. Incrementar o contador de vendas na rifa (Se aprovado)
+      // C. Lógica de Split e Gestão de Saldos (Se aprovado)
       if (finalStatus === 'pago' && tickets && tickets.length > 0) {
         const raffleId = tickets[0].raffle_id;
         const totalPurchased = tickets.length;
-        
-        console.log(`[VENDIDO] Incrementando sold_tickets em ${totalPurchased} para rifa ${raffleId}`);
+        const totalAmount = payment.transaction_amount;
+
+        try {
+          // 1. Buscar Configurações de Taxas e Criador da Rifa
+          const [ { data: config }, { data: raffle } ] = await Promise.all([
+            supabase.from('platform_config').select('*').limit(1).single(),
+            supabase.from('raffles').select('creator_id').eq('id', raffleId).single()
+          ]);
+
+          if (config && raffle) {
+            const fixedFee = (config.fixed_fee_per_ticket || 2.50) * totalPurchased;
+            const operatorShare = totalAmount - fixedFee;
+            const creatorId = raffle.creator_id;
+
+            console.log(`[SPLIT] Total: R$ ${totalAmount} | Taxa Plataforma: R$ ${fixedFee} | Operador: R$ ${operatorShare}`);
+
+            // 2. Registrar Transações Financeiras (Histórico)
+            await supabase.from('financial_transactions').insert([
+              { order_id: orderId, raffle_id: raffleId, type: 'fee_platform', amount: fixedFee },
+              { order_id: orderId, raffle_id: raffleId, type: 'payout_operator', amount: operatorShare, recipient_uid: creatorId }
+            ]);
+
+            // 3. Atualizar Saldo do Operador (Transação Atômica via RPC recomendada no futuro)
+            // Para agora, faremos um update simples ou via RPC se for implementado
+            const { data: balanceData } = await supabase.from('user_balances').select('available_balance, total_earned').eq('user_id', creatorId).single();
+            
+            if (balanceData) {
+              await supabase.from('user_balances').update({
+                available_balance: Number(balanceData.available_balance) + operatorShare,
+                total_earned: Number(balanceData.total_earned) + operatorShare,
+                updated_at: new Date().toISOString()
+              }).eq('user_id', creatorId);
+            } else {
+              // Primeiro ganho do operador: Criar registro
+              await supabase.from('user_balances').insert({
+                user_id: creatorId,
+                available_balance: operatorShare,
+                total_earned: operatorShare
+              });
+            }
+
+            console.log(`[WALLET] Saldo de ${creatorId} atualizado com +R$ ${operatorShare}`);
+          }
+        } catch (splitErr) {
+          console.error('Erro no processamento do SPLIT:', splitErr);
+        }
+
+        // D. Incrementar o contador de vendas na rifa (Se aprovado)
         const { error: raffleErr } = await supabase.rpc('increment_raffle_sold_tickets', { 
           rid: raffleId, 
           count_add: totalPurchased 

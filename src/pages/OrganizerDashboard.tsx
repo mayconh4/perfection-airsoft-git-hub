@@ -3,13 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { PixKeyManager } from '../components/PixKeyManager';
 
 interface EventStats {
   ticketsSold: number;
   revenue: number;
   netRevenue: number;
 }
-
 export default function OrganizerDashboard() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -31,7 +31,14 @@ export default function OrganizerDashboard() {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      // 1. Buscar todos os eventos do organizador
+      // 1. Buscar Saldo Real da nova tabela user_balances
+      const { data: balanceData } = await supabase
+        .from('user_balances')
+        .select('available_balance, total_earned')
+        .eq('user_id', user?.id)
+        .single();
+
+      // 2. Buscar todos os eventos do organizador
       const { data: eventsData, error: eventsError } = await supabase
         .from('events')
         .select('*')
@@ -41,30 +48,17 @@ export default function OrganizerDashboard() {
       if (eventsError) throw eventsError;
       setEvents(eventsData || []);
 
+      let totalSold = 0;
       if (eventsData && eventsData.length > 0) {
-        const eventIds = eventsData.map(e => e.id);
-
-        // 2. Buscar tickets confirmados para esses eventos
-        const { data: ticketsData, error: ticketsError } = await supabase
-          .from('tickets')
-          .select('price_paid')
-          .in('event_id', eventIds)
-          .eq('status', 'confirmed');
-
-        if (ticketsError) throw ticketsError;
-
-        if (ticketsData) {
-          const sold = ticketsData.length;
-          const rev = ticketsData.reduce((sum, t) => sum + (Number(t.price_paid) || 0), 0);
-          const net = rev - (sold * 6.00); // R$ 6,00 de taxa por ticket
-
-          setStats({
-            ticketsSold: sold,
-            revenue: rev,
-            netRevenue: net
-          });
-        }
+        totalSold = eventsData.reduce((sum, e) => sum + (e.sold_count || 0), 0);
       }
+
+      setStats({
+        ticketsSold: totalSold,
+        revenue: balanceData?.total_earned ? Number(balanceData.total_earned) + (totalSold * 2.50) : 0, // Estimativa bruta (incluindo taxas)
+        netRevenue: balanceData?.available_balance ? Number(balanceData.available_balance) : 0
+      });
+
     } catch (err: any) {
       console.error('Erro no Dashboard:', err.message);
     } finally {
@@ -104,7 +98,7 @@ export default function OrganizerDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-12">
           <div className="bg-surface/30 border border-white/5 p-8">
             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Tickets Vendidos</span>
             <span className="text-4xl font-black text-white">{stats.ticketsSold}</span>
@@ -114,8 +108,12 @@ export default function OrganizerDashboard() {
             <span className="text-4xl font-black text-white">R$ {stats.revenue.toFixed(2)}</span>
           </div>
           <div className="bg-surface/30 border border-white/5 p-8 border-l-primary/40 border-l-4">
-            <span className="text-[10px] text-primary/60 font-black uppercase tracking-widest block mb-1 font-mono italic">Seu Saldo Líquido</span>
+            <span className="text-[10px] text-primary/60 font-black uppercase tracking-widest block mb-1 font-mono italic">Saldo Disponível</span>
             <span className="text-4xl font-black text-primary">R$ {stats.netRevenue.toFixed(2)}</span>
+          </div>
+          <div className="bg-surface/30 border border-white/5 p-8">
+            <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Status de Saque</span>
+            <span className="text-[12px] font-black text-white uppercase tracking-widest">Liberado após 48h</span>
           </div>
         </div>
 
@@ -171,16 +169,19 @@ export default function OrganizerDashboard() {
           </div>
 
           {/* Right Sidebar */}
-          <div className="lg:col-span-1">
-            <h2 className="text-lg font-black text-white uppercase tracking-widest mb-6">Suporte ao QG</h2>
+          <div className="lg:col-span-1 space-y-8">
+            <h2 className="text-lg font-black text-white uppercase tracking-widest mb-6">Logística de Recebimento</h2>
+            
+            <PixKeyManager />
+
             <div className="bg-primary/5 border border-primary/20 p-8">
-              <span className="material-symbols-outlined text-primary text-3xl mb-4">account_balance_wallet</span>
-              <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6">Configuração de Saques</h3>
+              <span className="material-symbols-outlined text-primary text-3xl mb-4">info</span>
+              <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6">Regras de Split</h3>
               <p className="text-[11px] text-slate-500 font-mono leading-relaxed mb-8 uppercase">
-                O site retém automaticamente R$ 6,00 de taxa fixa por ticket. Seu saldo líquido fica disponível para saque após 48h da realização do evento.
+                O sistema desconta automaticamente R$ 2,50 fixos por ticket vendido (taxa de operação). O restante cai direto no seu saldo operacional.
               </p>
               <button disabled className="w-full bg-white/5 text-slate-500 font-black py-4 text-[9px] uppercase tracking-[.3em] cursor-not-allowed border border-white/10">
-                Vincular Conta Bancária
+                SOLICITAR RESGATE PIX
               </button>
             </div>
 
