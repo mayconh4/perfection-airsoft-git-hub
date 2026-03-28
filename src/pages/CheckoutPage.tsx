@@ -94,8 +94,9 @@ export function CheckoutPage() {
 
         if (isPureRaffle) {
           // Geração Silenciosa (Shadow Account) para Rifas
-          signUpEmail = `${form.cpf.replace(/\D/g, '')}@perfectionairsoft.com.br`;
-          signUpPass = `pa${form.cpf.replace(/\D/g, '').slice(-6)}`;
+          const cleanCpf = form.cpf.replace(/\D/g, '');
+          signUpEmail = `op_${cleanCpf}@perfectionairsoft.com.br`;
+          signUpPass = `pa${cleanCpf.slice(-6)}`;
         } else {
           // Exige senha e email para produtos
           if (!signUpEmail || !signUpPass || signUpPass.length < 6) {
