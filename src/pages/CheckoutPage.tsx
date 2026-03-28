@@ -104,21 +104,30 @@ export function CheckoutPage() {
           }
         }
 
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        let { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: signUpEmail,
           password: signUpPass,
           options: { data: { full_name: form.name, phone: form.phone, cpf: form.cpf, is_shadow: isPureRaffle } }
         });
 
-        if (signUpError) {
-          if (signUpError.message.includes('already registered')) {
-            setError('CPF/E-mail já cadastrado. Por favor, faça login.');
+        if (signUpError && signUpError.message.includes('already registered') && isPureRaffle) {
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: signUpEmail,
+            password: signUpPass
+          });
+          
+          if (!signInError) {
+            currentUserId = signInData.user?.id;
           } else {
-            setError(`Erro na identificação: ${signUpError.message}`);
+            setError('CPF já cadastrado com outra senha. Por favor, faça login.');
+            return;
           }
+        } else if (signUpError) {
+          setError(`Erro na identificação: ${signUpError.message}`);
           return;
+        } else {
+          currentUserId = signUpData.user?.id;
         }
-        currentUserId = signUpData.user?.id;
       }
 
       if (!currentUserId) {
