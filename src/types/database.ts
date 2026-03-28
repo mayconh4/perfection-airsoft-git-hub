@@ -70,8 +70,10 @@ export interface WishlistItem {
   product?: Product;
 }
 
-export const roundTacticalPrice = (price: number): number => {
+export const roundTacticalPrice = (price: number, isStrict: boolean = false): number => {
   if (!price) return 0;
+  if (isStrict) return price; // [FRONTEND SPECIALIST] Preço exato para rifas
+  
   const base = Math.floor(price / 100) * 100; // Centena completa (ex: 1400)
   const remainder = price - base; // Resto (ex: 11)
 
@@ -82,8 +84,8 @@ export const roundTacticalPrice = (price: number): number => {
   return base + 130; // ex: 95 vira 130
 };
 
-export const formatPrice = (price: number) => {
-  const rounded = roundTacticalPrice(price);
+export const formatPrice = (price: number, isStrict: boolean = false) => {
+  const rounded = roundTacticalPrice(price, isStrict);
   return `R$ ${rounded.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 };
 

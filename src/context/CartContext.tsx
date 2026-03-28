@@ -233,7 +233,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
-  const total = items.reduce((sum, i) => sum + roundTacticalPrice(i.product?.price || 0) * i.quantity, 0);
+  const total = items.reduce((sum, i) => {
+    const isStrict = i.product?.brand === 'DROP';
+    const unitPrice = roundTacticalPrice(i.product?.price || 0, isStrict);
+    return sum + (unitPrice * i.quantity);
+  }, 0);
 
   return (
     <CartContext.Provider value={{

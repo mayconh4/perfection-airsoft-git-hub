@@ -330,22 +330,24 @@ export function CheckoutPage() {
                   <p className="text-[9px] font-black uppercase leading-tight truncate">{i.product?.name}</p>
                   <p className="text-[9px] text-slate-500">x{i.quantity}</p>
                 </div>
-                <span className="text-xs font-mono font-black">{formatPrice((i.product?.price || 0) * i.quantity)}</span>
+                <span className="text-xs font-mono font-black">
+                  {formatPrice((i.product?.price || 0) * i.quantity, i.product?.brand === 'DROP')}
+                </span>
               </div>
             ))}
           </div>
           <div className="border-t border-white/5 pt-4 space-y-2">
             <div className="flex justify-between text-xs">
               <span className="text-slate-500 uppercase tracking-wider">Subtotal</span>
-              <span className="font-mono">{formatPrice(total)}</span>
+              <span className="font-mono">{formatPrice(total, true)}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-slate-500 uppercase tracking-wider">Frete</span>
-              <span className="font-mono">{selectedShipping ? formatPrice(selectedShipping.price) : '—'}</span>
+              <span className="font-mono">{selectedShipping ? formatPrice(selectedShipping.price, true) : '—'}</span>
             </div>
             <div className="flex justify-between font-black text-lg border-t border-white/5 pt-2 mt-2">
               <span className="uppercase text-sm">Total</span>
-              <span className="text-primary font-mono">{formatPrice(grandTotal)}</span>
+              <span className="text-primary font-mono">{formatPrice(grandTotal, true)}</span>
             </div>
           </div>
         </div>

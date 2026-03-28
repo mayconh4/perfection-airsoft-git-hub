@@ -45,7 +45,9 @@ export function CartDrawer() {
                       {item.product?.brand === 'DROP' ? <span className="text-primary mr-1">DROP:</span> : null}
                       {item.product?.name}
                     </h4>
-                    <span className="text-[10px] text-primary font-black">{formatPrice(item.product?.price || 0)}</span>
+                    <span className="text-[10px] text-primary font-black">
+                      {formatPrice(item.product?.price || 0, item.product?.brand === 'DROP')}
+                    </span>
                   </div>
                   <div className="flex items-center gap-3 bg-background-dark w-fit border border-white/10 rounded-sm">
                     <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="px-3 py-1 text-white/50 hover:text-primary transition-colors text-xs font-bold">-</button>
@@ -79,7 +81,7 @@ export function CartDrawer() {
           <div className="p-6 border-t border-primary/20 bg-surface shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-10">
              <div className="flex justify-between items-center mb-6">
                <span className="text-xs font-bold uppercase text-white/50 tracking-widest">Subtotal:</span>
-               <span className="text-xl font-mono text-primary font-black">{formatPrice(total)}</span>
+               <span className="text-xl font-mono text-primary font-black">{formatPrice(total, true)}</span>
              </div>
              <Link 
                to="/carrinho" 
