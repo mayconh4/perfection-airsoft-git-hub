@@ -229,7 +229,7 @@ export default function RaffleDetailPage() {
                 <span>{((raffle.sold_tickets / raffle.total_tickets) * 100).toFixed(1)}%</span>
               </div>
               <div className="h-1 bg-white/5 w-full overflow-hidden">
-                <div className="h-full bg-primary" style={{ width: `${(raffle.sold_tickets / raffle.total_tickets) * 100}%` }} />
+                <div className="h-full bg-green-400 shadow-[0_0_15px_rgba(74,222,128,0.3)]" style={{ width: `${(raffle.sold_tickets / raffle.total_tickets) * 100}%` }} />
               </div>
             </div>
 

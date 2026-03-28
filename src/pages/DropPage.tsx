@@ -151,7 +151,7 @@ function RaffleCard({ raffle }: { raffle: Raffle }) {
                 {[...Array(10)].map((_, i) => (
                     <div 
                         key={i} 
-                        className={`h-full flex-1 transition-all duration-700 ${percentSold > (i * 10) ? 'bg-primary shadow-[0_0_8px_rgba(255,193,7,0.4)]' : 'bg-white/5'}`}
+                        className={`h-full flex-1 transition-all duration-700 ${percentSold > (i * 10) ? 'bg-green-400 shadow-[0_0_10px_rgba(74,222,128,0.5)]' : 'bg-white/5'}`}
                     />
                 ))}
             </div>
