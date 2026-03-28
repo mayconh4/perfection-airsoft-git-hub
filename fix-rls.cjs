@@ -1,5 +1,5 @@
 'use strict';
-const TOKEN = 'sbp_0686f3a1dd1043f22d6431453716cfe93c9ab05d';
+const TOKEN = 'sbp_0335f32e65cc6e7e9c22015533ff2c03bb033c0e';
 const REF = 'seewdqetyolfmqsiyban';
 
 const sql = `
