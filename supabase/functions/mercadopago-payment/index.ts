@@ -83,6 +83,34 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // 2. Registrar Tickets de Rifa (Para reserva imediata)
+    const ticketsToReserve = [];
+    for (const item of items) {
+      if (item.metadata?.type === 'raffle' && Array.isArray(item.metadata.tickets)) {
+        for (const tNum of item.metadata.tickets) {
+          ticketsToReserve.push({
+            raffle_id: item.product_id,
+            ticket_number: Number(tNum),
+            payment_status: 'pendente',
+            payment_id: finalOrderId
+          });
+        }
+      }
+    }
+
+    if (ticketsToReserve.length > 0) {
+      console.log(`[DEBUG] Reservando ${ticketsToReserve.length} tickets para pedido ${finalOrderId}`);
+      await fetch(`${SUPABASE_URL}/rest/v1/raffle_tickets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          'apikey': SUPABASE_SERVICE_ROLE_KEY
+        },
+        body: JSON.stringify(ticketsToReserve)
+      });
+    }
+
     const cleanedCpf = customerData?.cpf ? String(customerData.cpf).replace(/\D/g, '') : '';
     const guestEmail = `op_${cleanedCpf}@perfectionairsoft.com.br`;
     const payerEmail = (customerData?.email && customerData.email.includes('@') && !customerData.email.includes(' ')) 

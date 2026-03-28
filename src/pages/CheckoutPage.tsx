@@ -210,6 +210,37 @@ export function CheckoutPage() {
     }
   };
 
+  // Monitoramento Realtime do Status de Pagamento
+  useEffect(() => {
+    if (step === 3 && paymentData?.order_id) {
+      console.log('[REALTIME] Iniciando escuta tática para pedido:', paymentData.order_id);
+      
+      const channel = supabase
+        .channel(`order_status_${paymentData.order_id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'orders',
+            filter: `id=eq.${paymentData.order_id}`
+          },
+          (payload) => {
+            console.log('[REALTIME] Alteração de status detectada:', payload.new.status);
+            if (payload.new.status === 'pago') {
+              clearCart();
+              navigate(`/sucesso/${paymentData.order_id}`);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [step, paymentData, navigate, clearCart]);
+
   if (items.length === 0 && step !== 3) return (
     <div className="px-4 sm:px-6 lg:px-8 py-20 text-center">
       <p className="text-slate-500 uppercase tracking-widest mb-4 text-sm">Carrinho vazio</p>
@@ -382,11 +413,21 @@ export function CheckoutPage() {
                 </div>
               </div>
 
-              <div className="pt-8 border-t border-white/10 space-y-4">
-                <p className="text-[10px] text-white/40 uppercase tracking-widest italic font-bold">Após pagar, seus itens aparecerão no seu painel de operador.</p>
-                <button onClick={() => navigate('/dashboard')} className="px-10 py-5 border-2 border-primary text-primary font-black uppercase tracking-[0.4em] text-[10px] hover:bg-primary hover:text-black transition-all rounded-full outline-offset-4">
-                  Acessar Meu Painel →
-                </button>
+              <div className="pt-8 border-t border-white/10 space-y-6">
+                <div className="flex flex-col items-center gap-4 py-4 bg-primary/5 border border-primary/10 rounded-lg">
+                  <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                  <div className="text-center">
+                    <p className="text-[10px] text-primary font-black uppercase tracking-[0.3em] animate-pulse">Aguardando confirmação do drop!</p>
+                    <p className="text-[8px] text-white/30 uppercase tracking-widest mt-1">O sistema irá redirecionar automaticamente após o pagamento</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <p className="text-[10px] text-white/40 uppercase tracking-widest italic font-bold">Após pagar, seus itens aparecerão no seu painel de operador.</p>
+                  <button onClick={() => navigate('/dashboard')} className="px-10 py-5 border-2 border-primary text-primary font-black uppercase tracking-[0.4em] text-[10px] hover:bg-primary hover:text-black transition-all rounded-full outline-offset-4">
+                    Acessar Meu Painel →
+                  </button>
+                </div>
               </div>
             </div>
           )}

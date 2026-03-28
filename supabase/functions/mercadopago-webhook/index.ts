@@ -63,16 +63,33 @@ Deno.serve(async (req: Request) => {
       }
 
       // B. Atualizar Tabela de Rifas (Raffle Tickets) - Se houver tickets vinculados
-      const { error: ticketError } = await supabase
+      const { data: tickets, error: ticketError } = await supabase
         .from('raffle_tickets')
         .update({ 
           payment_status: finalStatus,
           purchased_at: finalStatus === 'pago' ? new Date().toISOString() : null
         })
-        .eq('payment_id', orderId);
+        .eq('payment_id', orderId)
+        .select('raffle_id');
       
       if (ticketError) {
         console.error('Erro ao atualizar tabela raffle_tickets:', ticketError);
+      }
+
+      // C. Incrementar o contador de vendas na rifa (Se aprovado)
+      if (finalStatus === 'pago' && tickets && tickets.length > 0) {
+        const raffleId = tickets[0].raffle_id;
+        const totalPurchased = tickets.length;
+        
+        console.log(`[VENDIDO] Incrementando sold_tickets em ${totalPurchased} para rifa ${raffleId}`);
+        const { error: raffleErr } = await supabase.rpc('increment_raffle_sold_tickets', { 
+          rid: raffleId, 
+          count_add: totalPurchased 
+        });
+
+        if (raffleErr) {
+          console.error('Erro ao chamar RPC increment_raffle_sold_tickets:', raffleErr);
+        }
       }
 
       console.log(`Sincronização concluída para #${orderId}`);
