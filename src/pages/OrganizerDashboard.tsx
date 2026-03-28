@@ -89,12 +89,22 @@ export default function OrganizerDashboard() {
               Painel do <span className="text-primary">Organizador</span>
             </h1>
           </div>
-          <Link 
-            to="/drop/criar" 
-            className="bg-primary text-background-dark font-black py-4 px-8 text-[10px] uppercase tracking-[0.3em] hover:bg-white transition-all text-center"
-          >
-            Nova Missão
-          </Link>
+          <div className="flex flex-wrap gap-4">
+            <Link 
+              to="/drop/criar" 
+              className="bg-primary text-background-dark font-black py-4 px-8 text-[10px] uppercase tracking-[0.3em] hover:bg-white transition-all text-center flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-sm">inventory_2</span>
+              Novo Drop (Rifa)
+            </Link>
+            <Link 
+              to="/eventos/criar" 
+              className="bg-white/5 border border-white/10 text-white font-black py-4 px-8 text-[10px] uppercase tracking-[0.3em] hover:bg-white hover:text-black transition-all text-center flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-sm">military_tech</span>
+              Nova Missão (Evento)
+            </Link>
+          </div>
         </div>
 
         {/* Stats Grid */}

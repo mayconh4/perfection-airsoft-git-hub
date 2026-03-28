@@ -178,10 +178,10 @@ export default function CreateRafflePage() {
         {/* Header HUD */}
         <div className="mb-12 border-l-4 border-primary pl-8 py-4 bg-surface/10">
             <span className="text-primary font-black uppercase tracking-[0.4em] text-[10px] block mb-2">
-                {id ? 'EDIT MISSION: UPDATE INTEL' : 'NEW MISSION: SETUP DROP'}
+                {id ? 'EDIT DROP: UPDATE PRIZE' : 'NEW DROP: SETUP PRIZE'}
             </span>
             <h1 className="text-4xl font-black text-white uppercase tracking-tighter">
-                {id ? 'EDIÇÃO DE DROP' : 'CONFIGURAÇÃO DE DROP'}
+                {id ? 'EDIÇÃO DE DROP' : 'LANÇAR NOVO DROP'}
             </h1>
         </div>
 
@@ -189,7 +189,7 @@ export default function CreateRafflePage() {
             <div className="bg-surface/20 border border-white/5 p-8 space-y-8">
                 {/* Title */}
                 <div>
-                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">TITLE / DESIGNATION</label>
+                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">NOME DO EQUIPAMENTO / PRÊMIO</label>
                     <input 
                         type="text" 
                         required
@@ -202,7 +202,7 @@ export default function CreateRafflePage() {
 
                 {/* Description */}
                 <div>
-                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">INTEL BRIEFING (DESCRIPTION)</label>
+                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">DESCRIÇÃO TÉCNICA (PRODUCT BRIEFING)</label>
                     <textarea 
                         required
                         rows={4}
@@ -246,7 +246,7 @@ export default function CreateRafflePage() {
                 {/* Date & Rules */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                    <div>
-                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">DRAW WINDOW (DRAW DATE)</label>
+                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">DATA DO SORTEIO (DRAW WINDOW)</label>
                         <input 
                             type="datetime-local" 
                             required
@@ -271,7 +271,7 @@ export default function CreateRafflePage() {
             {/* Custom Mission Intel */}
             <div className="bg-surface/20 border border-white/5 p-8 space-y-8">
                 <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                    <h3 className="text-sm font-black text-white uppercase tracking-widest">CUSTOM MISSION INTEL // LABELS</h3>
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest">LOGÍSTICA E REGRAS PERSONALIZADAS</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -298,7 +298,7 @@ export default function CreateRafflePage() {
                 </div>
 
                 <div>
-                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">LOGISTICS BRIEFING (SHIPPING INFO)</label>
+                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">DETALHES DE ENVIO (SHIPPING INFO)</label>
                     <textarea 
                         rows={2}
                         placeholder="EX: ENVIO SEGURADO PARA TODO O BRASIL..."
