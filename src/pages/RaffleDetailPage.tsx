@@ -87,89 +87,32 @@ export default function RaffleDetailPage() {
 
     setLoading(true);
     try {
-        const ticketNumbers = selectedTickets;
-        const totalAmount = ticketNumbers.length * (raffle?.ticket_price || 0);
-
-        // Gera um ID de referência para o pedido (funciona para usuários logados e anônimos)
-        const orderId = `RIFA-${raffle?.id?.slice(0, 8)}-${Date.now()}`;
-        const userId = user?.id || null;
-
-        // 1. Criar pedido na tabela 'orders' (funciona com ou sem login)
-        const { data: order, error: orderError } = await supabase
-            .from('orders')
-            .insert({
-                ...(userId ? { user_id: userId } : {}),
-                total: totalAmount,
-                status: 'pendente',
-                customer_data: {
-                    name: user?.user_metadata?.full_name || 'Cliente Anônimo',
-                    email: user?.email || '',
-                    reference: orderId,
-                    cpf: user?.user_metadata?.cpf || ''
-                },
-                shipping_address: { type: 'digital', info: 'Rifa/Drop' }
-            })
-            .select()
-            .single();
-
-        if (orderError || !order) throw new Error(`Erro ao criar pedido: ${orderError?.message}`);
-
-        // 2. Criar itens do pedido (Usamos um ID de produto mestre para satisfazer a FK do banco)
-        const MASTER_PRODUCT_ID = '017213a1-6228-48bd-bb71-1154e82ec3eb';
-        const { error: itemsError } = await supabase
-            .from('order_items')
-            .insert({
-                order_id: order.id,
-                product_id: MASTER_PRODUCT_ID,
-                product_name: `TICKET RIFA: ${raffle?.title} (#${ticketNumbers.join(', #')})`,
-                product_price: raffle?.ticket_price || 0,
-                quantity: ticketNumbers.length
-            });
-
-        if (itemsError) throw itemsError;
-
-        // 3. Criar tickets na tabela 'raffle_tickets' vinculados ao pedido
-        const { error: ticketError } = await supabase.from('raffle_tickets').insert(
-            ticketNumbers.map(num => ({
-                raffle_id: raffle?.id,
-                user_id: userId,
-                ticket_number: num,
-                payment_status: 'pendente',
-                payment_id: order.id
-            }))
-        );
-
-        if (ticketError) throw ticketError;
-
-        // 4. Chamar Edge Function via fetch direto (funciona sem login — tok do Mercado Pago na função)
+        // Toda a lógica de criação de pedido fica na Edge Function (service_role, ignora RLS)
         const { data: { session } } = await supabase.auth.getSession();
+        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
         const mpResponse = await fetch('https://seewdqetyolfmqsiyban.supabase.co/functions/v1/mercadopago-payment', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // Envia o access_token se disponível, caso contrário usa anon key
-                'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY || ''}`,
+                'Authorization': `Bearer ${session?.access_token || anonKey}`,
             },
             body: JSON.stringify({
-                orderId: order.id,
+                raffleId: raffle?.id,
+                raffleTitle: raffle?.title,
+                ticketPrice: raffle?.ticket_price,
+                ticketNumbers: selectedTickets,
                 customerData: {
                     email: user?.email || '',
-                    name: user?.user_metadata?.full_name || 'Cliente',
-                    cpf: user?.user_metadata?.cpf || ''
+                    name: user?.user_metadata?.full_name || '',
+                    cpf: user?.user_metadata?.cpf || '',
                 },
-                items: [{
-                    product_id: MASTER_PRODUCT_ID,
-                    product_name: `TICKETS: ${raffle?.title}`,
-                    quantity: ticketNumbers.length,
-                    product_price: raffle?.ticket_price
-                }],
-                total: totalAmount
             })
         });
 
         console.log('Status HTTP da Edge Function:', mpResponse.status);
         const data = await mpResponse.json();
-        console.log('Corpo da resposta:', JSON.stringify(data));
+        console.log('Resposta:', JSON.stringify(data));
 
         if (!mpResponse.ok) {
             const errMsg = data?.error || data?.message || `Erro HTTP ${mpResponse.status}`;
@@ -180,17 +123,17 @@ export default function RaffleDetailPage() {
         if (data?.checkout_url) {
             window.location.href = data.checkout_url;
         } else {
-            console.error('Resposta sem URL de checkout:', data);
             throw new Error('O Mercado Pago não retornou um link de pagamento.');
         }
 
     } catch (err: any) {
         console.error('FALHA NO PROTOCOLO DE COMPRA:', err);
-        alert(`FALHA NO PROTOCOLO: ${err.message || 'Erro inesperado na comunicação com o servidor.'}`);
+        alert(`FALHA NO PROTOCOLO: ${err.message || 'Erro inesperado.'}`);
     } finally {
         setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen pb-20 bg-background-dark">
