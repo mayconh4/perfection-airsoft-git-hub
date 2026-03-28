@@ -35,7 +35,11 @@ Deno.serve(async (req: Request) => {
           user_id: null,
           total: Number(total),
           status: 'pendente',
-          customer_data: customerData,
+          customer_data: {
+            ...customerData,
+            cpf: customerData.cpf?.replace(/\D/g, ''),
+            phone: customerData.phone?.replace(/\D/g, '')
+          },
           shipping_address: { street: 'Digital', city: 'Online', cep: '00000-000' }
         })
       });
@@ -65,9 +69,13 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 2. Mercado Pago PIX
     const cleanedCpf = customerData?.cpf ? String(customerData.cpf).replace(/\D/g, '') : '';
-    console.log('[DEBUG] Chamando Mercado Pago...');
+    const guestEmail = `op_${cleanedCpf}@perfectionairsoft.com.br`;
+    const payerEmail = (customerData?.email && customerData.email.includes('@') && !customerData.email.includes(' ')) 
+      ? customerData.email 
+      : guestEmail;
+
+    console.log('[DEBUG] 7 - Chamando MP para:', payerEmail);
 
     const payResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
@@ -80,7 +88,7 @@ Deno.serve(async (req: Request) => {
         description: `Pedido ${finalOrderId}`,
         payment_method_id: 'pix',
         payer: {
-          email: customerData?.email || `op_${cleanedCpf}@perfection.com`,
+          email: payerEmail,
           identification: { type: 'CPF', number: cleanedCpf || '00000000000' }
         },
         external_reference: finalOrderId,
@@ -91,7 +99,14 @@ Deno.serve(async (req: Request) => {
     const payment = await payResponse.json();
 
     if (!payResponse.ok) {
-      return new Response(JSON.stringify({ error: 'Erro MP', details: payment }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      console.error('[ERRO MP]', JSON.stringify(payment));
+      return new Response(JSON.stringify({ 
+        error: 'Erro MP', 
+        details: payment.message || payment.cause?.[0]?.description || 'Dados Inválidos' 
+      }), { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
     }
 
     return new Response(JSON.stringify({ 

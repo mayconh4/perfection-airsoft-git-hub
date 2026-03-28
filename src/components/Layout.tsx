@@ -494,7 +494,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
 
           <div className="mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-[9px] text-white/20 tracking-[0.3em] uppercase italic">© 2024 perfection airsoft // airsoft performance hub. [V2.0.2] all rights reserved.</p>
+            <p className="text-[9px] text-white/20 tracking-[0.3em] uppercase italic">© 2024 perfection airsoft // airsoft performance hub. [V2.0.3] all rights reserved.</p>
             <div className="flex gap-8 text-[9px] text-white/20 tracking-widest font-bold uppercase">
               <span className="hover:text-white cursor-pointer transition-colors">Privacy Protocol</span>
               <span className="hover:text-white cursor-pointer transition-colors">Security Clearance</span>
