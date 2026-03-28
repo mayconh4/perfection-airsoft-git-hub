@@ -84,7 +84,7 @@ export function CartDrawer() {
                <span className="text-xl font-mono text-primary font-black">{formatPrice(total, true)}</span>
              </div>
              <Link 
-               to="/carrinho" 
+               to="/checkout" 
                onClick={() => setIsCartOpen(false)} 
                className="w-full bg-primary text-black font-black uppercase tracking-[0.2em] py-4 flex items-center justify-center gap-2 hover:bg-white transition-all text-xs border border-primary hover:border-white shadow-[0_0_20px_rgba(255,193,7,0.15)]"
              >
