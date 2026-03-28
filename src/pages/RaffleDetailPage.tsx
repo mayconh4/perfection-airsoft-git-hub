@@ -114,12 +114,13 @@ export default function RaffleDetailPage() {
 
         if (orderError || !order) throw new Error(`Erro ao criar pedido: ${orderError?.message}`);
 
-        // 2. Criar itens do pedido
+        // 2. Criar itens do pedido (Usamos um ID de produto mestre para satisfazer a FK do banco)
+        const MASTER_PRODUCT_ID = '017213a1-6228-48bd-bb71-1154e82ec3eb';
         const { error: itemsError } = await supabase
             .from('order_items')
             .insert({
                 order_id: order.id,
-                product_id: raffle?.id,
+                product_id: MASTER_PRODUCT_ID,
                 product_name: `TICKET RIFA: ${raffle?.title} (#${ticketNumbers.join(', #')})`,
                 product_price: raffle?.ticket_price || 0,
                 quantity: ticketNumbers.length
