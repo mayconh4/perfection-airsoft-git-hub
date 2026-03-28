@@ -94,25 +94,56 @@ export default function RaffleDetailPage() {
     try {
         const ticketNumbers = selectedTickets;
         const totalAmount = ticketNumbers.length * (raffle?.ticket_price || 0);
-        const paymentId = `TICK_${raffle?.id.slice(0, 8)}_${user.id.slice(0, 8)}_${Date.now()}`;
 
-        // 1. Criar tickets pendentes no Supabase
+        // 1. Criar pedido na tabela 'orders' (Tratar como produto real)
+        const { data: order, error: orderError } = await supabase
+            .from('orders')
+            .insert({
+                user_id: user.id,
+                total: totalAmount,
+                status: 'pendente',
+                customer_data: {
+                    name: user.user_metadata?.full_name || 'Operador Anônimo',
+                    email: user.email,
+                    cpf: user.user_metadata?.cpf || ''
+                },
+                shipping_address: { type: 'digital', info: 'Rifa/Drop' }
+            })
+            .select()
+            .single();
+
+        if (orderError || !order) throw new Error(`Erro ao criar pedido: ${orderError?.message}`);
+
+        // 2. Criar itens do pedido
+        const { error: itemsError } = await supabase
+            .from('order_items')
+            .insert({
+                order_id: order.id,
+                product_id: raffle?.id,
+                product_name: `TICKET RIFA: ${raffle?.title} (#${ticketNumbers.join(', #')})`,
+                product_price: raffle?.ticket_price || 0,
+                quantity: ticketNumbers.length
+            });
+
+        if (itemsError) throw itemsError;
+
+        // 3. Criar tickets na tabela 'raffle_tickets' vinculados ao pedido
         const { error: ticketError } = await supabase.from('raffle_tickets').insert(
             ticketNumbers.map(num => ({
                 raffle_id: raffle?.id,
                 user_id: user.id,
                 ticket_number: num,
                 payment_status: 'pendente',
-                payment_id: paymentId
+                payment_id: order.id // Usamos o ID do pedido como referência
             }))
         );
 
         if (ticketError) throw ticketError;
 
-        // 2. Chamar Edge Function do Mercado Pago
+        // 4. Chamar Edge Function do Mercado Pago
         const { data, error: functionError } = await supabase.functions.invoke('mercadopago-payment', {
             body: {
-                orderId: paymentId,
+                orderId: order.id,
                 customerData: {
                     email: user.email,
                     name: user.user_metadata?.full_name || 'Operador Anônimo',
@@ -130,32 +161,22 @@ export default function RaffleDetailPage() {
         });
 
         if (functionError) {
-          // Supabase Function invocation error
-          let errorMessage = 'Erro na comunicação com o servidor de pagamento.';
-          
-          try {
-            // Tenta obter o corpo da resposta de erro
-            if (data && data.error) {
-                errorMessage = data.error;
-                if (data.details?.message) errorMessage += `: ${data.details.message}`;
-            } else {
-                errorMessage = functionError.message;
-            }
-          } catch (e) {
-            console.error('Erro ao processar resposta de falha:', e);
-          }
-          
-          throw new Error(errorMessage);
+            console.error('Erro de Invocação:', functionError);
+            throw new Error(`Falha na API: ${functionError.message}`);
+        }
+
+        if (data?.error) {
+            console.error('Erro retornado pela Function:', data);
+            throw new Error(`${data.error}${data.details ? ' (' + JSON.stringify(data.details) + ')' : ''}`);
         }
 
         if (data?.checkout_url) {
             window.location.href = data.checkout_url;
         } else if (data?.qr_code_base64) {
             alert('PIX GERADO COM SUCESSO. VERIFIQUE SEU EMAIL.');
-        } else if (data?.error) {
-            throw new Error(data.error);
         } else {
-            throw new Error('REPOSTA DO GATEWAY INVÁLIDA.');
+            console.error('Resposta sem URL de checkout:', data);
+            throw new Error('O sistema não retornou um link de pagamento válido.');
         }
 
     } catch (err: any) {

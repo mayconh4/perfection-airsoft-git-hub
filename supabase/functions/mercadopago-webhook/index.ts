@@ -44,33 +44,38 @@ Deno.serve(async (req: Request) => {
       if (status === 'approved') finalStatus = 'pago';
       if (status === 'rejected' || status === 'cancelled') finalStatus = 'cancelado';
 
-      if (orderId.startsWith('TICK_')) {
-        // Fluxo de Rifas/Drops
-        console.log(`Processando pagamento de Ticket: ${orderId}`);
-        const { error } = await supabase
-          .from('raffle_tickets')
-          .update({ 
-            payment_status: finalStatus,
-            purchased_at: finalStatus === 'pago' ? new Date().toISOString() : null
-          })
-          .eq('payment_id', orderId);
-        
-        if (error) throw error;
-      } else {
-        // Fluxo de Pedidos Normais
-        const { error } = await supabase
-          .from('orders')
-          .update({ 
-            payment_status: finalStatus,
-            mercadopago_id: String(paymentId),
-            payment_type: payment.payment_type_id
-          })
-          .eq('id', orderId);
+      console.log(`Atualizando Pedido #${orderId} para status: ${finalStatus}`);
 
-        if (error) throw error;
+      // A. Atualizar Tabela de Pedidos (Orders) - Sempre necessário
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update({ 
+          status: finalStatus,
+          payment_status: finalStatus,
+          mercadopago_id: String(paymentId),
+          payment_type: payment.payment_type_id
+        })
+        .eq('id', orderId);
+
+      if (orderError) {
+        console.error('Erro ao atualizar tabela orders:', orderError);
+        // Não jogamos erro ainda, pois pode ser um ticket antigo com prefixo TICK_
       }
 
-      console.log(`Referência #${orderId} atualizada para ${finalStatus}`);
+      // B. Atualizar Tabela de Rifas (Raffle Tickets) - Se houver tickets vinculados
+      const { error: ticketError } = await supabase
+        .from('raffle_tickets')
+        .update({ 
+          payment_status: finalStatus,
+          purchased_at: finalStatus === 'pago' ? new Date().toISOString() : null
+        })
+        .eq('payment_id', orderId);
+      
+      if (ticketError) {
+        console.error('Erro ao atualizar tabela raffle_tickets:', ticketError);
+      }
+
+      console.log(`Sincronização concluída para #${orderId}`);
     }
 
     return new Response(JSON.stringify({ received: true }), {
