@@ -65,10 +65,11 @@ function getTimeRemaining(dateStr: string) {
 
 function RaffleCard({ raffle }: { raffle: Raffle }) {
   const { user } = useAuth();
-  const isAdmin = user?.email === 'admin@perfectionairsoft.com.br' || 
-                  user?.email === 'maycontuliofs@gmail.com' || 
-                  user?.email === 'maycontulio@gmail.com' || 
-                  user?.email === 'maaycontulio@gmail.com';
+  const isAdmin = !!user && (
+    user.email === 'admin@perfectionairsoft.com.br' || 
+    user.email?.includes('maycontulio') || 
+    user.email?.includes('maaycontulio')
+  );
   const percentSold = (raffle.sold_tickets / raffle.total_tickets) * 100;
   const isEndingSoon = percentSold >= 90;
 
@@ -90,19 +91,19 @@ function RaffleCard({ raffle }: { raffle: Raffle }) {
         
         {/* HUD Badges */}
         <div className="absolute top-4 left-4 flex flex-col gap-2 z-20">
+            {isAdmin && (
+               <Link 
+                to={`/drop/editar/${raffle.id}`}
+                className="bg-primary hover:bg-white text-background-dark text-[10px] font-black uppercase tracking-widest px-4 py-3 flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(255,193,7,0.5)] border-2 border-black animate-bounce"
+               >
+                 <span className="material-symbols-outlined text-sm">edit_square</span>
+                 COMANDO DROP
+               </Link>
+            )}
             <span className="bg-black/80 border border-white/10 text-[8px] font-black uppercase tracking-widest px-3 py-1 flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-primary animate-pulse" />
               LIVE OPS
             </span>
-            {isAdmin && (
-               <Link 
-                to={`/drop/editar/${raffle.id}`}
-                className="bg-primary hover:bg-white text-background-dark text-[8px] font-black uppercase tracking-widest px-3 py-1 flex items-center gap-1.5 transition-all shadow-lg"
-               >
-                 <span className="material-symbols-outlined text-[10px]">edit</span>
-                 EDIT OPS
-               </Link>
-            )}
             {isEndingSoon && (
                <span className="bg-red-900/80 border border-red-500/30 text-red-100 text-[8px] font-black uppercase tracking-widest px-3 py-1">
                  LAST UNITS
