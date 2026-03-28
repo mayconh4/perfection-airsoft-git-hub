@@ -143,7 +143,7 @@ export default function RaffleDetailPage() {
 
         // 4. Chamar Edge Function via fetch direto (para ver o erro real do servidor)
         const { data: { session } } = await supabase.auth.getSession();
-        const mpResponse = await fetch('https://dtndhmsfmsvuvfowpcrw.supabase.co/functions/v1/mercadopago-payment', {
+        const mpResponse = await fetch('https://seewdqetyolfmqsiyban.supabase.co/functions/v1/mercadopago-payment', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
