@@ -18,51 +18,7 @@ interface Event {
   organizer_id: string;
 }
 
-// Mock data para demonstração enquanto o banco não está configurado
-const MOCK_EVENTS: Event[] = [
-  {
-    id: '1',
-    title: 'Operation: Dark Veil',
-    description: 'Missão noturna em campo fechado. Modo de jogo: Eliminação por equipes. Capacity máxima de 40 operadores. Equipamentos obrigatórios: Full-face protection e tracer unit.',
-    location: 'Campo Batalha SP - Zona Leste, São Paulo',
-    event_date: '2026-04-12T09:00:00',
-    ticket_price: 46,
-    platform_fee: 6,
-    capacity: 40,
-    sold_count: 28,
-    image_url: null,
-    status: 'published',
-    organizer_id: 'org1',
-  },
-  {
-    id: '2',
-    title: 'CQB Speedsoft Championship',
-    description: 'Torneio de Speedsoft em arena indoor. 3 modalidades: 1v1, 2v2 e 5v5. Premiação para os campeões de cada categoria.',
-    location: 'Arena Tática Indoor - Santo André, SP',
-    event_date: '2026-04-19T10:00:00',
-    ticket_price: 60,
-    platform_fee: 6,
-    capacity: 60,
-    sold_count: 60,
-    image_url: null,
-    status: 'closed',
-    organizer_id: 'org2',
-  },
-  {
-    id: '3',
-    title: 'Operação Floresta Negra',
-    description: 'Missão em campo aberto com mais de 5 hectares de área. Jogo de papéis com times de Assalto e Defesa. Duração: 6 horas contínuas.',
-    location: 'Campo BR Airsoft - Mogi das Cruzes, SP',
-    event_date: '2026-05-03T08:00:00',
-    ticket_price: 55,
-    platform_fee: 6,
-    capacity: 80,
-    sold_count: 14,
-    image_url: null,
-    status: 'published',
-    organizer_id: 'org1',
-  },
-];
+// Tabela de Eventos original removida em favor do Supabase
 
 const FILTERS = ['Todos', 'Esta Semana', 'Este Mês', 'Esgotados'];
 
@@ -182,7 +138,7 @@ function EventCard({ event }: { event: Event }) {
 }
 
 export default function EventsPage() {
-  const [events, setEvents] = useState<Event[]>(MOCK_EVENTS);
+  const [events, setEvents] = useState<Event[]>([]);
   const [activeFilter, setActiveFilter] = useState('Todos');
   const [loading, setLoading] = useState(false);
 
@@ -200,12 +156,11 @@ export default function EventsPage() {
         .eq('status', 'published')
         .order('event_date', { ascending: true });
       
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         setEvents(data);
       }
-      // Se a tabela não existir ainda, mantém o mock
     } catch {
-      // Mantém mock data
+      // Falha na conexão
     } finally {
       setLoading(false);
     }

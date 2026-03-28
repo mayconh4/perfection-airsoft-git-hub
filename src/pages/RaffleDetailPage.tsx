@@ -28,6 +28,7 @@ export default function RaffleDetailPage() {
   const [raffle, setRaffle] = useState<Raffle | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
+  const [soldTicketNumbers, setSoldTicketNumbers] = useState<number[]>([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const allImages = raffle ? [raffle.image_url, ...(raffle.images || [])].filter(Boolean) as string[] : [];
@@ -48,6 +49,17 @@ export default function RaffleDetailPage() {
       
       if (!error && data) {
         setRaffle(data);
+        
+        // Carregar tickets já vendidos/reservados
+        const { data: tickets, error: ticketsError } = await supabase
+          .from('raffle_tickets')
+          .select('ticket_number')
+          .eq('raffle_id', id)
+          .neq('payment_status', 'cancelado');
+        
+        if (!ticketsError && tickets) {
+          setSoldTicketNumbers(tickets.map(t => t.ticket_number));
+        }
       }
     } catch {
       // Mock fallback
@@ -80,6 +92,16 @@ export default function RaffleDetailPage() {
 
     setLoading(true);
     try {
+        let userCpf = user.user_metadata?.cpf;
+        if (!userCpf || userCpf === '00000000000') {
+            userCpf = window.prompt('PROTOCOLO DE SEGURANÇA: Informe seu CPF (apenas números) para o checkout do Mercado Pago:');
+        }
+
+        if (!userCpf || userCpf.length < 11) {
+            alert('OPERADOR: CPF INVÁLIDO OU NÃO INFORMADO. PROTOCOLO ABORTADO.');
+            return;
+        }
+
         const ticketNumbers = selectedTickets;
         const totalAmount = ticketNumbers.length * (raffle?.ticket_price || 0);
         const paymentId = `TICK_${raffle?.id.slice(0, 8)}_${user.id.slice(0, 8)}_${Date.now()}`;
@@ -104,7 +126,7 @@ export default function RaffleDetailPage() {
                 customerData: {
                     email: user.email,
                     name: user.user_metadata?.full_name || 'Operador Anônimo',
-                    cpf: '00000000000' // Placeholder
+                    cpf: userCpf
                 },
                 items: [{
                     product_id: raffle?.id,
@@ -117,19 +139,38 @@ export default function RaffleDetailPage() {
             }
         });
 
-        if (functionError) throw functionError;
+        if (functionError) {
+          // Supabase Function invocation error
+          let errorMessage = 'Erro na comunicação com o servidor de pagamento.';
+          
+          try {
+            // Tenta obter o corpo da resposta de erro
+            if (data && data.error) {
+                errorMessage = data.error;
+                if (data.details?.message) errorMessage += `: ${data.details.message}`;
+            } else {
+                errorMessage = functionError.message;
+            }
+          } catch (e) {
+            console.error('Erro ao processar resposta de falha:', e);
+          }
+          
+          throw new Error(errorMessage);
+        }
 
         if (data?.checkout_url) {
             window.location.href = data.checkout_url;
         } else if (data?.qr_code_base64) {
             alert('PIX GERADO COM SUCESSO. VERIFIQUE SEU EMAIL.');
+        } else if (data?.error) {
+            throw new Error(data.error);
         } else {
             throw new Error('REPOSTA DO GATEWAY INVÁLIDA.');
         }
 
     } catch (err: any) {
         console.error('FALHA NO PROTOCOLO DE COMPRA:', err);
-        alert(`FALHA NO PROTOCOLO: ${err.message}`);
+        alert(`FALHA NO PROTOCOLO: ${err.message || 'Erro inesperado na comunicação com o servidor.'}`);
     } finally {
         setLoading(false);
     }
@@ -256,10 +297,10 @@ export default function RaffleDetailPage() {
               </div>
 
               {/* Ticket Grid Overlay (Visual representation) */}
-              <div className="grid grid-cols-10 gap-1 mb-8 overflow-y-auto max-h-60 p-1 bg-black/20">
-                  {Array.from({ length: 100 }).map((_, i) => {
+              <div className="grid grid-cols-10 gap-1 mb-8 overflow-y-auto max-h-80 p-1 bg-black/20">
+                  {Array.from({ length: raffle.total_tickets }).map((_, i) => {
                     const ticketNum = i + 1;
-                    const isSold = ticketNum <= 40; // Simulated sold
+                    const isSold = soldTicketNumbers.includes(ticketNum);
                     const isSelected = selectedTickets.includes(ticketNum);
 
                     return (

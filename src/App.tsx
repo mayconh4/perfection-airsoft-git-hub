@@ -23,6 +23,7 @@ import { MapsPage } from './pages/MapsPage';
 import { CustomizacaoPage } from './pages/CustomizacaoPage';
 import EventsPage from './pages/EventsPage';
 import EventDetailPage from './pages/EventDetailPage';
+import CreateEventPage from './pages/CreateEventPage';
 import DropPage from './pages/DropPage';
 import RaffleDetailPage from './pages/RaffleDetailPage';
 import CreateRafflePage from './pages/CreateRafflePage';
@@ -63,12 +64,14 @@ function App() {
               <Route path="/contato" element={<ContactPage />} />
               <Route path="/customizacao" element={<CustomizacaoPage />} />
               <Route path="/eventos" element={<EventsPage />} />
+              <Route path="/eventos/criar" element={<CreateEventPage />} />
               <Route path="/eventos/:id" element={<EventDetailPage />} />
               <Route path="/drop" element={<DropPage />} />
               <Route path="/drop/criar" element={<CreateRafflePage />} />
               <Route path="/drop/editar/:id" element={<CreateRafflePage />} />
               <Route path="/drop/:id" element={<RaffleDetailPage />} />
               <Route path="/organizador" element={<OrganizerDashboard />} />
+              <Route path="/organizador/eventos/:id" element={<CreateEventPage />} />
               
               {/* Admin Area */}
               <Route path="/admin" element={<AdminLayout />}>

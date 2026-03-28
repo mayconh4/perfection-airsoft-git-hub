@@ -20,10 +20,11 @@ Deno.serve(async (req: Request) => {
       throw new Error('MERCADO_PAGO_TOKEN não configurado');
     }
 
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
     const payload: any = {
       external_reference: orderId,
       description: `Pedido #${orderId} - Perfection Airsoft`,
-      notification_url: "https://dtndhmsfmsvuvfowpcrw.supabase.co/functions/v1/mercadopago-webhook",
+      notification_url: `${SUPABASE_URL}/functions/v1/mercadopago-webhook`,
       payer: {
         email: customerData.email,
         first_name: customerData.name.split(' ')[0],
@@ -47,10 +48,7 @@ Deno.serve(async (req: Request) => {
       payload.payment_method_id = 'pix';
       payload.transaction_amount = total;
     } else {
-      // Para cartão de crédito via API transparente seria mais complexo.
-      // Por simplicidade inicial, vamos focar no Checkout Pro ou PIX.
-      // Se for Cartão, podemos criar uma Preferência e retornar o init_point.
-      
+      // Checkout Pro Preference
       const preferenceResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
         method: 'POST',
         headers: {
@@ -76,6 +74,18 @@ Deno.serve(async (req: Request) => {
       });
       
       const preference = await preferenceResponse.json();
+      
+      if (!preferenceResponse.ok) {
+        console.error('Mercado Pago Error (Preference):', preference);
+        return new Response(JSON.stringify({ 
+          error: 'Erro ao gerar preferência de pagamento', 
+          details: preference 
+        }), {
+          status: preferenceResponse.status, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       return new Response(JSON.stringify({ checkout_url: preference.init_point }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -94,9 +104,14 @@ Deno.serve(async (req: Request) => {
 
     const payment = await response.json();
 
-    if (payment.error || payment.status === 400) {
-      return new Response(JSON.stringify(payment), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    if (!response.ok) {
+      console.error('Mercado Pago Error (PIX):', payment);
+      return new Response(JSON.stringify({ 
+        error: 'Erro ao gerar pagamento PIX', 
+        details: payment 
+      }), {
+        status: response.status, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
@@ -110,6 +125,7 @@ Deno.serve(async (req: Request) => {
     });
 
   } catch (error) {
+    console.error('Edge Function Error:', error);
     return new Response(JSON.stringify({ error: String(error) }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

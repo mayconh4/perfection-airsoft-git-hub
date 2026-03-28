@@ -399,8 +399,8 @@ export function Layout({ children }: LayoutProps) {
                       {renderIcon(cat.icon, true)}
                       {cat.label}
                     </div>
-                    {cat.badge && (
-                      <span className="bg-primary text-black px-1.5 py-0.5 text-[8px] rounded-sm font-black uppercase">{cat.badge}</span>
+                    {cat.badge === 'new' && (
+                      <span className="size-1.5 rounded-full bg-primary animate-pulse ml-2 shadow-[0_0_8px_rgba(255,193,7,0.5)]"></span>
                     )}
                     <span className="material-symbols-outlined text-sm opacity-30">chevron_right</span>
                   </Link>
@@ -416,8 +416,8 @@ export function Layout({ children }: LayoutProps) {
                       {renderIcon(cat.icon, true)}
                       {cat.label}
                     </div>
-                    {cat.badge && (
-                      <span className="bg-primary text-black px-1.5 py-0.5 text-[8px] rounded-sm font-black uppercase">{cat.badge}</span>
+                    {cat.badge === 'new' && (
+                      <span className="size-1.5 rounded-full bg-primary animate-pulse ml-2 shadow-[0_0_8px_rgba(255,193,7,0.5)]"></span>
                     )}
                     <span className="material-symbols-outlined text-sm opacity-30">chevron_right</span>
                   </Link>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MapBackgroundSequence } from '../components/MapBackgroundSequence';
 import { supabase } from '../lib/supabase';
 
@@ -12,6 +13,7 @@ export function MapsPage() {
   const [mapsList, setMapsList] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [editingMapId, setEditingMapId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
 
   // States para Avaliações
   const [reviewComment, setReviewComment] = useState('');
@@ -39,6 +41,13 @@ export function MapsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('register') === 'true') {
+      setShowForm(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [searchParams]);
 
   // States para o form
   const GAME_MODES = [
