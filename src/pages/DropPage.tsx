@@ -65,7 +65,10 @@ function getTimeRemaining(dateStr: string) {
 
 function RaffleCard({ raffle }: { raffle: Raffle }) {
   const { user } = useAuth();
-  const isAdmin = user?.email === 'admin@perfectionairsoft.com.br' || user?.email === 'maycontuliofs@gmail.com';
+  const isAdmin = user?.email === 'admin@perfectionairsoft.com.br' || 
+                  user?.email === 'maycontuliofs@gmail.com' || 
+                  user?.email === 'maycontulio@gmail.com' || 
+                  user?.email === 'maaycontulio@gmail.com';
   const percentSold = (raffle.sold_tickets / raffle.total_tickets) * 100;
   const isEndingSoon = percentSold >= 90;
 
@@ -158,13 +161,25 @@ function RaffleCard({ raffle }: { raffle: Raffle }) {
         </div>
 
         {/* CTA */}
-        <Link 
-          to={`/drop/${raffle.id}`}
-          className="mt-auto bg-primary text-background-dark font-black py-4 text-[10px] uppercase tracking-[0.3em] hover:bg-white transition-all text-center flex items-center justify-center gap-3 group/btn"
-        >
-          <span>SELECT TICKETS</span>
-          <span className="material-symbols-outlined text-sm group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>
-        </Link>
+        <div className="mt-auto flex gap-2">
+          <Link 
+            to={`/drop/${raffle.id}`}
+            className="flex-1 bg-primary text-background-dark font-black py-4 text-[10px] uppercase tracking-[0.3em] hover:bg-white transition-all text-center flex items-center justify-center gap-3 group/btn"
+          >
+            <span>SELECT TICKETS</span>
+            <span className="material-symbols-outlined text-sm group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>
+          </Link>
+
+          {isAdmin && (
+            <Link 
+              to={`/drop/editar/${raffle.id}`}
+              className="bg-white/5 border border-white/10 text-white hover:bg-white hover:text-black px-4 transition-all flex items-center justify-center group/edit shadow-lg"
+              title="EDIT OPERATION"
+            >
+              <span className="material-symbols-outlined text-sm group-hover/edit:rotate-12 transition-transform">edit</span>
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );
