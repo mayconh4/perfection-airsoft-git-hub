@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -24,11 +24,31 @@ export default function CreateRafflePage() {
     logistics_description: 'Envio segurado para todo o Brasil via transportadora tática especializada.'
   });
 
+  const [hasPixKey, setHasPixKey] = useState<boolean | null>(null);
+  
   useEffect(() => {
+    checkPixKey();
     if (id) {
       loadRaffleData();
     }
-  }, [id]);
+  }, [id, user]);
+
+  const checkPixKey = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('pix_key')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) throw error;
+      setHasPixKey(!!data?.pix_key);
+    } catch (err) {
+      console.error('Erro ao verificar Chave Pix:', err);
+      setHasPixKey(false);
+    }
+  };
 
   const loadRaffleData = async () => {
     setLoading(true);
@@ -117,6 +137,12 @@ export default function CreateRafflePage() {
       return;
     }
 
+    if (!hasPixKey) {
+      alert('PROTOCOLO BLOQUEADO: VOCÊ PRECISA CADASTRAR UMA CHAVE PIX PARA RECEBER AS VENDAS.');
+      navigate('/organizador');
+      return;
+    }
+
     setLoading(true);
     try {
       if (id) {
@@ -186,7 +212,25 @@ export default function CreateRafflePage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="bg-surface/20 border border-white/5 p-8 space-y-8">
+            {hasPixKey === false && (
+                <div className="bg-red-500/10 border border-red-500/50 p-8 flex flex-col items-center text-center gap-4 mb-8">
+                    <span className="material-symbols-outlined text-red-500 text-4xl">warning</span>
+                    <div>
+                        <h3 className="text-white font-black uppercase tracking-widest mb-2">PAGAMENTO NÃO CONFIGURADO</h3>
+                        <p className="text-slate-400 text-[10px] uppercase font-mono max-w-md mx-auto leading-relaxed">
+                            PARA LANÇAR UM DROP E RECEBER O DINHEIRO IMEDIATAMENTE, VOCÊ PRECISA CADASTRAR SUA CHAVE PIX NO PAINEL DO ORGANIZADOR.
+                        </p>
+                    </div>
+                    <Link 
+                        to="/organizador" 
+                        className="bg-red-500 text-white font-black py-3 px-8 text-[10px] uppercase tracking-widest hover:bg-white hover:text-red-500 transition-all"
+                    >
+                        CONFIGURAR CHAVE PIX AGORA
+                    </Link>
+                </div>
+            )}
+            
+            <div className={`space-y-8 ${hasPixKey === false ? 'opacity-20 pointer-events-none grayscale' : ''}`}>
                 {/* Title */}
                 <div>
                     <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">NOME DO EQUIPAMENTO / PRÊMIO</label>
