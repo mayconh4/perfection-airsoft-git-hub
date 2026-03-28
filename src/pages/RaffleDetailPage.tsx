@@ -54,7 +54,7 @@ export default function RaffleDetailPage() {
           .from('raffle_tickets')
           .select('ticket_number')
           .eq('raffle_id', id)
-          .neq('payment_status', 'cancelado');
+          .eq('payment_status', 'pago');
 
         if (!ticketsError && tickets) {
           setSoldTicketNumbers(tickets.map(t => t.ticket_number));
