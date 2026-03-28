@@ -31,6 +31,17 @@ export default function RaffleDetailPage() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const allImages = raffle ? [raffle.image_url, ...(raffle.images || [])].filter(Boolean) as string[] : [];
+  
+  // Auto-carrossel de 3 segundos
+  useEffect(() => {
+    if (allImages.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setActiveImageIndex((prev) => (prev + 1) % allImages.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [allImages.length]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
