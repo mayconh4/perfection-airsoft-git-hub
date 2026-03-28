@@ -41,6 +41,8 @@ export function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('pix');
   const [paymentData, setPaymentData] = useState<{qr_code?: string, qr_code_base64?: string, checkout_url?: string} | null>(null);
   const navigate = useNavigate();
+  const onlyRaffles = items.every(i => i.product?.brand === 'DROP');
+  const [error, setError] = useState<string | null>(null);
 
   const grandTotal = total + (selectedShipping?.price || 0);
 
@@ -54,6 +56,7 @@ export function CheckoutPage() {
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     // Salvar memória do operador
     if (step === 0) {
@@ -61,109 +64,127 @@ export function CheckoutPage() {
       ['name', 'cpf', 'email', 'phone'].forEach(key => {
         const val = (form as any)[key];
         if (val && !newMemory[key].includes(val)) {
-          newMemory[key] = [...newMemory[key], val].slice(-5); // Manter as últimas 5 sugestões
+          newMemory[key] = [...newMemory[key], val].slice(-5);
         }
       });
       setMemory(newMemory);
       localStorage.setItem('operator_memory', JSON.stringify(newMemory));
     }
 
-    if (step < 2) setStep(s => s + 1);
+    // Se for só rifa, pula o endereço (Step 1) e vai pro pagamento (Step 2)
+    if (step === 0 && onlyRaffles) {
+      setStep(2);
+    } else if (step < 2) {
+      setStep(s => s + 1);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (items.length === 0) return;
 
-    let currentUserId = user?.id;
+    try {
+      let currentUserId = user?.id;
 
-    // Se não estiver logado, cria conta primeiro
-    if (!currentUserId) {
-      if (!form.password || form.password.length < 6) {
-        alert('Crie uma senha de ao menos 6 caracteres para finalizar seu cadastro.');
-        return;
-      }
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: { data: { full_name: form.name } }
-      });
-
-      if (signUpError) {
-        alert(`Erro ao criar conta: ${signUpError.message}`);
-        return;
-      }
-      currentUserId = signUpData.user?.id;
-    }
-
-    if (!currentUserId) return;
-
-    const order = await createOrder(
-      { name: form.name, cpf: form.cpf, email: form.email, phone: form.phone, payment_method: paymentMethod },
-      {
-        street: `${form.street}, ${form.number}${form.complement ? ' - ' + form.complement : ''}`,
-        district: form.district,
-        cep: form.cep,
-        city: `${form.city} - ${form.state}`,
-        shipping_method: selectedShipping?.name,
-        shipping_company: selectedShipping?.company,
-        shipping_price: selectedShipping?.price
-      },
-      currentUserId
-    );
-    if (order) {
-      try {
-        // [FRONTEND SPECIALIST] Correção da URL do projeto seewdqetyolfmqsiyban
-        const functionUrl = `https://seewdqetyolfmqsiyban.supabase.co/functions/v1/mercadopago-payment?t=${Date.now()}`;
-        
-        const response = await fetch(functionUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId: order.id,
-            total: grandTotal,
-            paymentMethod,
-            customerData: {
-              name: form.name,
-              email: form.email,
-              cpf: form.cpf,
-              phone: form.phone
-            },
-            items: items.map((i: any) => ({
-              product_id: i.product_id,
-              product_name: i.product?.name,
-              product_price: i.product?.price,
-              quantity: i.quantity,
-              metadata: i.metadata // [FRONTEND SPECIALIST] Passar tickets
-            }))
-          })
+      // Se não estiver logado, cria conta primeiro
+      if (!currentUserId) {
+        if (!form.password || form.password.length < 6) {
+          setError('Crie uma senha de ao menos 6 caracteres.');
+          return;
+        }
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: form.email,
+          password: form.password,
+          options: { data: { full_name: form.name } }
         });
 
-
-        const payment = await response.json();
-
-        if (payment.checkout_url) {
-          window.location.href = payment.checkout_url;
+        if (signUpError) {
+          setError(`Erro ao criar conta: ${signUpError.message}`);
           return;
         }
+        currentUserId = signUpData.user?.id;
+      }
 
-        if (payment.qr_code) {
-          setPaymentData(payment);
-          setStep(3); // Novo passo para exibir o PIX
-          await clearCart();
-          return;
-        }
+      if (!currentUserId) {
+        setError('Falha ao identificar usuário.');
+        return;
+      }
 
-        if (payment.error) {
-          alert('Erro ao processar pagamento: ' + payment.error);
-        } else {
-          await clearCart();
-          navigate(`/sucesso/${order.id}`);
-        }
-      } catch (err) {
-        console.error('Erro no pagamento:', err);
+      const order = await createOrder(
+        { name: form.name, cpf: form.cpf, email: form.email, phone: form.phone, payment_method: paymentMethod },
+        {
+          street: onlyRaffles ? 'Digital/Rifa' : `${form.street}, ${form.number}${form.complement ? ' - ' + form.complement : ''}`,
+          district: onlyRaffles ? 'Digital' : form.district,
+          cep: onlyRaffles ? '00000-000' : form.cep,
+          city: onlyRaffles ? 'Online' : `${form.city} - ${form.state}`,
+          shipping_method: onlyRaffles ? 'Entrega Digital' : selectedShipping?.name,
+          shipping_company: onlyRaffles ? 'DROP' : selectedShipping?.company,
+          shipping_price: onlyRaffles ? 0 : selectedShipping?.price
+        },
+        currentUserId
+      );
+
+      if (!order) {
+        setError('Erro ao processar pedido no banco de dados. Tente novamente.');
+        return;
+      }
+
+      // [FRONTEND SPECIALIST] Chamada para Edge Function (PIX Automático)
+      const functionUrl = `https://seewdqetyolfmqsiyban.supabase.co/functions/v1/mercadopago-payment?t=${Date.now()}`;
+      
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: order.id,
+          total: grandTotal,
+          paymentMethod,
+          customerData: {
+            name: form.name,
+            email: form.email,
+            cpf: form.cpf,
+            phone: form.phone
+          },
+          items: items.map((i: any) => ({
+            product_id: i.product_id,
+            product_name: i.product?.name,
+            product_price: i.product?.price,
+            quantity: i.quantity,
+            metadata: i.metadata
+          }))
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        setError('Servidor MP indisponível: ' + (errData.error || response.statusText));
+        return;
+      }
+
+      const payment = await response.json();
+
+      if (payment.checkout_url) {
+        window.location.href = payment.checkout_url;
+        return;
+      }
+
+      if (payment.qr_code) {
+        setPaymentData(payment);
+        setStep(3);
+        await clearCart();
+        return;
+      }
+
+      if (payment.error) {
+        setError('Erro no Mercado Pago: ' + payment.error);
+      } else {
+        await clearCart();
         navigate(`/sucesso/${order.id}`);
       }
+    } catch (err: any) {
+      console.error('Erro no pagamento:', err);
+      setError('Ocorreu um erro inesperado: ' + err.message);
     }
   };
 
@@ -190,12 +211,21 @@ export function CheckoutPage() {
       {/* Step Indicator */}
       <div className="flex items-center gap-0 mb-10 border border-white/5 overflow-hidden">
         {STEPS.map((s, i) => (
-          <div key={s} className={`flex-1 py-3 text-center text-[9px] font-black uppercase tracking-[0.2em] transition-colors border-r border-white/5 last:border-0 ${i === step ? 'bg-primary text-black' : i < step ? 'bg-primary/10 text-primary' : 'text-white/20 bg-black/20'
-            }`}>
-            <span className="mr-2 font-mono">{i < step ? '✓' : `0${i + 1}`}</span>{s}
-          </div>
+          (onlyRaffles && i === 1) ? null : (
+            <div key={s} className={`flex-1 py-3 text-center text-[9px] font-black uppercase tracking-[0.2em] transition-colors border-r border-white/5 last:border-0 ${i === step ? 'bg-primary text-black' : i < step ? 'bg-primary/10 text-primary' : 'text-white/20 bg-black/20'
+              }`}>
+              <span className="mr-2 font-mono">{i < step ? '✓' : `0${i + 1}`}</span>{s}
+            </div>
+          )
         ))}
       </div>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-black uppercase tracking-widest flex items-center gap-3">
+          <span className="material-symbols-outlined text-sm">error</span>
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
