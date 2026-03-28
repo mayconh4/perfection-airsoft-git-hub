@@ -14,14 +14,28 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const MERCADO_PAGO_TOKEN = Deno.env.get('MERCADO_PAGO_TOKEN');
+
+    // Validação de Segredos
+    if (!SUPABASE_SERVICE_ROLE_KEY || !MERCADO_PAGO_TOKEN) {
+      const missing = !SUPABASE_SERVICE_ROLE_KEY ? 'SUPABASE_SERVICE_ROLE_KEY' : 'MERCADO_PAGO_TOKEN';
+      console.error(`[ERRO] Secret ${missing} não configurada`);
+      return new Response(JSON.stringify({ 
+        error: 'Erro de Configuração', 
+        details: `Secret ${missing} não encontrada no Supabase. Use a CLI para definir.` 
+      }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const body = await req.json();
     console.log('[DEBUG] Ordem recebida:', body.orderId);
 
-    const { orderId, total, items, customerData, paymentMethod, isGuest } = body;
+    const { orderId, total, items, customerData, isGuest } = body;
 
     // 1. Criar Pedido se for Guest (via REST API direta para ser mais rápido)
     let finalOrderId = orderId;
-    if (isGuest && (!orderId || orderId === 'GUEST_NEW')) {
+    if (isGuest && (orderId === 'GUEST_NEW')) {
       console.log('[DEBUG] Registrando pedido via REST...');
       const orderResp = await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
         method: 'POST',
@@ -81,7 +95,8 @@ Deno.serve(async (req: Request) => {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${MERCADO_PAGO_TOKEN}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': finalOrderId
       },
       body: JSON.stringify({
         transaction_amount: Number(total),
@@ -112,6 +127,7 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ 
       qr_code: payment.point_of_interaction?.transaction_data?.qr_code,
       qr_code_base64: payment.point_of_interaction?.transaction_data?.qr_code_base64,
+      amount: payment.transaction_amount || total,
       order_id: finalOrderId 
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 

@@ -189,7 +189,7 @@ export function CheckoutPage() {
       if (payment.qr_code) {
         setPaymentData(payment);
         setStep(3);
-        await clearCart();
+        // Não limpamos o carrinho aqui para o resumo lateral não zerar
         return;
       }
 
