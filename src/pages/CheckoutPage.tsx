@@ -86,95 +86,92 @@ export function CheckoutPage() {
 
     try {
       let currentUserId = user?.id;
+      const isGuestFlow = isPureRaffle && !currentUserId;
 
-      // Se não estiver logado
-      if (!currentUserId) {
+      // Se não for fluxo de convidado e não estiver logado, tenta identificar
+      if (!currentUserId && !isGuestFlow) {
         let signUpEmail = form.email;
         let signUpPass = form.password;
 
-        if (isPureRaffle) {
-          // Geração Silenciosa (Shadow Account) para Rifas
-          const cleanCpf = form.cpf.replace(/\D/g, '');
-          signUpEmail = `op_${cleanCpf}@perfectionairsoft.com.br`;
-          signUpPass = `pa${cleanCpf.slice(-6)}`;
-        } else {
-          // Exige senha e email para produtos
-          if (!signUpEmail || !signUpPass || signUpPass.length < 6) {
-            setError('Identificação completa necessária (E-mail e Senha de 6 dígitos) para prosseguir.');
-            return;
-          }
+        // Identificação Completa para Produtos Físicos
+        if (!signUpEmail || !signUpPass || signUpPass.length < 6) {
+          setError('Identificação completa necessária (E-mail e Senha) para produtos físicos.');
+          return;
         }
 
-        let { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: signUpEmail,
           password: signUpPass,
-          options: { data: { full_name: form.name, phone: form.phone, cpf: form.cpf, is_shadow: isPureRaffle } }
+          options: { data: { full_name: form.name, phone: form.phone, cpf: form.cpf } }
         });
 
-        if (signUpError && signUpError.message.includes('already registered') && isPureRaffle) {
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email: signUpEmail,
-            password: signUpPass
-          });
-          
-          if (!signInError) {
-            currentUserId = signInData.user?.id;
+        if (signUpError) {
+          if (signUpError.message.includes('already registered')) {
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email: signUpEmail, password: signUpPass });
+            if (!signInError) currentUserId = signInData.user?.id;
+            else { setError('E-mail já cadastrado com outra senha. Faça login.'); return; }
           } else {
-            setError('CPF já cadastrado com outra senha. Por favor, faça login.');
+            setError(`Erro na identificação: ${signUpError.message}`);
             return;
           }
-        } else if (signUpError) {
-          setError(`Erro na identificação: ${signUpError.message}`);
-          return;
         } else {
           currentUserId = signUpData.user?.id;
         }
       }
 
-      if (!currentUserId) {
-        setError('Falha na autenticação do operador.');
-        return;
+      // [GUEST TÁTICO] Se for rifa e não logado, o pedido é criado via Edge Function para evitar Rate Limits
+      let orderId = '';
+      if (!isGuestFlow) {
+        if (!currentUserId) { setError('Falha na autenticação do operador.'); return; }
+        
+        const order = await createOrder(
+          { name: form.name, cpf: form.cpf, email: form.email, phone: form.phone, payment_method: paymentMethod },
+          {
+            street: isPureRaffle ? 'Digital' : `${form.street}, ${form.number}${form.complement ? ' - ' + form.complement : ''}`,
+            district: isPureRaffle ? '-' : form.district,
+            cep: isPureRaffle ? '00000-000' : form.cep,
+            city: isPureRaffle ? 'Online' : `${form.city} - ${form.state}`,
+            shipping_method: isPureRaffle ? 'Entrega Digital' : selectedShipping?.name,
+            shipping_company: isPureRaffle ? 'DROP' : selectedShipping?.company,
+            shipping_price: isPureRaffle ? 0 : selectedShipping?.price
+          },
+          currentUserId
+        );
+
+        if (!order) {
+          setError('Erro ao criar registro do pedido no banco de dados.');
+          return;
+        }
+        orderId = order.id;
       }
 
-      const order = await createOrder(
-        { name: form.name, cpf: form.cpf, email: isPureRaffle ? '' : form.email, phone: form.phone, payment_method: paymentMethod },
-        {
-          street: isPureRaffle ? 'Digital' : `${form.street}, ${form.number}${form.complement ? ' - ' + form.complement : ''}`,
-          district: isPureRaffle ? '-' : form.district,
-          cep: isPureRaffle ? '00000-000' : form.cep,
-          city: isPureRaffle ? 'Online' : `${form.city} - ${form.state}`,
-          shipping_method: isPureRaffle ? 'Entrega Digital' : selectedShipping?.name,
-          shipping_company: isPureRaffle ? 'DROP' : selectedShipping?.company,
-          shipping_price: isPureRaffle ? 0 : selectedShipping?.price
-        },
-        currentUserId
-      );
-
-      if (!order) {
-        setError('Erro ao criar registro do pedido. Tente novamente.');
-        return;
-      }
-
-      // MP Call
+      // MP Call (Unificado para Guest e Auth)
       const functionUrl = `https://seewdqetyolfmqsiyban.supabase.co/functions/v1/mercadopago-payment?t=${Date.now()}`;
-      const mpEmail = isPureRaffle ? `${form.cpf.replace(/\D/g, '')}@perfectionairsoft.com.br` : form.email;
+      
+      const payload = {
+        orderId: isGuestFlow ? 'GUEST_NEW' : orderId,
+        isGuest: isGuestFlow,
+        total: grandTotal,
+        paymentMethod,
+        customerData: { 
+          name: form.name, 
+          email: isGuestFlow ? `op_${form.cpf.replace(/\D/g, '')}@perfectionairsoft.com.br` : (form.email || user?.email), 
+          cpf: form.cpf, 
+          phone: form.phone 
+        },
+        items: items.map((i: any) => ({
+          product_id: i.product_id,
+          product_name: i.product?.name,
+          product_price: i.product?.price,
+          quantity: i.quantity,
+          metadata: i.metadata
+        }))
+      };
 
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId: order.id,
-          total: grandTotal,
-          paymentMethod,
-          customerData: { name: form.name, email: mpEmail, cpf: form.cpf, phone: form.phone },
-          items: items.map((i: any) => ({
-            product_id: i.product_id,
-            product_name: i.product?.name,
-            product_price: i.product?.price,
-            quantity: i.quantity,
-            metadata: i.metadata
-          }))
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -200,7 +197,7 @@ export function CheckoutPage() {
         setError('Mercado Pago: ' + payment.error);
       } else {
         await clearCart();
-        navigate(`/sucesso/${order.id}`);
+        navigate(`/sucesso/${payment.order_id || orderId}`);
       }
     } catch (err: any) {
       console.error('Erro no checkout:', err);
