@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import type { Order, OrderItem } from '../types/database';
+import type { Order } from '../types/database';
 
 export function useOrders() {
   const { user } = useAuth();
@@ -54,12 +54,13 @@ export function useCreateOrder() {
     if (error || !order) { setCreating(false); return null; }
 
     // 2. Criar itens do pedido
-    const orderItems: Omit<OrderItem, 'id'>[] = cartItems.map(ci => ({
+    const orderItems = (cartItems as any[]).map(ci => ({
       order_id: order.id,
       product_id: ci.product_id,
       product_name: ci.product?.name || 'Produto',
       product_price: ci.product?.price || 0,
       quantity: ci.quantity,
+      metadata: ci.metadata || null // [FRONTEND SPECIALIST] Persistir tickets
     }));
 
     await supabase.from('order_items').insert(orderItems);

@@ -7,7 +7,7 @@ param(
     [string]$CommitMsg = "chore: auto deploy $(Get-Date -Format 'dd/MM/yyyy HH:mm')"
 )
 
-$PROJECT_REF = "dtndhmsfmsvuvfowpcrw"
+$PROJECT_REF = "seewdqetyolfmqsiyban"
 $FUNCTIONS = @("mercadopago-payment", "mercadopago-webhook")
 
 # Carrega o token do .env.deploy ou variável de ambiente

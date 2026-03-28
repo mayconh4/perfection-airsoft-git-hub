@@ -45,13 +45,23 @@ export function CartDrawer() {
                     <span className="text-[10px] text-primary font-black">{formatPrice(item.product?.price || 0)}</span>
                   </div>
                   <div className="flex items-center gap-3 bg-background-dark w-fit border border-white/10 rounded-sm">
-                    <button onClick={() => updateQuantity(item.product_id, item.quantity - 1)} className="px-3 py-1 text-white/50 hover:text-primary transition-colors text-xs font-bold">-</button>
+                    <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="px-3 py-1 text-white/50 hover:text-primary transition-colors text-xs font-bold">-</button>
                     <span className="text-[10px] font-mono font-bold w-4 text-center">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.product_id, item.quantity + 1)} className="px-3 py-1 text-white/50 hover:text-primary transition-colors text-xs font-bold">+</button>
+                    <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="px-3 py-1 text-white/50 hover:text-primary transition-colors text-xs font-bold">+</button>
                   </div>
+                  {item.metadata?.tickets && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {item.metadata.tickets.slice(0, 5).map((t: number) => (
+                        <span key={t} className="bg-primary/10 text-primary text-[8px] font-black px-1 border border-primary/20">#{String(t).padStart(2, '0')}</span>
+                      ))}
+                      {item.metadata.tickets.length > 5 && (
+                        <span className="text-[8px] text-white/30 font-black">+{item.metadata.tickets.length - 5}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <button 
-                  onClick={() => removeItem(item.product_id)} 
+                  onClick={() => removeItem(item.id)} 
                   className="absolute top-2 right-2 text-white/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all bg-background-dark p-1 rounded-sm"
                   title="Remover"
                 >

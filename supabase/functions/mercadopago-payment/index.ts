@@ -21,95 +21,64 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    console.log('Payload recebido:', JSON.stringify(body));
+    console.log('[DEBUG] Payload recebido:', JSON.stringify(body));
 
-    const { raffleId, raffleTitle, ticketPrice, ticketNumbers, customerData } = body;
+    const { orderId, total, items, customerData } = body;
 
     if (!MERCADO_PAGO_TOKEN) {
       return new Response(
-        JSON.stringify({ error: 'MERCADO_PAGO_TOKEN nao configurado no servidor.' }),
+        JSON.stringify({ error: 'MERCADO_PAGO_TOKEN nao configurado.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!raffleId || !ticketNumbers || ticketNumbers.length === 0 || !ticketPrice) {
+    if (!orderId || !items || items.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'Dados da rifa incompletos.', received: body }),
+        JSON.stringify({ error: 'Payload invalido: orderId ou items ausentes.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const totalAmount = ticketNumbers.length * ticketPrice;
-
-    // Cria client com service_role para ignorar RLS
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // 1. Criar pedido (com service_role, sem limitacao de RLS)
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        total: totalAmount,
-        status: 'pendente',
-        customer_data: {
-          name: customerData?.name || 'Cliente Anonimo',
-          email: customerData?.email || '',
-          cpf: customerData?.cpf || '',
-          source: 'rifa'
-        },
-        shipping_address: { type: 'digital', info: `Rifa: ${raffleTitle}` }
-      })
-      .select()
-      .single();
+    // [BACKEND SPECIALIST] Processamento de Itens (Rifas vs Produtos)
+    for (const item of items) {
+      if (item.metadata?.type === 'raffle' && item.metadata?.tickets) {
+        console.log(`[RIFA] Registrando tickets para o item: ${item.product_name}`);
+        
+        const ticketsToInsert = item.metadata.tickets.map((num: number) => ({
+          raffle_id: item.product_id,
+          ticket_number: num,
+          payment_status: 'pendente',
+          payment_id: orderId,
+          user_email: customerData?.email || 'anonimo'
+        }));
 
-    if (orderError || !order) {
-      console.error('Erro ao criar pedido:', orderError);
-      return new Response(
-        JSON.stringify({ error: `Erro ao criar pedido: ${orderError?.message}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+        const { error: ticketError } = await supabase
+          .from('raffle_tickets')
+          .insert(ticketsToInsert);
 
-    // 2. Criar itens do pedido
-    const { error: itemsError } = await supabase.from('order_items').insert({
-      order_id: order.id,
-      product_id: MASTER_PRODUCT_ID,
-      product_name: `TICKET RIFA: ${raffleTitle} (#${ticketNumbers.join(', #')})`,
-      product_price: ticketPrice,
-      quantity: ticketNumbers.length
-    });
-
-    if (itemsError) {
-      console.error('Erro ao criar itens:', itemsError);
-    }
-
-    // 3. Criar raffle_tickets
-    const { error: ticketError } = await supabase.from('raffle_tickets').insert(
-      ticketNumbers.map((num: number) => ({
-        raffle_id: raffleId,
-        ticket_number: num,
-        payment_status: 'pendente',
-        payment_id: order.id
-      }))
-    );
-
-    if (ticketError) {
-      console.error('Erro ao criar tickets:', ticketError);
+        if (ticketError) {
+          console.error('[ERRO RIFA] Falha ao reservar tickets:', ticketError);
+          // Nao travamos o checkout por isso, apenas logamos
+        }
+      }
     }
 
     // 4. Criar preferência no Mercado Pago
     const preferenceBody: any = {
-      items: [{
-        id: MASTER_PRODUCT_ID,
-        title: `TICKETS: ${raffleTitle}`,
-        quantity: ticketNumbers.length,
-        unit_price: ticketPrice,
+      items: items.map((i: any) => ({
+        id: i.product_id,
+        title: i.product_name,
+        quantity: i.quantity,
+        unit_price: i.product_price,
         currency_id: 'BRL',
-      }],
+      })),
       payer: {
         email: customerData?.email || 'cliente@perfectionairsoft.com.br',
         name: customerData?.name || 'Cliente',
       },
-      external_reference: order.id,
+      external_reference: orderId,
       notification_url: `${SUPABASE_URL}/functions/v1/mercadopago-webhook`,
       back_urls: {
         success: `${ORIGIN}/checkout/success`,
@@ -125,7 +94,7 @@ Deno.serve(async (req: Request) => {
       preferenceBody.payer.identification = { type: 'CPF', number: cleanedCpf };
     }
 
-    console.log('Enviando preference para MP:', JSON.stringify(preferenceBody));
+    console.log('[DEBUG] Enviando preference para MP');
 
     const prefResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
@@ -137,15 +106,11 @@ Deno.serve(async (req: Request) => {
     });
 
     const preference = await prefResponse.json();
-    console.log('Resposta MP:', JSON.stringify(preference));
 
     if (!prefResponse.ok) {
+      console.error('[ERROR MP]', preference);
       return new Response(
-        JSON.stringify({
-          error: 'Mercado Pago rejeitou a preferencia.',
-          status: prefResponse.status,
-          details: preference,
-        }),
+        JSON.stringify({ error: 'Erro no Mercado Pago', details: preference }),
         { status: prefResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -153,15 +118,16 @@ Deno.serve(async (req: Request) => {
     const checkout_url = preference.init_point || preference.sandbox_init_point;
 
     return new Response(
-      JSON.stringify({ checkout_url, preference_id: preference.id, order_id: order.id }),
+      JSON.stringify({ checkout_url, preference_id: preference.id, order_id: orderId }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
-    console.error('Erro inesperado:', error);
+    console.error('[ERRO CRITICO]', error);
     return new Response(
-      JSON.stringify({ error: String(error?.message || error) }),
+      JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
+

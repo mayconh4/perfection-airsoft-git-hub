@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 interface Raffle {
   id: string;
@@ -21,10 +21,9 @@ interface Raffle {
   logistics_description?: string;
 }
 
-
 export default function RaffleDetailPage() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { addItem, setIsCartOpen } = useCart();
   const [raffle, setRaffle] = useState<Raffle | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
@@ -87,58 +86,31 @@ export default function RaffleDetailPage() {
 
     setLoading(true);
     try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+        console.log('[DEBUG] Adicionando tickets ao carrinho...', selectedTickets);
         
-        // [FRONTEND SPECIALIST] Cache busting para garantir versão mais recente da Edge Function
-        const timestamp = Date.now();
-        const functionUrl = `https://seewdqetyolfmqsiyban.supabase.co/functions/v1/mercadopago-payment?t=${timestamp}`;
-
-        const payload = {
-            raffleId: raffle?.id,
-            raffleTitle: raffle?.title,
-            ticketPrice: raffle?.ticket_price,
-            ticketNumbers: selectedTickets,
-            customerData: {
-                email: user?.email || '',
-                name: user?.user_metadata?.full_name || 'Cliente Anonimo',
-                cpf: user?.user_metadata?.cpf || '',
-            },
-        };
-
-        console.log('[DEBUG] Iniciando protocolo de compra...', payload);
-
-        const mpResponse = await fetch(functionUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session?.access_token || anonKey}`,
-            },
-            body: JSON.stringify(payload)
+        // Adiciona ao carrinho como um produto (raffleId) com metadados (tickets)
+        const success = await addItem(raffle.id, selectedTickets.length, {
+            type: 'raffle',
+            tickets: selectedTickets,
+            raffleTitle: raffle.title
         });
 
-        console.log('[DEBUG] Status HTTP:', mpResponse.status);
-        const data = await mpResponse.json();
-        console.log('[DEBUG] Resposta Servidor:', JSON.stringify(data));
-
-        if (!mpResponse.ok) {
-            const errMsg = data?.error || data?.message || `Erro HTTP ${mpResponse.status}`;
-            throw new Error(errMsg);
-        }
-
-        if (data?.checkout_url) {
-            window.location.href = data.checkout_url;
+        if (success) {
+            setIsCartOpen(true);
+            // Limpa seleção após adicionar ao carrinho
+            setSelectedTickets([]);
         } else {
-            throw new Error('O Mercado Pago não retornou um link de pagamento.');
+            throw new Error('Falha ao adicionar ao carrinho operacional.');
         }
 
     } catch (err: any) {
-        console.error('[ERRO CRÍTICO] Falha no checkout:', err);
+        console.error('[ERRO] Falha ao processar tickets:', err);
         alert(`FALHA NO PROTOCOLO: ${err.message || 'Erro inesperado.'}`);
     } finally {
         setLoading(false);
     }
   };
+
 
 
   return (

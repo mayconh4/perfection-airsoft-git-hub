@@ -93,8 +93,10 @@ export function CheckoutPage() {
     );
     if (order) {
       try {
-        // 2. Criar Pagamento no Mercado Pago
-        const response = await fetch('https://dtndhmsfmsvuvfowpcrw.supabase.co/functions/v1/mercadopago-payment', {
+        // [FRONTEND SPECIALIST] Correção da URL do projeto seewdqetyolfmqsiyban
+        const functionUrl = `https://seewdqetyolfmqsiyban.supabase.co/functions/v1/mercadopago-payment?t=${Date.now()}`;
+        
+        const response = await fetch(functionUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -111,10 +113,12 @@ export function CheckoutPage() {
               product_id: i.product_id,
               product_name: i.product?.name,
               product_price: i.product?.price,
-              quantity: i.quantity
+              quantity: i.quantity,
+              metadata: i.metadata // [FRONTEND SPECIALIST] Passar tickets
             }))
           })
         });
+
 
         const payment = await response.json();
 

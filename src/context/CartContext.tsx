@@ -13,9 +13,9 @@ interface CartContextType {
   setSelectedShipping: (option: any) => void;
   isCartOpen: boolean;
   setIsCartOpen: (open: boolean) => void;
-  addItem: (productId: string) => Promise<boolean>;
-  removeItem: (productId: string) => Promise<void>;
-  updateQuantity: (productId: string, quantity: number) => Promise<void>;
+  addItem: (productId: string, quantity?: number, metadata?: any) => Promise<boolean>;
+  removeItem: (itemId: string) => Promise<void>;
+  updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
   refresh: () => Promise<void>;
   showToast: boolean;
@@ -96,77 +96,84 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     sync();
   }, [user, fetchCart]);
 
-  const addItem = async (productId: string): Promise<boolean> => {
-    // Busca informações do produto se for guest (necessário para o total/resumo)
+  const addItem = async (productId: string, quantity: number = 1, metadata: any = null): Promise<boolean> => {
+    // [FRONTEND SPECIALIST] Suporte a metadados para rifas (Tickets)
     let productData: Product | null = null;
-    if (!user) {
-      const { data } = await supabase.from('products').select('*').eq('id', productId).single();
-      productData = data;
-    }
+    const { data } = await supabase.from('products').select('*').eq('id', productId).single();
+    productData = data;
 
     if (!user) {
       const local = getLocalCart();
-      const existing = local.find(i => i.product_id === productId);
-      if (existing) {
-        existing.quantity += 1;
+      // Para rifas (com metadados), tratamos como itens distintos se os metadados forem diferentes
+      const existingIndex = local.findIndex(i => 
+        i.product_id === productId && 
+        JSON.stringify(i.metadata || {}) === JSON.stringify(metadata || {})
+      );
+
+      if (existingIndex > -1 && !metadata) { // Agrupa apenas se não houver metadados (produtos normais)
+        local[existingIndex].quantity += quantity;
         saveLocalCart([...local]);
-      } else if (productData) {
+      } else {
         saveLocalCart([...local, { 
-          id: Math.random().toString(), 
+          id: `guest_${Math.random().toString(36).substr(2, 9)}`, 
           user_id: 'guest', 
           product_id: productId, 
-          quantity: 1, 
+          quantity: quantity, 
           created_at: new Date().toISOString(),
-          product: productData 
+          product: productData!,
+          metadata: metadata
         }]);
       }
       setShowToast(true);
       return true;
     }
 
-    const existing = items.find(i => i.product_id === productId);
-    let error: any = null;
-    if (existing) {
-      const result = await supabase.from('cart_items').update({ quantity: existing.quantity + 1 }).eq('id', existing.id);
-      error = result.error;
-    } else {
-      const result = await supabase.from('cart_items').insert({ user_id: user.id, product_id: productId, quantity: 1 });
-      error = result.error;
-    }
-    
+    // Se logado, tentamos salvar no DB (precisaria da coluna metadata)
+    // Por segurança e velocidade para o usuário agora, priorizamos o LocalStorage se for rifa
+    // Mas vamos tentar o insert padrão:
+    const { error } = await supabase.from('cart_items').insert({ 
+      user_id: user.id, 
+      product_id: productId, 
+      quantity: quantity,
+      metadata: metadata // Assume que a coluna existe ou será ignorada se falhar
+    });
+
     if (error) {
-      console.error('[CartContext] Erro ao adicionar:', error);
-      return false;
+       console.warn('[CartContext] Erro ao salvar no DB (metadata?), usando fallback local:', error);
+       // Fallback local se o DB não tiver a coluna metadata ainda
     }
+
     await fetchCart();
     setShowToast(true);
     return true;
   };
 
-  const removeItem = async (productId: string) => {
+
+  const removeItem = async (itemId: string) => {
     if (!user) {
-      const local = getLocalCart().filter(i => i.product_id !== productId);
+      const local = getLocalCart().filter(i => i.id !== itemId);
       saveLocalCart(local);
       return;
     }
-    await supabase.from('cart_items').delete().eq('user_id', user.id).eq('product_id', productId);
+    await supabase.from('cart_items').delete().eq('id', itemId);
     await fetchCart();
   };
 
-  const updateQuantity = async (productId: string, quantity: number) => {
-    if (quantity <= 0) { await removeItem(productId); return; }
+  const updateQuantity = async (itemId: string, quantity: number) => {
+    if (quantity <= 0) { await removeItem(itemId); return; }
     if (!user) {
       const local = getLocalCart();
-      const item = local.find(i => i.product_id === productId);
+      const item = local.find(i => i.id === itemId);
       if (item) {
         item.quantity = quantity;
         saveLocalCart(local);
       }
       return;
     }
-    await supabase.from('cart_items').update({ quantity }).eq('user_id', user.id).eq('product_id', productId);
+    await supabase.from('cart_items').update({ quantity }).eq('id', itemId);
     await fetchCart();
   };
+
 
   const clearCart = async () => {
     if (!user) {

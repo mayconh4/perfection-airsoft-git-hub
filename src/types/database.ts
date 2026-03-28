@@ -31,6 +31,7 @@ export interface CartItem {
   user_id: string;
   product_id: string;
   quantity: number;
+  metadata?: any;
   created_at: string;
   product?: Product;
 }
@@ -59,6 +60,7 @@ export interface OrderItem {
   product_name: string;
   product_price: number;
   quantity: number;
+  metadata?: any;
 }
 
 export interface WishlistItem {
