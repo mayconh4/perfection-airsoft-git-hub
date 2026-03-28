@@ -92,16 +92,6 @@ export default function RaffleDetailPage() {
 
     setLoading(true);
     try {
-        let userCpf = user.user_metadata?.cpf;
-        if (!userCpf || userCpf === '00000000000') {
-            userCpf = window.prompt('PROTOCOLO DE SEGURANÇA: Informe seu CPF (apenas números) para o checkout do Mercado Pago:');
-        }
-
-        if (!userCpf || userCpf.length < 11) {
-            alert('OPERADOR: CPF INVÁLIDO OU NÃO INFORMADO. PROTOCOLO ABORTADO.');
-            return;
-        }
-
         const ticketNumbers = selectedTickets;
         const totalAmount = ticketNumbers.length * (raffle?.ticket_price || 0);
         const paymentId = `TICK_${raffle?.id.slice(0, 8)}_${user.id.slice(0, 8)}_${Date.now()}`;
@@ -126,7 +116,7 @@ export default function RaffleDetailPage() {
                 customerData: {
                     email: user.email,
                     name: user.user_metadata?.full_name || 'Operador Anônimo',
-                    cpf: userCpf
+                    cpf: user.user_metadata?.cpf || '00000000000'
                 },
                 items: [{
                     product_id: raffle?.id,

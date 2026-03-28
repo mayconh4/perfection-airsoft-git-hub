@@ -48,40 +48,56 @@ Deno.serve(async (req: Request) => {
       payload.payment_method_id = 'pix';
       payload.transaction_amount = total;
     } else {
-      // Checkout Pro Preference
-      const preferenceResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
+      const origin = 'https://www.perfectionairsoft.com.br';
+      
+      const preferenceBody: any = {
+        items: items.map((item: any) => ({
+          title: item.product_name,
+          quantity: item.quantity,
+          unit_price: item.product_price,
+          currency_id: 'BRL'
+        })),
+        payer: {
+          email: customerData.email,
+          name: customerData.name,
+        },
+        external_reference: orderId,
+        notification_url: `${SUPABASE_URL}/functions/v1/mercadopago-webhook`,
+        back_urls: {
+          success: `${origin}/checkout/success`,
+          failure: `${origin}/checkout/error`,
+          pending: `${origin}/checkout/pending`,
+        },
+        auto_return: 'approved',
+      };
+
+      // Limpar e validar CPF
+      const cleanedCpf = customerData.cpf ? String(customerData.cpf).replace(/\D/g, '') : '';
+      if (cleanedCpf && cleanedCpf.length >= 11 && cleanedCpf !== '00000000000') {
+        preferenceBody.payer.identification = {
+          type: 'CPF',
+          number: cleanedCpf
+        };
+      }
+
+      const prefResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${MERCADO_PAGO_TOKEN}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          items: items.map((item: any) => ({
-            title: item.product_name,
-            quantity: item.quantity,
-            unit_price: item.product_price,
-            currency_id: 'BRL'
-          })),
-          external_reference: orderId,
-          notification_url: payload.notification_url,
-          back_urls: {
-            success: `https://www.perfectionairsoft.com.br/sucesso/${orderId}`,
-            failure: `https://www.perfectionairsoft.com.br/checkout`,
-            pending: `https://www.perfectionairsoft.com.br/sucesso/${orderId}`
-          },
-          auto_return: "approved"
-        })
+        body: JSON.stringify(preferenceBody)
       });
       
-      const preference = await preferenceResponse.json();
+      const preference = await prefResponse.json();
       
-      if (!preferenceResponse.ok) {
+      if (!prefResponse.ok) {
         console.error('Mercado Pago Error (Preference):', preference);
         return new Response(JSON.stringify({ 
           error: 'Erro ao gerar preferência de pagamento', 
           details: preference 
         }), {
-          status: preferenceResponse.status, 
+          status: prefResponse.status, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
