@@ -141,14 +141,20 @@ export default function RaffleDetailPage() {
 
         if (ticketError) throw ticketError;
 
-        // 4. Chamar Edge Function do Mercado Pago
-        const { data, error: functionError } = await supabase.functions.invoke('mercadopago-payment', {
-            body: {
+        // 4. Chamar Edge Function via fetch direto (para ver o erro real do servidor)
+        const { data: { session } } = await supabase.auth.getSession();
+        const mpResponse = await fetch('https://dtndhmsfmsvuvfowpcrw.supabase.co/functions/v1/mercadopago-payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token || ''}`,
+            },
+            body: JSON.stringify({
                 orderId: order.id,
                 customerData: {
                     email: user.email,
-                    name: user.user_metadata?.full_name || 'Operador Anônimo',
-                    cpf: user.user_metadata?.cpf || '00000000000'
+                    name: user.user_metadata?.full_name || 'Cliente',
+                    cpf: user.user_metadata?.cpf || ''
                 },
                 items: [{
                     product_id: raffle?.id,
@@ -156,28 +162,27 @@ export default function RaffleDetailPage() {
                     quantity: ticketNumbers.length,
                     product_price: raffle?.ticket_price
                 }],
-                paymentMethod: 'credit_card',
                 total: totalAmount
-            }
+            })
         });
 
-        if (functionError) {
-            console.error('Erro de Invocação:', functionError);
-            throw new Error(`Falha na API: ${functionError.message}`);
-        }
+        // Loga o status HTTP real para depuração
+        console.log('Status HTTP da Edge Function:', mpResponse.status);
+        const data = await mpResponse.json();
+        console.log('Corpo da resposta:', JSON.stringify(data));
 
-        if (data?.error) {
-            console.error('Erro retornado pela Function:', data);
-            throw new Error(`${data.error}${data.details ? ' (' + JSON.stringify(data.details) + ')' : ''}`);
+        if (!mpResponse.ok) {
+            // Mostra o erro real do Mercado Pago ou da função
+            const errMsg = data?.error || data?.message || `Erro HTTP ${mpResponse.status}`;
+            const errDetail = data?.details ? ` Detalhe: ${JSON.stringify(data.details)}` : '';
+            throw new Error(errMsg + errDetail);
         }
 
         if (data?.checkout_url) {
             window.location.href = data.checkout_url;
-        } else if (data?.qr_code_base64) {
-            alert('PIX GERADO COM SUCESSO. VERIFIQUE SEU EMAIL.');
         } else {
             console.error('Resposta sem URL de checkout:', data);
-            throw new Error('O sistema não retornou um link de pagamento válido.');
+            throw new Error('O Mercado Pago não retornou um link de pagamento.');
         }
 
     } catch (err: any) {
