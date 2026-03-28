@@ -17,12 +17,13 @@ interface InputFieldProps {
   required?: boolean;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  list?: string;
 }
 
-const InputField = ({ name, label, type = 'text', placeholder = '', className = '', required = true, value, onChange }: InputFieldProps) => (
+const InputField = ({ name, label, type = 'text', placeholder = '', className = '', required = true, value, onChange, list }: InputFieldProps) => (
   <div className={className}>
     <label className="block text-[9px] font-black text-slate-500 mb-1.5 tracking-[0.2em] uppercase">{label}</label>
-    <input name={name} type={type} required={required} value={value} onChange={onChange} placeholder={placeholder}
+    <input name={name} type={type} required={required} value={value} onChange={onChange} placeholder={placeholder} list={list}
       className="w-full bg-background-dark border border-white/10 text-white px-4 py-3 text-xs tracking-wide outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 placeholder:text-white/15 transition-colors"/>
   </div>
 );
@@ -43,11 +44,30 @@ export function CheckoutPage() {
 
   const grandTotal = total + (selectedShipping?.price || 0);
 
+  const [memory, setMemory] = useState<Record<string, string[]>>(() => {
+    const saved = localStorage.getItem('operator_memory');
+    return saved ? JSON.parse(saved) : { name: [], cpf: [], email: [], phone: [] };
+  });
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Salvar memória do operador
+    if (step === 0) {
+      const newMemory = { ...memory };
+      ['name', 'cpf', 'email', 'phone'].forEach(key => {
+        const val = (form as any)[key];
+        if (val && !newMemory[key].includes(val)) {
+          newMemory[key] = [...newMemory[key], val].slice(-5); // Manter as últimas 5 sugestões
+        }
+      });
+      setMemory(newMemory);
+      localStorage.setItem('operator_memory', JSON.stringify(newMemory));
+    }
+
     if (step < 2) setStep(s => s + 1);
   };
 
@@ -184,11 +204,19 @@ export function CheckoutPage() {
             <form onSubmit={handleNext} className="bg-surface/30 border border-white/5 p-6 space-y-4">
               <h3 className="text-[10px] font-black tracking-[0.2em] text-primary uppercase mb-2">Dados do Operador</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <InputField name="name" label="Nome Completo" placeholder="Nome completo" className="sm:col-span-2" value={form.name} onChange={handleChange}/>
-                <InputField name="cpf" label="CPF" placeholder="000.000.000-00" value={form.cpf} onChange={handleChange}/>
-                <InputField name="phone" label="Telefone / WhatsApp" placeholder="(00) 00000-0000" type="tel" value={form.phone} onChange={handleChange}/>
-                <InputField name="email" label="E-mail" placeholder="email@exemplo.com" type="email" className="sm:col-span-2" value={form.email} onChange={handleChange}/>
+                <InputField name="name" label="Nome Completo" placeholder="Nome completo" className="sm:col-span-2" value={form.name} onChange={handleChange} list="list-name" />
+                <InputField name="cpf" label="CPF" placeholder="000.000.000-00" value={form.cpf} onChange={handleChange} list="list-cpf" />
+                <InputField name="phone" label="Telefone / WhatsApp" placeholder="(00) 00000-0000" type="tel" value={form.phone} onChange={handleChange} list="list-phone" />
+                <InputField name="email" label="E-mail" placeholder="email@exemplo.com" type="email" className="sm:col-span-2" value={form.email} onChange={handleChange} list="list-email" />
               </div>
+
+              {/* Datalists for memory suggestions */}
+              {Object.entries(memory).map(([key, values]) => (
+                <datalist key={key} id={`list-${key}`}>
+                  {values.map(val => <option key={val} value={val} />)}
+                </datalist>
+              ))}
+
               <button type="submit" className="w-full bg-primary text-black font-black py-4 uppercase tracking-[0.2em] hover:bg-white transition-all mt-4 text-sm">
                 Próximo: Endereço →
               </button>
