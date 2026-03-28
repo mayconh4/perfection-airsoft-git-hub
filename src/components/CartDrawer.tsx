@@ -41,7 +41,10 @@ export function CartDrawer() {
                 </div>
                 <div className="flex-1 flex flex-col justify-between py-1">
                   <div>
-                    <h4 className="text-[10px] font-black text-white leading-tight uppercase line-clamp-2 pr-6 mb-1">{item.product?.name}</h4>
+                    <h4 className="text-[10px] font-black text-white leading-tight uppercase line-clamp-2 pr-6 mb-1">
+                      {item.product?.brand === 'DROP' ? <span className="text-primary mr-1">DROP:</span> : null}
+                      {item.product?.name}
+                    </h4>
                     <span className="text-[10px] text-primary font-black">{formatPrice(item.product?.price || 0)}</span>
                   </div>
                   <div className="flex items-center gap-3 bg-background-dark w-fit border border-white/10 rounded-sm">

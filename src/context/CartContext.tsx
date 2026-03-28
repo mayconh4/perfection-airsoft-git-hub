@@ -58,11 +58,44 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
     
     setLoading(true);
-    const { data } = await supabase
+    const { data: cartData, error } = await supabase
       .from('cart_items')
       .select('*, product:products(*)')
       .eq('user_id', user.id);
-    setItems((data as any) || []);
+
+    if (error) {
+      console.error('[CartContext] Error fetching cart:', error);
+      setLoading(false);
+      return;
+    }
+
+    // Pós-processamento para preencher dados de rifas se o produto for null
+    const processedItems = await Promise.all((cartData || []).map(async (item: any) => {
+      if (!item.product && item.metadata?.type === 'raffle') {
+        const { data: raffleData } = await supabase
+          .from('raffles')
+          .select('*')
+          .eq('id', item.product_id)
+          .single();
+        
+        if (raffleData) {
+          return {
+            ...item,
+            product: {
+              id: raffleData.id,
+              name: raffleData.title,
+              brand: 'DROP',
+              price: raffleData.ticket_price,
+              image_url: raffleData.image_url,
+              stock: 1
+            }
+          };
+        }
+      }
+      return item;
+    }));
+
+    setItems(processedItems);
     setLoading(false);
   }, [user]);
 
@@ -98,13 +131,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = async (productId: string, quantity: number = 1, metadata: any = null): Promise<boolean> => {
     // [FRONTEND SPECIALIST] Suporte a metadados para rifas (Tickets)
-    let productData: Product | null = null;
-    const { data } = await supabase.from('products').select('*').eq('id', productId).single();
-    productData = data;
+    let productData: any = null;
+    
+    // Se for rifa, busca na tabela de rifas
+    if (metadata?.type === 'raffle') {
+      const { data: raffleData } = await supabase.from('raffles').select('*').eq('id', productId).single();
+      if (raffleData) {
+        // Mapeia os campos da rifa para o formato de produto esperado pelo UI
+        productData = {
+          id: raffleData.id,
+          name: raffleData.title,
+          brand: 'DROP',
+          price: raffleData.ticket_price,
+          image_url: raffleData.image_url,
+          stock: 1
+        };
+      }
+    } else {
+      const { data } = await supabase.from('products').select('*').eq('id', productId).single();
+      productData = data;
+    }
 
     if (!user) {
       const local = getLocalCart();
-      // Para rifas (com metadados), tratamos como itens distintos se os metadados forem diferentes
+      // Para rifas (com metadados), tratamos como itens distintos
       const existingIndex = local.findIndex(i => 
         i.product_id === productId && 
         JSON.stringify(i.metadata || {}) === JSON.stringify(metadata || {})
@@ -120,7 +170,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           product_id: productId, 
           quantity: quantity, 
           created_at: new Date().toISOString(),
-          product: productData!,
+          product: productData,
           metadata: metadata
         }]);
       }
@@ -128,19 +178,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return true;
     }
 
-    // Se logado, tentamos salvar no DB (precisaria da coluna metadata)
-    // Por segurança e velocidade para o usuário agora, priorizamos o LocalStorage se for rifa
-    // Mas vamos tentar o insert padrão:
+    // Se logado, salva no DB
     const { error } = await supabase.from('cart_items').insert({ 
       user_id: user.id, 
       product_id: productId, 
       quantity: quantity,
-      metadata: metadata // Assume que a coluna existe ou será ignorada se falhar
+      metadata: metadata
     });
 
     if (error) {
-       console.warn('[CartContext] Erro ao salvar no DB (metadata?), usando fallback local:', error);
-       // Fallback local se o DB não tiver a coluna metadata ainda
+       console.warn('[CartContext] Erro ao salvar no DB, usando fallback local:', error);
     }
 
     await fetchCart();
