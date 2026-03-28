@@ -90,7 +90,7 @@ export default function OrganizerDashboard() {
             </h1>
           </div>
           <Link 
-            to="/eventos/criar" 
+            to="/drop/criar" 
             className="bg-primary text-background-dark font-black py-4 px-8 text-[10px] uppercase tracking-[0.3em] hover:bg-white transition-all text-center"
           >
             Nova Missão
