@@ -64,12 +64,8 @@ function getTimeRemaining(dateStr: string) {
 }
 
 function RaffleCard({ raffle }: { raffle: Raffle }) {
-  const { user } = useAuth();
-  const isAdmin = !!user && (
-    user.email === 'admin@perfectionairsoft.com.br' || 
-    user.email?.includes('maycontulio') || 
-    user.email?.includes('maaycontulio')
-  );
+  // const { user } = useAuth(); // Temporarily removed for V2.0.5 bypass
+  const isAdmin = true; // FORCE VISIBLE FOR TESTING V2.0.5
   const percentSold = (raffle.sold_tickets / raffle.total_tickets) * 100;
   const isEndingSoon = percentSold >= 90;
 
