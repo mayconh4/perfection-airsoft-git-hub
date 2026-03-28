@@ -20,31 +20,44 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const body = await req.json();
-    console.log('Payload recebido:', JSON.stringify(body));
+    const rawBody = await req.text();
+    console.log('[PAYLOAD RAW]:', rawBody);
+    
+    let body;
+    try {
+      body = JSON.parse(rawBody);
+    } catch (e) {
+      return new Response(JSON.stringify({ error: 'JSON Invalido', details: e.message }), { 
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
 
     const { raffleId, raffleTitle, ticketPrice, ticketNumbers, customerData } = body;
 
+    console.log('[DEBUG] Processando Checkout:', { raffleId, raffleTitle, ticketNumbersCount: ticketNumbers?.length });
+
     if (!MERCADO_PAGO_TOKEN) {
-      return new Response(
-        JSON.stringify({ error: 'MERCADO_PAGO_TOKEN nao configurado no servidor.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('[ERRO] MERCADO_PAGO_TOKEN faltando');
+      return new Response(JSON.stringify({ error: 'Configuracao do servidor incompleta (MP TOKEN).' }), { 
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
     }
 
-    if (!raffleId || !ticketNumbers || ticketNumbers.length === 0 || !ticketPrice) {
-      return new Response(
-        JSON.stringify({ error: 'Dados da rifa incompletos.', received: body }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Validacao Robusta
+    const isValid = raffleId && Array.isArray(ticketNumbers) && ticketNumbers.length > 0 && ticketPrice;
+    if (!isValid) {
+      console.error('[ERRO] Dados incompletos:', { raffleId, ticketNumbers, ticketPrice });
+      return new Response(JSON.stringify({ 
+        error: 'Dados da rifa incompletos ou invalidos.', 
+        received: { raffleId, hasTickets: !!ticketNumbers, count: ticketNumbers?.length, ticketPrice }
+      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const totalAmount = ticketNumbers.length * ticketPrice;
-
-    // Cria client com service_role para ignorar RLS
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // 1. Criar pedido (com service_role, sem limitacao de RLS)
+    // 1. Criar Pedido
+    console.log('[STEP 1] Criando pedido no Supabase (Service Role)...');
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -54,59 +67,59 @@ Deno.serve(async (req: Request) => {
           name: customerData?.name || 'Cliente Anonimo',
           email: customerData?.email || '',
           cpf: customerData?.cpf || '',
-          source: 'rifa'
+          source: 'rifa_v2'
         },
-        shipping_address: { type: 'digital', info: `Rifa: ${raffleTitle}` }
+        shipping_address: { type: 'digital', info: `Rifa: ${raffleTitle || 'Sorteio'}` }
       })
       .select()
       .single();
 
     if (orderError || !order) {
-      console.error('Erro ao criar pedido:', orderError);
-      return new Response(
-        JSON.stringify({ error: `Erro ao criar pedido: ${orderError?.message}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('[ERRO STEP 1] Falha ao criar pedido:', orderError);
+      throw new Error(`Falha na criacao do pedido: ${orderError?.message || 'Erro desconhecido'}`);
     }
+    console.log('[OK] Pedido criado:', order.id);
 
-    // 2. Criar itens do pedido
+    // 2. Criar Itens
+    console.log('[STEP 2] Criando itens do pedido...');
     const { error: itemsError } = await supabase.from('order_items').insert({
       order_id: order.id,
       product_id: MASTER_PRODUCT_ID,
-      product_name: `TICKET RIFA: ${raffleTitle} (#${ticketNumbers.join(', #')})`,
+      product_name: `TICKET RIFA: ${raffleTitle || 'Sorteio'} (#${ticketNumbers.join(', #')})`,
       product_price: ticketPrice,
       quantity: ticketNumbers.length
     });
 
-    if (itemsError) {
-      console.error('Erro ao criar itens:', itemsError);
-    }
+    if (itemsError) console.warn('[AVISO] Erro ao criar itens (nao fatal):', itemsError);
 
-    // 3. Criar raffle_tickets
+    // 3. Criar Raffle Tickets
+    console.log('[STEP 3] Criando registros de tickets...');
     const { error: ticketError } = await supabase.from('raffle_tickets').insert(
-      ticketNumbers.map((num: number) => ({
+      ticketNumbers.map((num: any) => ({
         raffle_id: raffleId,
-        ticket_number: num,
+        ticket_number: Number(num),
         payment_status: 'pendente',
         payment_id: order.id
       }))
     );
 
     if (ticketError) {
-      console.error('Erro ao criar tickets:', ticketError);
+        console.error('[ERRO STEP 3] Falha ao registrar tickets:', ticketError);
+        // Nao vamos abortar aqui, mas logar pesado
     }
 
-    // 4. Criar preferência no Mercado Pago
-    const preferenceBody: any = {
+    // 4. Criar Preferencia no Mercado Pago
+    console.log('[STEP 4] Gerando link de pagamento Mercado Pago...');
+    const preferenceBody = {
       items: [{
         id: MASTER_PRODUCT_ID,
-        title: `TICKETS: ${raffleTitle}`,
+        title: `TICKETS: ${raffleTitle || 'Sorteio Tactical'}`,
         quantity: ticketNumbers.length,
-        unit_price: ticketPrice,
+        unit_price: Number(ticketPrice),
         currency_id: 'BRL',
       }],
       payer: {
-        email: customerData?.email || 'cliente@perfectionairsoft.com.br',
+        email: customerData?.email || 'vendas@perfectionairsoft.com.br',
         name: customerData?.name || 'Cliente',
       },
       external_reference: order.id,
@@ -122,12 +135,10 @@ Deno.serve(async (req: Request) => {
 
     const cleanedCpf = customerData?.cpf ? String(customerData.cpf).replace(/\D/g, '') : '';
     if (cleanedCpf && cleanedCpf.length >= 11 && cleanedCpf !== '00000000000') {
-      preferenceBody.payer.identification = { type: 'CPF', number: cleanedCpf };
+      (preferenceBody.payer as any).identification = { type: 'CPF', number: cleanedCpf };
     }
 
-    console.log('Enviando preference para MP:', JSON.stringify(preferenceBody));
-
-    const prefResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
+    const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${MERCADO_PAGO_TOKEN}`,
@@ -136,31 +147,25 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify(preferenceBody),
     });
 
-    const preference = await prefResponse.json();
-    console.log('Resposta MP:', JSON.stringify(preference));
-
-    if (!prefResponse.ok) {
-      return new Response(
-        JSON.stringify({
-          error: 'Mercado Pago rejeitou a preferencia.',
-          status: prefResponse.status,
-          details: preference,
-        }),
-        { status: prefResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    const preference = await mpResponse.json();
+    
+    if (!mpResponse.ok) {
+        console.error('[ERRO STEP 4] Mercado Pago recusou preferencia:', preference);
+        throw new Error(`Mercado Pago erro: ${preference?.message || mpResponse.statusText}`);
     }
 
+    console.log('[OK] Checkout URL gerada com sucesso.');
     const checkout_url = preference.init_point || preference.sandbox_init_point;
 
     return new Response(
-      JSON.stringify({ checkout_url, preference_id: preference.id, order_id: order.id }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ checkout_url, order_id: order.id }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
-    console.error('Erro inesperado:', error);
+    console.error('[CRITICAL] Erro na Edge Function:', error.message || error);
     return new Response(
-      JSON.stringify({ error: String(error?.message || error) }),
+      JSON.stringify({ error: error.message || 'Erro interno no servidor.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

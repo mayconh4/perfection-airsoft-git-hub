@@ -87,37 +87,43 @@ export default function RaffleDetailPage() {
 
     setLoading(true);
     try {
-        // Toda a lógica de criação de pedido fica na Edge Function (service_role, ignora RLS)
         const { data: { session } } = await supabase.auth.getSession();
         const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+        
+        // [FRONTEND SPECIALIST] Cache busting para garantir versao mais recente da Edge Function
+        const timestamp = Date.now();
+        const functionUrl = `https://seewdqetyolfmqsiyban.supabase.co/functions/v1/mercadopago-payment?t=${timestamp}`;
 
-        const mpResponse = await fetch('https://seewdqetyolfmqsiyban.supabase.co/functions/v1/mercadopago-payment', {
+        const payload = {
+            raffleId: raffle?.id,
+            raffleTitle: raffle?.title,
+            ticketPrice: raffle?.ticket_price,
+            ticketNumbers: selectedTickets,
+            customerData: {
+                email: user?.email || '',
+                name: user?.user_metadata?.full_name || '',
+                cpf: user?.user_metadata?.cpf || '',
+            },
+        };
+
+        console.log('[DEBUG] Iniciando protocolo de compra...', payload);
+
+        const mpResponse = await fetch(functionUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${session?.access_token || anonKey}`,
             },
-            body: JSON.stringify({
-                raffleId: raffle?.id,
-                raffleTitle: raffle?.title,
-                ticketPrice: raffle?.ticket_price,
-                ticketNumbers: selectedTickets,
-                customerData: {
-                    email: user?.email || '',
-                    name: user?.user_metadata?.full_name || '',
-                    cpf: user?.user_metadata?.cpf || '',
-                },
-            })
+            body: JSON.stringify(payload)
         });
 
-        console.log('Status HTTP da Edge Function:', mpResponse.status);
+        console.log('[DEBUG] Status HTTP:', mpResponse.status);
         const data = await mpResponse.json();
-        console.log('Resposta:', JSON.stringify(data));
+        console.log('[DEBUG] Resposta Servidor:', JSON.stringify(data));
 
         if (!mpResponse.ok) {
             const errMsg = data?.error || data?.message || `Erro HTTP ${mpResponse.status}`;
-            const errDetail = data?.details ? ` Detalhe: ${JSON.stringify(data.details)}` : '';
-            throw new Error(errMsg + errDetail);
+            throw new Error(errMsg);
         }
 
         if (data?.checkout_url) {
@@ -127,12 +133,13 @@ export default function RaffleDetailPage() {
         }
 
     } catch (err: any) {
-        console.error('FALHA NO PROTOCOLO DE COMPRA:', err);
+        console.error('[ERRO CRITICO] Falha no checkout:', err);
         alert(`FALHA NO PROTOCOLO: ${err.message || 'Erro inesperado.'}`);
     } finally {
         setLoading(false);
     }
   };
+
 
 
   return (
