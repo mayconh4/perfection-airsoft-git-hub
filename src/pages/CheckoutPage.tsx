@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
@@ -37,7 +37,7 @@ export function CheckoutPage() {
   // Estados
   const [step, setStep] = useState(0); 
   const [paymentMethod, setPaymentMethod] = useState('pix');
-  const [paymentData, setPaymentData] = useState<{ qr_code?: string; qr_code_base64?: string; checkout_url?: string } | null>(null);
+  const [paymentData, setPaymentData] = useState<{ qr_code?: string; qr_code_base64?: string; checkout_url?: string; order_id?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: '', cpf: '', email: user?.email || '', phone: '',
@@ -414,11 +414,21 @@ export function CheckoutPage() {
               </div>
 
               <div className="pt-8 border-t border-white/10 space-y-6">
-                <div className="flex flex-col items-center gap-4 py-4 bg-primary/5 border border-primary/10 rounded-lg">
-                  <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                <div className="flex flex-col items-center gap-4 py-6 bg-black/40 border-2 border-primary/20 rounded-xl shadow-[inset_0_0_20px_rgba(255,193,7,0.05)]">
+                  <div className="relative">
+                    <div className="w-12 h-12 border-4 border-primary/10 border-t-primary rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-2 h-2 bg-primary rounded-full animate-ping"></div>
+                    </div>
+                  </div>
                   <div className="text-center">
-                    <p className="text-[10px] text-primary font-black uppercase tracking-[0.3em] animate-pulse">Aguardando confirmação do drop!</p>
-                    <p className="text-[8px] text-white/30 uppercase tracking-widest mt-1">O sistema irá redirecionar automaticamente após o pagamento</p>
+                    <p className="text-[11px] text-primary font-black uppercase tracking-[0.4em] animate-pulse">AGUARDANDO CONFIRMAÇÃO DO DROP! [V2]</p>
+                    <div className="flex items-center justify-center gap-2 mt-2">
+                       <span className="w-1 h-1 bg-primary/40 rounded-full animate-bounce"></span>
+                       <span className="w-1 h-1 bg-primary/40 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                       <span className="w-1 h-1 bg-primary/40 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                    </div>
+                    <p className="text-[8px] text-white/20 uppercase tracking-[0.2em] mt-3 font-mono">Sincronização Tática em Tempo Real Ativa</p>
                   </div>
                 </div>
 
