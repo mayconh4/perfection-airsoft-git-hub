@@ -80,11 +80,6 @@ export default function RaffleDetailPage() {
   };
 
   const handlePurchase = async () => {
-    if (!user) {
-        alert('IDENTIDADE NÃO VERIFICADA: FAÇA LOGIN PARA PARTICIPAR.');
-        return;
-    }
-
     if (selectedTickets.length === 0) {
         alert('SELECIONE AO MENOS UM TICKET PARA INICIAR O PROTOCOLO.');
         return;
@@ -95,17 +90,22 @@ export default function RaffleDetailPage() {
         const ticketNumbers = selectedTickets;
         const totalAmount = ticketNumbers.length * (raffle?.ticket_price || 0);
 
-        // 1. Criar pedido na tabela 'orders' (Tratar como produto real)
+        // Gera um ID de referência para o pedido (funciona para usuários logados e anônimos)
+        const orderId = `RIFA-${raffle?.id?.slice(0, 8)}-${Date.now()}`;
+        const userId = user?.id || null;
+
+        // 1. Criar pedido na tabela 'orders' (funciona com ou sem login)
         const { data: order, error: orderError } = await supabase
             .from('orders')
             .insert({
-                user_id: user.id,
+                ...(userId ? { user_id: userId } : {}),
                 total: totalAmount,
                 status: 'pendente',
                 customer_data: {
-                    name: user.user_metadata?.full_name || 'Operador Anônimo',
-                    email: user.email,
-                    cpf: user.user_metadata?.cpf || ''
+                    name: user?.user_metadata?.full_name || 'Cliente Anônimo',
+                    email: user?.email || '',
+                    reference: orderId,
+                    cpf: user?.user_metadata?.cpf || ''
                 },
                 shipping_address: { type: 'digital', info: 'Rifa/Drop' }
             })
@@ -132,32 +132,33 @@ export default function RaffleDetailPage() {
         const { error: ticketError } = await supabase.from('raffle_tickets').insert(
             ticketNumbers.map(num => ({
                 raffle_id: raffle?.id,
-                user_id: user.id,
+                user_id: userId,
                 ticket_number: num,
                 payment_status: 'pendente',
-                payment_id: order.id // Usamos o ID do pedido como referência
+                payment_id: order.id
             }))
         );
 
         if (ticketError) throw ticketError;
 
-        // 4. Chamar Edge Function via fetch direto (para ver o erro real do servidor)
+        // 4. Chamar Edge Function via fetch direto (funciona sem login — tok do Mercado Pago na função)
         const { data: { session } } = await supabase.auth.getSession();
         const mpResponse = await fetch('https://seewdqetyolfmqsiyban.supabase.co/functions/v1/mercadopago-payment', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session?.access_token || ''}`,
+                // Envia o access_token se disponível, caso contrário usa anon key
+                'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY || ''}`,
             },
             body: JSON.stringify({
                 orderId: order.id,
                 customerData: {
-                    email: user.email,
-                    name: user.user_metadata?.full_name || 'Cliente',
-                    cpf: user.user_metadata?.cpf || ''
+                    email: user?.email || '',
+                    name: user?.user_metadata?.full_name || 'Cliente',
+                    cpf: user?.user_metadata?.cpf || ''
                 },
                 items: [{
-                    product_id: raffle?.id,
+                    product_id: MASTER_PRODUCT_ID,
                     product_name: `TICKETS: ${raffle?.title}`,
                     quantity: ticketNumbers.length,
                     product_price: raffle?.ticket_price
@@ -166,13 +167,11 @@ export default function RaffleDetailPage() {
             })
         });
 
-        // Loga o status HTTP real para depuração
         console.log('Status HTTP da Edge Function:', mpResponse.status);
         const data = await mpResponse.json();
         console.log('Corpo da resposta:', JSON.stringify(data));
 
         if (!mpResponse.ok) {
-            // Mostra o erro real do Mercado Pago ou da função
             const errMsg = data?.error || data?.message || `Erro HTTP ${mpResponse.status}`;
             const errDetail = data?.details ? ` Detalhe: ${JSON.stringify(data.details)}` : '';
             throw new Error(errMsg + errDetail);
