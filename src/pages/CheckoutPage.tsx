@@ -481,7 +481,7 @@ export function CheckoutPage() {
                    <span className="material-symbols-outlined text-sm">flash_on</span>
                    <span className="text-[9px] font-black uppercase tracking-widest">Fluxo Expresso DROP</span>
                 </div>
-                <p className="text-[9px] text-white/40 uppercase tracking-widest leading-relaxed">Como todos seus itens são digitais (Rifas), o envio é instantâneo via sistema sem necessidade de endereço físico.</p>
+                <p className="text-[9px] text-white/40 uppercase tracking-widest leading-relaxed">Faça o registro em nosso site para preencher as credenciais de envio. Boa sorte!</p>
               </div>
             )}
           </div>
