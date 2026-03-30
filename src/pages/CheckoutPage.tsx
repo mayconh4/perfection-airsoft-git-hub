@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCreateOrder } from '../hooks/useOrders';
 import { formatPrice } from '../types/database';
+import { DynamicCheckoutAccordion } from '../components/DynamicCheckoutAccordion';
 
 const STEPS = ['Identificação', 'Endereço', 'Pagamento', 'Finalização'];
 
@@ -79,10 +80,12 @@ export function CheckoutPage() {
     setStep(s => s + 1);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, methodOverride?: string) => {
     e.preventDefault();
     setError(null);
     if (items.length === 0) return;
+    
+    const methodToUse = methodOverride || paymentMethod;
 
     try {
       let currentUserId = user?.id;
@@ -125,7 +128,7 @@ export function CheckoutPage() {
         if (!currentUserId) { setError('Falha na autenticação do operador.'); return; }
         
         const order = await createOrder(
-          { name: form.name, cpf: form.cpf, email: form.email, phone: form.phone, payment_method: paymentMethod },
+          { name: form.name, cpf: form.cpf, email: form.email, phone: form.phone, payment_method: methodToUse },
           {
             street: isPureRaffle ? 'Digital' : `${form.street}, ${form.number}${form.complement ? ' - ' + form.complement : ''}`,
             district: isPureRaffle ? '-' : form.district,
@@ -152,7 +155,7 @@ export function CheckoutPage() {
         orderId: isGuestFlow ? 'GUEST_NEW' : orderId,
         isGuest: isGuestFlow,
         total: grandTotal,
-        paymentMethod,
+        paymentMethod: methodToUse,
         customerData: { 
           name: form.name, 
           email: isGuestFlow ? `op_${form.cpf.replace(/\D/g, '')}@perfectionairsoft.com.br` : (form.email || user?.email), 
@@ -345,45 +348,24 @@ export function CheckoutPage() {
 
           {/* Step 2 — Pagamento */}
           {step === 2 && (
-            <form onSubmit={handleSubmit} className="bg-surface/30 border border-white/5 p-8 space-y-8">
-              <h3 className="text-[10px] font-black tracking-[0.3em] text-primary uppercase flex items-center gap-2">
-                <span className="material-symbols-outlined text-sm">payments</span> Checkout Seguro Mercado Pago
-              </h3>
+            <div className="bg-surface/30 border border-white/5 p-8 space-y-8">
+              <DynamicCheckoutAccordion 
+                amount={grandTotal}
+                loading={creating}
+                pixOnly={isPureRaffle}
+                onCommitPayment={(method) => {
+                  setPaymentMethod(method);
+                  const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+                  handleSubmit(fakeEvent, method);
+                }}
+              />
               
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { id: 'pix', label: 'PIX (Instantâneo)', icon: 'qr_code_2' },
-                  { id: 'cartao', label: 'Cartão de Crédito', icon: 'credit_card' },
-                  { id: 'boleto', label: 'Boleto Bancário', icon: 'receipt_long' },
-                ].map(m => (
-                  <label key={m.id} className={`border p-5 cursor-pointer transition-all flex flex-col items-center justify-center gap-3 ${paymentMethod === m.id ? 'border-primary bg-primary/10' : 'border-white/10 bg-black/40 hover:border-primary/30'
-                    }`}>
-                    <input type="radio" name="paymentMethod" value={m.id} checked={paymentMethod === m.id} onChange={e => setPaymentMethod(e.target.value)} className="hidden" />
-                    <span className={`material-symbols-outlined text-3xl ${paymentMethod === m.id ? 'text-primary' : 'text-slate-600'}`}>{m.icon}</span>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-center text-slate-300">{m.label}</span>
-                  </label>
-                ))}
-              </div>
-
-              {paymentMethod === 'pix' && (
-                <div className="p-5 border border-dashed border-primary/30 bg-primary/5 rounded flex items-center gap-4 text-left">
-                  <span className="material-symbols-outlined text-primary text-3xl">bolt</span>
-                  <div>
-                    <p className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Pagamento Instantâneo</p>
-                    <p className="text-[9px] text-white/30 uppercase tracking-widest leading-relaxed">Liberação imediata dos seus tickets de rifa após a confirmação.</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-4 pt-4">
-                <button type="button" onClick={() => setStep(isPureRaffle ? 0 : 1)} className="px-8 py-5 border border-white/10 text-white/40 hover:text-white font-black uppercase tracking-widest text-[10px] transition-colors">
+              <div className="flex gap-4 pt-4 border-t border-white/5">
+                <button type="button" onClick={() => setStep(isPureRaffle ? 0 : 1)} className="px-8 py-5 border border-white/10 text-white/40 hover:text-white font-black uppercase tracking-widest text-[10px] transition-colors w-full sm:w-auto">
                   ← Voltar
                 </button>
-                <button type="submit" disabled={creating} className="flex-1 bg-primary text-black font-black py-5 uppercase tracking-[0.2em] hover:bg-white transition-all disabled:opacity-50 text-sm shadow-[0_10px_40px_rgba(255,193,7,0.2)]">
-                  {creating ? 'Gerando Pagamento...' : 'Finalizar Pedido Agora'}
-                </button>
               </div>
-            </form>
+            </div>
           )}
 
           {/* Step 3 — PIX QR Code */}
