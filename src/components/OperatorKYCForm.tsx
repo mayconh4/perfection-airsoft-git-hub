@@ -180,7 +180,13 @@ export function OperatorKYCForm() {
         <div className="pt-4 flex items-center justify-between gap-4 border-t border-white/5 mt-4">
             <div>
                 <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Nível de Acesso</label>
-                <span className="text-[10px] text-primary font-black uppercase tracking-[0.2em] italic">{role}</span>
+                <span className="text-[10px] text-primary font-black uppercase tracking-[0.2em] italic">
+                  {role === 'admin' 
+                    ? 'Nível 3: Operator: Task Force' 
+                    : kycStatus === 'approved' 
+                      ? 'Nível 2: Operator: Sergeant' 
+                      : 'Nível 1: Operator: Private'}
+                </span>
             </div>
             
             {kycStatus !== 'approved' && (
