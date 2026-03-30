@@ -182,10 +182,10 @@ export function OperatorKYCForm() {
                 <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Nível de Acesso</label>
                 <span className="text-[10px] text-primary font-black uppercase tracking-[0.2em] italic">
                   {role === 'admin' 
-                    ? 'Nível 3: Operator: Task Force' 
+                    ? 'Nível 3: Task Force' 
                     : kycStatus === 'approved' 
-                      ? 'Nível 2: Operator: Sergeant' 
-                      : 'Nível 1: Operator: Private'}
+                      ? 'Nível 2: Spetsnaz' 
+                      : 'Nível 1: Ranger'}
                 </span>
             </div>
             
