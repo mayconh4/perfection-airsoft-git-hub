@@ -86,23 +86,45 @@ export function OperatorKYCForm() {
     setMessage('ENVIANDO DADOS PARA VERIFICAÇÃO...');
     
     try {
-      // 1. Atualiza o banco de dados (Supabase)
-      // OBS: Campos de endereço e telefone precisarão de colunas novas na db se quisermos salvar.
-      // Por enquanto, salvamos os originais do KYC base.
+      // 1. Atualiza o banco de dados (Supabase) com todos os campos novos
       const { error } = await supabase
         .from('profiles')
         .update({ 
           full_name: fullName,
           cpf_cnpj: cpfCnpj,
           pix_key_type: pixKeyType,
-          pix_key: pixKey
+          pix_key: pixKey,
+          phone: phone,
+          cep: cep,
+          city: city,
+          street: street,
+          neighborhood: neighborhood,
+          address_number: number,
+          complement: complement
         })
         .eq('id', user.id);
 
       if (error) throw error;
       
+      // 2. Chama a Edge Function para criar a subconta
+      setMessage('AUTENTICANDO JUNTO À PLATAFORMA FINANCEIRA...');
+      
+      const { data: asaasData, error: asaasError } = await supabase.functions.invoke('asaas-create-subaccount', {
+        body: { 
+          fullName, email, cpfCnpj, phone, cep, city, street, neighborhood, addressNumber: number, complement, state: '' 
+        }
+      });
+
+      if (asaasError) throw new Error(asaasError.message || 'Erro na comunicação com o Motor Financeiro');
+      if (asaasData?.error) throw new Error(asaasData.error);
+
+      // Sucesso total
       setIsError(false);
-      setMessage('DADOS ENVIADOS COM SUCESSO! AGUARDANDO CRIAÇÃO DA SUBCONTA. 🎖️');
+      setMessage('SUBCONTA VERIFICADA E CRIADA COM SUCESSO! 🎖️');
+      
+      // Atualiza status na tela
+      setKycStatus('approved');
+
     } catch (err: any) {
       setIsError(true);
       setMessage(`ERRO: ${err.message || 'FALHA DESCONHECIDA'} 🛠️`);

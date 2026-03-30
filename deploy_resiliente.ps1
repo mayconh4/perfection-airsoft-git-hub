@@ -93,6 +93,22 @@ while ($deployWebhookAttempts -lt 3 -and -not $deployWebhookSuccess) {
     }
 }
 
+$deployAsaasAttempts = 0
+$deployAsaasSuccess = $false
+while ($deployAsaasAttempts -lt 3 -and -not $deployAsaasSuccess) {
+    $deployAsaasAttempts++
+    Write-Host "Deploy asaas-create-subaccount (Tentativa $deployAsaasAttempts/3)..."
+    $LASTEXITCODE = 0
+    npx supabase functions deploy asaas-create-subaccount --project-ref seewdqetyolfmqsiyban
+    if ($LASTEXITCODE -eq 0) {
+        $deployAsaasSuccess = $true
+    } else {
+        Write-Host "Falha no deploy asaas-create-subaccount. Aguardando 5 segundos..."
+        Start-Sleep -Seconds 5
+    }
+}
+
+
 Write-Host "`n========================================="
 Write-Host "5. Verificacao das funcoes"
 Write-Host "========================================="
