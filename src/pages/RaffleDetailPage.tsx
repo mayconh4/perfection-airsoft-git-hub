@@ -46,6 +46,37 @@ export default function RaffleDetailPage() {
   useEffect(() => {
     window.scrollTo(0, 0);
     loadRaffle();
+
+    // real-time subscription para novos tickets vendidos
+    const channel = supabase
+      .channel(`raffle-tickets-${id}`)
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'raffle_tickets',
+          filter: `raffle_id=eq.${id}`
+        },
+        (payload) => {
+          console.log('[REALTIME] Update nos tickets:', payload);
+          if (payload.new && (payload.new as any).payment_status === 'pago') {
+             const ticketNum = (payload.new as any).ticket_number;
+             setSoldTicketNumbers(prev => [...new Set([...prev, ticketNum])]);
+             
+             // Atualiza contador total na rifa
+             setRaffle(prev => prev ? {
+               ...prev,
+               sold_tickets: (prev.sold_tickets || 0) + 1
+             } : null);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [id]);
 
   const loadRaffle = async () => {

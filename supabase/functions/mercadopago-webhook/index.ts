@@ -96,10 +96,81 @@ Deno.serve(async (req: Request) => {
 
             console.log(`[SPLIT] Total: R$ ${totalAmount} | Taxa Plataforma: R$ ${fixedFee} | Operador: R$ ${operatorShare}`);
 
-            // 2. Registrar Transações Financeiras (Histórico)
+            // 2. Buscar Chave PIX do Criador
+            const { data: creatorProfile } = await supabase
+              .from('profiles')
+              .select('pix_key')
+              .eq('id', creatorId)
+              .single();
+
+            const pixKey = creatorProfile?.pix_key;
+            let payoutId = null;
+            let payoutStatus = 'nao_configurado';
+
+            if (pixKey) {
+              console.log(`[PAYOUT] Iniciando repasse de R$ ${operatorShare} para Chave PIX: ${pixKey}`);
+              try {
+                // Chamada de Payout/Transferência do Mercado Pago
+                // Nota: Requer que a conta da plataforma tenha saldo e permissões de Payout
+                const payoutResponse = await fetch('https://api.mercadopago.com/v1/payments', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${MERCADO_PAGO_TOKEN}`,
+                    'Content-Type': 'application/json',
+                    'X-Idempotency-Key': `payout_${orderId}`
+                  },
+                  body: JSON.stringify({
+                    transaction_amount: Number(operatorShare.toFixed(2)),
+                    description: `Repasse Venda Drop - Pedido ${orderId}`,
+                    payment_method_id: 'pix',
+                    payer: {
+                      email: 'financeiro@perfectionairsoft.com.br' // Email da conta plataforma
+                    },
+                    point_of_interaction: {
+                      type: 'PIX',
+                      sub_type: 'PAYOUT'
+                    },
+                    receiver: {
+                      identification: {
+                        type: 'PIX',
+                        number: pixKey
+                      }
+                    }
+                  })
+                });
+
+                const payoutData = await payoutResponse.json();
+                if (payoutResponse.ok) {
+                  payoutId = String(payoutData.id);
+                  payoutStatus = 'concluido';
+                  console.log(`[PAYOUT] Sucesso! ID: ${payoutId}`);
+                } else {
+                  payoutStatus = 'erro';
+                  console.error('[PAYOUT] Erro na API MP:', JSON.stringify(payoutData));
+                }
+              } catch (err) {
+                payoutStatus = 'erro_conexao';
+                console.error('[PAYOUT] Erro de rede/processamento:', err);
+              }
+            }
+
+            // 3. Registrar Transações Financeiras (Histórico)
             await supabase.from('financial_transactions').insert([
-              { order_id: orderId, raffle_id: raffleId, type: 'fee_platform', amount: fixedFee },
-              { order_id: orderId, raffle_id: raffleId, type: 'payout_operator', amount: operatorShare, recipient_uid: creatorId }
+              { 
+                order_id: orderId, 
+                raffle_id: raffleId, 
+                type: 'fee_platform', 
+                amount: fixedFee 
+              },
+              { 
+                order_id: orderId, 
+                raffle_id: raffleId, 
+                type: 'payout_operator', 
+                amount: operatorShare, 
+                recipient_uid: creatorId,
+                payout_id: payoutId,
+                payout_status: payoutStatus
+              }
             ]);
 
             // 3. Atualizar Saldo do Operador (Transação Atômica via RPC recomendada no futuro)

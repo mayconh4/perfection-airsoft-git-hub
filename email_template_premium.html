@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocolo de Ativação - Perfection Airsoft</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Space+Grotesk:wght@700&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0A0A0A;
+            font-family: 'Inter', Helvetica, Arial, sans-serif;
+            color: #FFFFFF;
+        }
+
+        .wrapper {
+            width: 100%;
+            table-layout: fixed;
+            background-color: #0A0A0A;
+            padding-bottom: 40px;
+        }
+
+        .main {
+            background-color: #0A0A0A;
+            margin: 0 auto;
+            width: 100%;
+            max-width: 600px;
+            border-spacing: 0;
+            color: #FFFFFF;
+        }
+
+        /* Tactical Header */
+        .header {
+            padding: 40px 20px;
+            text-align: center;
+            background: linear-gradient(180deg, #1A1A1A 0%, #0A0A0A 100%);
+            border-bottom: 2px solid #FFBF00;
+        }
+
+        .logo-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            color: #FFBF00;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 50px 30px;
+            text-align: center;
+        }
+
+        .protocol-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 28px;
+            color: #FFBF00;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background-color: rgba(255, 191, 0, 0.1);
+            border: 1px solid #FFBF00;
+            color: #FFBF00;
+            padding: 5px 15px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        /* Content Card */
+        .content-card {
+            background-color: #1A1A1A;
+            padding: 30px;
+            border-radius: 4px;
+            border-left: 4px solid #FFBF00;
+            margin: 0 20px;
+        }
+
+        .welcome-text {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #A1A1AA;
+            margin-bottom: 30px;
+        }
+
+        /* CTA Button */
+        .button-wrapper {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        .button {
+            background-color: #FFBF00;
+            color: #0A0A0A !important;
+            padding: 18px 35px;
+            text-decoration: none;
+            font-weight: bold;
+            text-transform: uppercase;
+            display: inline-block;
+            letter-spacing: 1px;
+            border-radius: 2px;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        /* Permissions List */
+        .permissions {
+            padding: 30px 0;
+            border-top: 1px solid #262626;
+            margin-top: 20px;
+        }
+
+        .permission-item {
+            display: block;
+            margin-bottom: 15px;
+        }
+
+        .permission-title {
+            color: #FFBF00;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .permission-desc {
+            color: #71717A;
+            font-size: 13px;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 40px 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #52525B;
+        }
+
+        .footer-line {
+            margin-bottom: 10px;
+        }
+
+        @media screen and (max-width: 600px) {
+            .hero { padding: 30px 15px; }
+            .content-card { margin: 0 10px; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <table class="main">
+            <tr>
+                <td class="header">
+                    <div class="logo-text">Perfection Airsoft</div>
+                </td>
+            </tr>
+            <tr>
+                <td class="hero">
+                    <div class="protocol-title">Protocolo de Ativação</div>
+                    <div class="status-badge">Operador Identificado</div>
+                    <p style="color: #A1A1AA; font-size: 14px;">Aguardando verificação de credenciais táticas.</p>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="content-card">
+                        <div class="welcome-text">
+                            Bem-vindo ao arsenal, Operador.<br><br>
+                            Sua licença de acesso ao Hub de Performance está pronta para ser emitida. Confirme sua identidade abaixo para liberar as ferramentas de combate.
+                        </div>
+
+                        <div class="button-wrapper">
+                            <a href="{{ .ConfirmationURL }}" class="button">Confirmar Protocolo</a>
+                        </div>
+
+                        <div class="permissions">
+                            <div class="permission-item">
+                                <span class="permission-title">Acesso a Drops</span><br>
+                                <span class="permission-desc">Equipamentos exclusivos de tier lendário disponíveis.</span>
+                            </div>
+                            <div class="permission-item">
+                                <span class="permission-title">Histórico de Missões</span><br>
+                                <span class="permission-desc">Log completo de todas as suas operações e compras.</span>
+                            </div>
+                            <div class="permission-item">
+                                <span class="permission-title">Saldo do Operador</span><br>
+                                <span class="permission-desc">Gerencie seus créditos e split de pagamentos em tempo real.</span>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="footer">
+                    <div class="footer-line">Se você não solicitou este protocolo, ignore este comunicado.</div>
+                    <div class="footer-line">Link válido por 24 horas.</div>
+                    <div style="margin-top: 20px; border-top: 1px solid #262626; padding-top: 20px;">
+                        Perfection Airsoft © 2026. All Rights Reserved.<br>
+                        MISSION-CRITICAL DATA.
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

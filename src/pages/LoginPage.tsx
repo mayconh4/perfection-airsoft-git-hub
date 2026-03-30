@@ -26,7 +26,7 @@ export function LoginPage() {
     setLoading(true);
     const { error } = await resendConfirmation(email);
     if (error) setMessage(error.message);
-    else setMessage('E-mail de confirmação reenviado! Verifique sua caixa de entrada.');
+    else setMessage('E-mail de confirmação reenviado! Verifique sua caixa de entrada e seu SPAM.');
     setLoading(false);
   };
 
@@ -60,7 +60,7 @@ export function LoginPage() {
     } else {
       const { error } = await signUp(email, password, name);
       if (error) { setMessage(error.message); }
-      else { setMessage('Conta criada! Verifique seu e-mail para confirmar.'); }
+      else { setMessage('🛡️ OPERADOR EM ASCENSÃO! Verifique seu e-mail e a sua caixa de SPAM.'); }
     }
     setLoading(false);
   };
@@ -123,7 +123,7 @@ export function LoginPage() {
           </div>
 
           {message && (
-            <div className={`p-3 text-xs text-center uppercase tracking-widest border ${message.includes('enviado') || message.includes('criada') ? 'border-green-500/30 text-green-400 bg-green-500/5' : 'border-red-500/30 text-red-400 bg-red-500/5'}`}>
+            <div className={`p-3 text-xs text-center uppercase tracking-widest border ${message.includes('enviado') || message.includes('ascensão') || message.includes('reenviado') ? 'border-green-500/30 text-green-400 bg-green-500/5' : 'border-red-500/30 text-red-400 bg-red-500/5'}`}>
               <p>{message}</p>
               {(message.includes('confirmado') || message.includes('exist')) && (
                 <button 
