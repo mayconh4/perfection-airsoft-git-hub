@@ -114,12 +114,14 @@ export function OperatorKYCForm() {
   const handleSave = async () => {
     if (!user) return;
     
-    // Validação Básica
-    if (!fullName || !cpfCnpj || !pixKey) {
-      setIsError(true);
-      setMessage('PREENCHA TODOS OS CAMPOS OBRIGATÓRIOS. 🛠️');
-      return;
-    }
+    // Validação Tática Estrita
+    if (!fullName) { setIsError(true); setMessage('ERRO: PREENCHA SEU NOME COMPLETO. 🛠️'); setStep(1); return; }
+    if (!email) { setIsError(true); setMessage('ERRO: PREENCHA SEU E-MAIL. 🛠️'); setStep(1); return; }
+    if (!cpfCnpj) { setIsError(true); setMessage('ERRO: PREENCHA SEU CPF OU CNPJ. 🛠️'); setStep(1); return; }
+    if (!phone) { setIsError(true); setMessage('ERRO: PREENCHA SEU CELULAR. 🛠️'); setStep(1); return; }
+    if (!cep) { setIsError(true); setMessage('ERRO: PREENCHA SEU CEP. 🛠️'); setStep(2); return; }
+    if (!number) { setIsError(true); setMessage('ERRO: PREENCHA O NÚMERO DO ENDEREÇO. 🛠️'); setStep(2); return; }
+    if (!pixKey) { setIsError(true); setMessage('ERRO: PREENCHA SUA CHAVE PIX. 🛠️'); setStep(3); return; }
 
     setSaving(true);
     setIsError(false);

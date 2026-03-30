@@ -1,17 +1,17 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    console.log('>>> INICIANDO EDGE FUNCTION ASAAS <<<');
     const asaasApiKey = Deno.env.get('ASAAS_API_KEY');
     const asaasApiUrl = Deno.env.get('ASAAS_API_URL') || 'https://sandbox.asaas.com/api/v3';
 
@@ -27,13 +27,17 @@ serve(async (req) => {
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    // Valida o usuário atual
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) throw new Error('Usuário não autenticado');
+    // Valida o usuário atual extraindo o token do cabecalho (Bearer eyJ...)
+    const token = authHeader.replace('Bearer ', '').trim();
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error('Auth Error:', authError);
+      throw new Error('Sessão expirada ou usuário não autenticado no servidor central.');
+    }
 
     // Recebe os dados validados do front-end
     const { 
@@ -59,20 +63,23 @@ serve(async (req) => {
     const cleanPhone = phone.replace(/\D/g, '');
     const cleanCep = cep.replace(/\D/g, '');
 
+    const companyType = cleanCpfCnpj.length <= 11 ? 'INDIVIDUAL' : 'LIMITED';
+
     // 1. CHAMA API DO ASAAS PARA CRIAR CONTA (SUBCONTA)
     const asaasAccountPayload = {
       name: fullName,
       email: email,
       loginEmail: email,
       cpfCnpj: cleanCpfCnpj,
+      companyType: companyType,
       phone: cleanPhone,
       mobilePhone: cleanPhone,
       address: street,
       addressNumber: addressNumber,
       complement: complement || '',
       province: neighborhood,
-      postalCode: cleanCep,
-      city: city || 0, // Nota: a API de Subcontas da v3 geralmente pede código IBGE, ou aceita string, em Sandbox as vezes aceita só postalCode
+      postalCode: cleanCep
+      // 'city' omitido pois o Asaas exige código IBGE (número). Com o postalCode o Asaas deduz automático.
     };
 
     console.log('Criando subconta no Asaas...', asaasAccountPayload);
@@ -135,8 +142,8 @@ serve(async (req) => {
   } catch (error: any) {
     console.error('Asaas Subaccount Edge Function Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      JSON.stringify({ error: error.message || 'Erro Desconhecido no Backend' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   }
 });
