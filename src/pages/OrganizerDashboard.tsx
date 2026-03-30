@@ -55,7 +55,7 @@ export default function OrganizerDashboard() {
 
       setStats({
         ticketsSold: totalSold,
-        revenue: balanceData?.total_earned ? Number(balanceData.total_earned) + (totalSold * 2.50) : 0, // Estimativa bruta (incluindo taxas)
+        revenue: balanceData?.total_earned ? Number(balanceData.total_earned) : 0,
         netRevenue: balanceData?.available_balance ? Number(balanceData.available_balance) : 0
       });
 
@@ -188,7 +188,7 @@ export default function OrganizerDashboard() {
               <span className="material-symbols-outlined text-primary text-3xl mb-4">info</span>
               <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6">Regras de Split</h3>
               <p className="text-[11px] text-slate-500 font-mono leading-relaxed mb-8 uppercase">
-                O sistema desconta automaticamente R$ 2,50 fixos por ticket vendido (taxa de operação). O restante cai direto no seu saldo operacional.
+                Taxa operacional: 7% por ticket
               </p>
               <button disabled className="w-full bg-white/5 text-slate-500 font-black py-4 text-[9px] uppercase tracking-[.3em] cursor-not-allowed border border-white/10">
                 SOLICITAR RESGATE PIX

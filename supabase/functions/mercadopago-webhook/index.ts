@@ -90,11 +90,12 @@ Deno.serve(async (req: Request) => {
           ]);
 
           if (config && raffle) {
-            const fixedFee = (config.fixed_fee_per_ticket || 2.50) * totalPurchased;
-            const operatorShare = totalAmount - fixedFee;
+            const feePercent = (config.platform_fee_percent || 7) / 100;
+            const platformFee = totalAmount * feePercent;
+            const operatorShare = totalAmount - platformFee;
             const creatorId = raffle.creator_id;
 
-            console.log(`[SPLIT] Total: R$ ${totalAmount} | Taxa Plataforma: R$ ${fixedFee} | Operador: R$ ${operatorShare}`);
+            console.log(`[SPLIT] Total: R$ ${totalAmount} | Taxa Plataforma (${(feePercent*100).toFixed(0)}%): R$ ${platformFee.toFixed(2)} | Operador: R$ ${operatorShare.toFixed(2)}`);
 
             // 2. Buscar Chave PIX do Criador
             const { data: creatorProfile } = await supabase
@@ -160,7 +161,7 @@ Deno.serve(async (req: Request) => {
                 order_id: orderId, 
                 raffle_id: raffleId, 
                 type: 'fee_platform', 
-                amount: fixedFee 
+                amount: platformFee 
               },
               { 
                 order_id: orderId, 
