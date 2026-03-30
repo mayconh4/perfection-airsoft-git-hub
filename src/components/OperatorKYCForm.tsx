@@ -109,6 +109,19 @@ export function OperatorKYCForm() {
     }
   };
 
+  const handleBirthDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/\D/g, '');
+    if (val.length > 8) val = val.slice(0, 8);
+    
+    // Mascara visual de Data DD/MM/AAAA
+    if (val.length >= 5) {
+      val = val.slice(0, 2) + '/' + val.slice(2, 4) + '/' + val.slice(4);
+    } else if (val.length >= 3) {
+      val = val.slice(0, 2) + '/' + val.slice(2);
+    }
+    setBirthDate(val);
+  };
+
   const handleNext = () => setStep(prev => Math.min(prev + 1, 3));
   const handlePrev = () => setStep(prev => Math.max(prev - 1, 1));
 
@@ -264,7 +277,7 @@ export function OperatorKYCForm() {
               <input 
                 type="text" 
                 value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
+                onChange={handleBirthDateChange}
                 disabled={kycStatus === 'approved'}
                 placeholder="DD/MM/AAAA"
                 className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none focus:border-primary transition-colors disabled:opacity-50"
