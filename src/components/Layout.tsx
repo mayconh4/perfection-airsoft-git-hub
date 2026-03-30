@@ -29,7 +29,7 @@ export function Layout({ children }: LayoutProps) {
   };
 
   const { itemCount, showToast } = useCart();
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const { getEffectiveRate } = usePricing();
   const navigate = useNavigate();
 
@@ -259,7 +259,7 @@ export function Layout({ children }: LayoutProps) {
               </div>
 
               {/* Admin Panel Link (Beside Operator) */}
-              {(user?.email === 'admin@perfectionairsoft.com.br' || user?.email === 'maycontuliofs@gmail.com') && (
+              {isAdmin && (
                 <Link to="/admin" className="flex flex-col items-center gap-1 group">
                    <span className="material-symbols-outlined text-primary/60 group-hover:text-primary transition-colors text-xl sm:text-2xl">admin_panel_settings</span>
                    <span className="text-[7px] font-black text-primary/40 uppercase tracking-widest group-hover:text-primary transition-colors hidden lg:block">HQ Control</span>

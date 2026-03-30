@@ -11,6 +11,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resendConfirmation: (email: string) => Promise<{ error: Error | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -75,7 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ 
-      user, session, loading, signIn, signUp, signOut, resendConfirmation, resetPassword 
+      user, session, loading, signIn, signUp, signOut, resendConfirmation, resetPassword,
+      isAdmin: user?.email === 'admin@perfectionairsoft.com.br'
     }}>
       {children}
     </AuthContext.Provider>
