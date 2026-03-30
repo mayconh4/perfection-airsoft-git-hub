@@ -133,7 +133,7 @@ export default function CreateRafflePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      alert('IDENTIDADE NÃO VERIFICADA: ACESSO NEGADO.');
+      alert('IDENTIDADE NÃO VERIFICADA: ACESSO NEGADO.\nREGISTRE-SE PARA PROSSEGUIR.');
       return;
     }
 
@@ -204,7 +204,7 @@ export default function CreateRafflePage() {
         {/* Header HUD */}
         <div className="mb-12 border-l-4 border-primary pl-8 py-4 bg-surface/10">
             <span className="text-primary font-black uppercase tracking-[0.4em] text-[10px] block mb-2">
-                {id ? 'EDITAR DROP: ATUALIZAR PRÊMIO' : 'NOVO DROP: CONFIGURAR PRÊMIO'}
+                {id ? 'EDITAR DROP: ATUALIZAR PRÊMIO' : 'PROTOCOLO DE COMANDO'}
             </span>
             <h1 className="text-4xl font-black text-white uppercase tracking-tighter">
                 {id ? 'EDIÇÃO DE DROP' : 'LANÇAR NOVO DROP'}
@@ -212,7 +212,25 @@ export default function CreateRafflePage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-            {hasPixKey === false && (
+            {!user && (
+                <div className="bg-primary/10 border border-primary/50 p-8 flex flex-col items-center text-center gap-4 mb-8">
+                    <span className="material-symbols-outlined text-primary text-4xl">shield_person</span>
+                    <div>
+                        <h3 className="text-white font-black uppercase tracking-widest mb-2 font-display italic">IDENTIDADE NÃO VERIFICADA</h3>
+                        <p className="text-slate-400 text-[10px] uppercase font-mono max-w-md mx-auto leading-relaxed">
+                            PARA ACESSAR O PROTOCOLO DE CONCESSÃO DE DROPS, VOCÊ PRECISA ESTAR NO SISTEMA.
+                        </p>
+                    </div>
+                    <Link 
+                        to="/login" 
+                        className="bg-primary text-background-dark font-black py-3 px-8 text-[11px] uppercase tracking-[0.3em] hover:bg-white transition-all shadow-[0_0_20px_rgba(255,193,7,0.3)]"
+                    >
+                        REGISTRE-SE PARA COMANDAR
+                    </Link>
+                </div>
+            )}
+
+            {hasPixKey === false && user && (
                 <div className="bg-red-500/10 border border-red-500/50 p-8 flex flex-col items-center text-center gap-4 mb-8">
                     <span className="material-symbols-outlined text-red-500 text-4xl">warning</span>
                     <div>
@@ -230,7 +248,7 @@ export default function CreateRafflePage() {
                 </div>
             )}
             
-            <div className={`space-y-8 ${hasPixKey === false ? 'opacity-20 pointer-events-none grayscale' : ''}`}>
+            <div className={`space-y-8 ${(!user || hasPixKey === false) ? 'opacity-20 pointer-events-none grayscale' : ''}`}>
                 {/* Title */}
                 <div>
                     <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">NOME DO EQUIPAMENTO / PRÊMIO</label>

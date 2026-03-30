@@ -70,8 +70,8 @@ export function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <span className="material-symbols-outlined text-primary text-5xl mb-4 block">shield_person</span>
-          <h2 className="text-3xl font-black text-white tracking-tighter uppercase">{isLogin ? 'Login' : 'Cadastro'}</h2>
-          <p className="text-slate-500 text-xs uppercase tracking-widest mt-2">{isLogin ? 'Acesse seu painel operacional' : 'Crie sua conta de operador'}</p>
+          <h2 className="text-3xl font-black text-white tracking-tighter uppercase">{isLogin ? 'Painel de Comando' : 'Acesso ao Comando'}</h2>
+          <p className="text-slate-500 text-xs uppercase tracking-widest mt-2">{isLogin ? 'Acesse suas diretrizes operacionais' : 'Registre-se para comandar seu primeiro drop'}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-surface border border-border-tactical p-6 space-y-4">
