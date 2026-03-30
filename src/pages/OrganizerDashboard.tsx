@@ -186,7 +186,7 @@ export default function OrganizerDashboard() {
 
             <div className="bg-primary/5 border border-primary/20 p-8">
               <span className="material-symbols-outlined text-primary text-3xl mb-4">info</span>
-              <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6">Regras de Split</h3>
+              <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6">Regras Operacionais</h3>
               <p className="text-[11px] text-slate-500 font-mono leading-relaxed mb-8 uppercase">
                 Taxa operacional: 7% por ticket
               </p>
