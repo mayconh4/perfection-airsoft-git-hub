@@ -16,6 +16,7 @@ export function OperatorKYCForm() {
   
   // Etapa 2: Endereço
   const [cep, setCep] = useState('');
+  const [state, setState] = useState('');
   const [city, setCity] = useState('');
   const [street, setStreet] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
@@ -32,6 +33,7 @@ export function OperatorKYCForm() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
+  const [loadingCep, setLoadingCep] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -65,6 +67,44 @@ export function OperatorKYCForm() {
       }
     } catch (err: any) {
       console.error('Falha na requisição de perfil:', err);
+    }
+  };
+
+  const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/\D/g, '');
+    if (val.length > 8) val = val.slice(0, 8);
+    
+    // Mascara visual de CEP 00000-000
+    if (val.length > 5) {
+      val = val.slice(0, 5) + '-' + val.slice(5);
+    }
+    setCep(val);
+
+    const numericCep = val.replace(/\D/g, '');
+    if (numericCep.length === 8) {
+      setLoadingCep(true);
+      setMessage('RASTREANDO COORDENADAS DO CEP... 🛰️');
+      setIsError(false);
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${numericCep}/json/`);
+        const data = await res.json();
+        if (data.erro) {
+            setMessage('CEP NÃO ENCONTRADO NO RADAR. 🛠️');
+            setIsError(true);
+        } else {
+            setStreet(data.logradouro || '');
+            setNeighborhood(data.bairro || '');
+            setCity(data.localidade || '');
+            setState(data.uf || '');
+            setMessage('ENDEREÇO TRAVADO NO RADAR. ✅');
+            setTimeout(() => setMessage(''), 3000);
+        }
+      } catch (err) {
+        console.error("ViaCEP Error", err);
+        setMessage('ERRO AO BUSCAR CEP. 🛠️');
+      } finally {
+        setLoadingCep(false);
+      }
     }
   };
 
@@ -111,7 +151,7 @@ export function OperatorKYCForm() {
       
       const { data: asaasData, error: asaasError } = await supabase.functions.invoke('asaas-create-subaccount', {
         body: { 
-          fullName, email, cpfCnpj, phone, cep, city, street, neighborhood, addressNumber: number, complement, state: '' 
+          fullName, email, cpfCnpj, phone, cep, city, street, neighborhood, addressNumber: number, complement, state 
         }
       });
 
@@ -219,26 +259,42 @@ export function OperatorKYCForm() {
             <h4 className="text-[10px] text-white font-black uppercase tracking-widest mb-4 border-b border-white/5 pb-2">2. Endereço</h4>
             
             <div>
-              <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">CEP</label>
+              <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">
+                CEP {loadingCep && <span className="text-primary animate-pulse ml-2">CARREGANDO...</span>}
+              </label>
               <input 
                 type="text" 
                 value={cep}
-                onChange={(e) => setCep(e.target.value)}
-                disabled={kycStatus === 'approved'}
+                onChange={handleCepChange}
+                disabled={kycStatus === 'approved' || loadingCep}
                 placeholder="00000-000"
                 className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none focus:border-primary transition-colors disabled:opacity-50"
               />
             </div>
 
-            <div>
-              <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Cidade</label>
-              <input 
-                type="text" 
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                disabled={kycStatus === 'approved'}
-                className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none focus:border-primary transition-colors disabled:opacity-50"
-              />
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-2">
+                <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Cidade</label>
+                <input 
+                  type="text" 
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  disabled={kycStatus === 'approved'}
+                  className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none focus:border-primary transition-colors disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Estado</label>
+                <input 
+                  type="text" 
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                  disabled={kycStatus === 'approved'}
+                  maxLength={2}
+                  placeholder="UF"
+                  className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none focus:border-primary transition-colors disabled:opacity-50 text-center uppercase"
+                />
+              </div>
             </div>
 
             <div>
