@@ -39,7 +39,8 @@ Deno.serve(async (req: Request) => {
       
       if (authError || !user) {
         console.error('Auth Error:', authError);
-        throw new Error('Sessão expirada ou usuário não autenticado no servidor central.');
+        const prefix = token ? token.substring(0, 15) + '...' : 'VAZIO';
+        throw new Error(`Auth Fatal: [${authError?.message}] | Token lido: ${prefix}`);
       }
       userId = user.id;
     }
@@ -56,7 +57,8 @@ Deno.serve(async (req: Request) => {
       neighborhood, 
       addressNumber, 
       complement, 
-      state 
+      state,
+      birthDate
     } = await req.json();
 
     if (!fullName || !cpfCnpj || !email || !phone || !cep || !addressNumber) {
@@ -69,6 +71,15 @@ Deno.serve(async (req: Request) => {
     const cleanCep = cep.replace(/\D/g, '');
 
     const companyType = cleanCpfCnpj.length <= 11 ? 'INDIVIDUAL' : 'LIMITED';
+
+    // Tratar Data de Nascimento (Asaas exige YYYY-MM-DD)
+    let asaasBirthDate = birthDate;
+    if (asaasBirthDate && asaasBirthDate.includes('/')) {
+      const parts = asaasBirthDate.split('/');
+      if (parts.length === 3) {
+        asaasBirthDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+    }
 
     // 1. CHAMA API DO ASAAS PARA CRIAR CONTA (SUBCONTA)
     const asaasAccountPayload = {
@@ -83,7 +94,8 @@ Deno.serve(async (req: Request) => {
       addressNumber: addressNumber,
       complement: complement || '',
       province: neighborhood,
-      postalCode: cleanCep
+      postalCode: cleanCep,
+      birthDate: asaasBirthDate // Exigido para INDIVIDUAL
       // 'city' omitido pois o Asaas exige código IBGE (número). Com o postalCode o Asaas deduz automático.
     };
 

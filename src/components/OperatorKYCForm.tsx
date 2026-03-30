@@ -13,6 +13,7 @@ export function OperatorKYCForm() {
   const [cpfCnpj, setCpfCnpj] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   
   // Etapa 2: Endereço
   const [cep, setCep] = useState('');
@@ -118,6 +119,7 @@ export function OperatorKYCForm() {
     if (!fullName) { setIsError(true); setMessage('ERRO: PREENCHA SEU NOME COMPLETO. 🛠️'); setStep(1); return; }
     if (!email) { setIsError(true); setMessage('ERRO: PREENCHA SEU E-MAIL. 🛠️'); setStep(1); return; }
     if (!cpfCnpj) { setIsError(true); setMessage('ERRO: PREENCHA SEU CPF OU CNPJ. 🛠️'); setStep(1); return; }
+    if (!birthDate) { setIsError(true); setMessage('ERRO: PREENCHA SUA DATA DE NASCIMENTO. 🛠️'); setStep(1); return; }
     if (!phone) { setIsError(true); setMessage('ERRO: PREENCHA SEU CELULAR. 🛠️'); setStep(1); return; }
     if (!cep) { setIsError(true); setMessage('ERRO: PREENCHA SEU CEP. 🛠️'); setStep(2); return; }
     if (!number) { setIsError(true); setMessage('ERRO: PREENCHA O NÚMERO DO ENDEREÇO. 🛠️'); setStep(2); return; }
@@ -160,7 +162,7 @@ export function OperatorKYCForm() {
           'Authorization': `Bearer ${userToken}`
         },
         body: JSON.stringify({
-          fullName, email, cpfCnpj, phone, cep, city, street, neighborhood, addressNumber: number, complement, state
+          fullName, email, cpfCnpj, phone, cep, city, street, neighborhood, addressNumber: number, complement, state, birthDate
         })
       });
 
@@ -253,6 +255,18 @@ export function OperatorKYCForm() {
                 value={cpfCnpj}
                 onChange={(e) => setCpfCnpj(e.target.value)}
                 disabled={kycStatus === 'approved'}
+                className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none focus:border-primary transition-colors disabled:opacity-50"
+              />
+            </div>
+
+            <div>
+              <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Data de Nascimento</label>
+              <input 
+                type="text" 
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
+                disabled={kycStatus === 'approved'}
+                placeholder="DD/MM/AAAA"
                 className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none focus:border-primary transition-colors disabled:opacity-50"
               />
             </div>
