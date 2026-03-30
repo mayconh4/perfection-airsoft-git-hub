@@ -108,12 +108,12 @@ export function OperatorKYCForm() {
       <div className="flex items-center gap-3 mb-6">
         <span className="material-symbols-outlined text-primary text-xl">admin_panel_settings</span>
         <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em]">
-          Verificação de Operador (KYC)
+          Verificação de Operador
         </h3>
       </div>
       
       <p className="text-[11px] text-slate-400 font-mono mb-6 uppercase leading-relaxed">
-        Para receber pagamentos diretamente em sua conta sem bitributação, precisamos verificar sua identidade. Esses dados são oficiais e serão repassados ao processador financeiro.
+        Para receber pagamentos diretamente em sua conta, precisamos verificar sua identidade.
       </p>
 
       <div className="space-y-4">
