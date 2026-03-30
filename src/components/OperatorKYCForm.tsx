@@ -148,17 +148,33 @@ export function OperatorKYCForm() {
 
       if (error) throw error;
       
-      // 2. Chama a Edge Function para criar a subconta
-      setMessage('AUTENTICANDO JUNTO À PLATAFORMA FINANCEIRA...');
-      
-      const { data: asaasData, error: asaasError } = await supabase.functions.invoke('asaas-create-subaccount', {
-        body: { 
-          fullName, email, cpfCnpj, phone, cep, city, street, neighborhood, addressNumber: number, complement, state 
-        }
+      // Busca a Sessao atual na mao
+      const { data: { session } } = await supabase.auth.getSession();
+      const userToken = session?.access_token || 'TEST_BYPASS';
+
+      // Bypass do Bug do Supabase-js Invoke: Usar Fetch nativo
+      const asaasRes = await fetch('https://seewdqetyolfmqsiyban.supabase.co/functions/v1/asaas-create-subaccount', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        },
+        body: JSON.stringify({
+          fullName, email, cpfCnpj, phone, cep, city, street, neighborhood, addressNumber: number, complement, state
+        })
       });
 
-      if (asaasError) throw new Error(asaasError.message || 'Erro na comunicação com o Motor Financeiro');
-      if (asaasData?.error) throw new Error(asaasData.error);
+      const rawText = await asaasRes.text();
+      let asaasData: any = {};
+      try {
+        asaasData = JSON.parse(rawText);
+      } catch (e) {
+        throw new Error(`Erro Fatal da Nuvem (HTTP ${asaasRes.status}): ${rawText.substring(0, 100)}`);
+      }
+
+      if (asaasData.error || !asaasRes.ok) {
+        throw new Error(asaasData.error || asaasData.message || `Erro do Gateway: ${asaasRes.statusText}`);
+      }
 
       // Sucesso total
       setIsError(false);
