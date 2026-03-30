@@ -38,12 +38,12 @@ export default function CreateRafflePage() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('pix_key')
+        .select('kyc_status, asaas_wallet_id')
         .eq('id', user.id)
         .single();
       
       if (error) throw error;
-      setHasPixKey(!!data?.pix_key);
+      setHasPixKey(data?.kyc_status === 'approved' || !!data?.asaas_wallet_id);
     } catch (err) {
       console.error('Erro ao verificar Chave Pix:', err);
       setHasPixKey(false);
@@ -138,7 +138,7 @@ export default function CreateRafflePage() {
     }
 
     if (!hasPixKey) {
-      alert('PROTOCOLO BLOQUEADO: VOCÊ PRECISA CADASTRAR UMA CHAVE PIX PARA RECEBER AS VENDAS.');
+      alert('PROTOCOLO BLOQUEADO: VOCÊ PRECISA CONCLUIR A VERIFICAÇÃO DE IDENTIDADE (KYC) NO PAINEL PARA RECEBER PAGAMENTOS.');
       navigate('/organizador');
       return;
     }

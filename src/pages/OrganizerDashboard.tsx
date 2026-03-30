@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { PixKeyManager } from '../components/PixKeyManager';
+import { OperatorKYCForm } from '../components/OperatorKYCForm';
 
 interface EventStats {
   ticketsSold: number;
@@ -182,7 +182,7 @@ export default function OrganizerDashboard() {
           <div className="lg:col-span-1 space-y-8">
             <h2 className="text-lg font-black text-white uppercase tracking-widest mb-6">Logística de Recebimento</h2>
             
-            <PixKeyManager />
+            <OperatorKYCForm />
 
             <div className="bg-primary/5 border border-primary/20 p-8">
               <span className="material-symbols-outlined text-primary text-3xl mb-4">info</span>
