@@ -109,8 +109,8 @@ export default function RaffleDetailPage() {
     }
   };
 
-  if (loading && !raffle) return <div className="p-20 text-white font-mono uppercase tracking-widest animate-pulse">Sincronizando com o Hub...</div>;
-  if (!raffle) return <div className="p-20 text-white">Rifa não encontrada ou desativada.</div>;
+  if (loading && !raffle) return <div className="p-20 text-white font-mono uppercase tracking-widest animate-pulse">Sincronizando com o Hub do QG...</div>;
+  if (!raffle) return <div className="p-20 text-white font-black uppercase tracking-widest">PROTOCOLO NÃO ENCONTRADO OU DESATIVADO.</div>;
 
   const toggleTicket = (num: number) => {
     if (selectedTickets.includes(num)) {
@@ -164,13 +164,13 @@ export default function RaffleDetailPage() {
         <div className="max-w-7xl mx-auto px-6">
           <Link to="/drop" className="text-[10px] font-black text-primary/60 uppercase tracking-[0.3em] flex items-center gap-2 mb-8 hover:text-primary transition-colors">
             <span className="material-symbols-outlined text-sm">arrow_back</span>
-            ABORT MISSION / RETURN TO HUB
+            ABORTAR MISSÃO / VOLTAR AO HUB
           </Link>
 
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
             <div>
               <span className="bg-primary/20 text-primary border border-primary/40 text-[8px] font-black uppercase tracking-widest px-3 py-1 mb-4 inline-block">
-                OBJECTIVE: {raffle.id.substring(0, 8).toUpperCase()}
+                OBJETIVO: {raffle.id.substring(0, 8).toUpperCase()}
               </span>
               <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none">
                 {raffle.title}
@@ -178,7 +178,7 @@ export default function RaffleDetailPage() {
             </div>
 
             <div className="bg-white/5 border-l-2 border-primary p-6 md:text-right">
-              <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-2">TARGET VALUE / TICKET</span>
+              <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-2">VALOR DO ALVO / TICKET</span>
               <span className="text-4xl font-black text-white">R$ {raffle.ticket_price.toFixed(2)}</span>
             </div>
           </div>
@@ -226,7 +226,7 @@ export default function RaffleDetailPage() {
           <div className="bg-surface/20 border border-white/5 p-8">
             <h3 className="text-[10px] font-black text-primary/60 uppercase tracking-[0.4em] mb-6 flex items-center gap-3">
               <span className="h-px w-8 bg-primary/40" />
-              MISSION BRIEFING
+              BRIEFING DA MISSÃO
             </h3>
             <p className="text-sm text-slate-400 font-mono leading-relaxed uppercase mb-8">
               {raffle.description}
@@ -235,7 +235,7 @@ export default function RaffleDetailPage() {
             <div className="grid grid-cols-2 gap-8 border-t border-white/5 pt-8">
               <div>
                 <h4 className="text-[9px] font-black text-white uppercase tracking-widest mb-4">
-                  {raffle.rules_title || 'RULES & ENGAGEMENT'}
+                  {raffle.rules_title || 'REGRAS E ENGAJAMENTO'}
                 </h4>
                 <p className="text-[10px] text-slate-500 font-mono leading-relaxed uppercase">
                   {raffle.rules || 'Sorteio baseado na extração da Loteria Federal ou hash de rede blockchain verificado.'}
@@ -243,7 +243,7 @@ export default function RaffleDetailPage() {
               </div>
               <div>
                 <h4 className="text-[9px] font-black text-white uppercase tracking-widest mb-4">
-                  {raffle.logistics_title || 'LOGISTICS'}
+                  {raffle.logistics_title || 'LOGÍSTICA'}
                 </h4>
                 <p className="text-[10px] text-slate-500 font-mono leading-relaxed uppercase">
                   {raffle.logistics_description || 'Envio segurado para todo o Brasil via transportadora tática especializada.'}
@@ -257,9 +257,9 @@ export default function RaffleDetailPage() {
         <div className="lg:col-span-5 flex flex-col gap-8">
           <div className="bg-surface border border-primary/20 p-8 sticky top-32">
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">TICKET SELECTOR</h3>
+              <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">SELETOR DE TICKETS</h3>
               <div className="text-right">
-                <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest block">SELECTED</span>
+                <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest block">SELECIONADOS</span>
                 <span className="text-lg font-black text-primary font-mono">{selectedTickets.length}</span>
               </div>
             </div>
@@ -267,7 +267,7 @@ export default function RaffleDetailPage() {
             {/* Progress HUD */}
             <div className="mb-8 p-4 bg-black/40 border-l border-primary/40">
               <div className="flex justify-between text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2">
-                <span>OPERATIONAL CAPACITY</span>
+                <span>CAPACIDADE OPERACIONAL</span>
                 <span>{((raffle.sold_tickets / raffle.total_tickets) * 100).toFixed(1)}%</span>
               </div>
               <div className="h-1 bg-white/5 w-full overflow-hidden">
@@ -302,7 +302,7 @@ export default function RaffleDetailPage() {
             {/* Summary & Checkout */}
             <div className="border-t border-white/5 pt-8 flex flex-col gap-6">
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">TOTAL DEPLOYMENT COST</span>
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">CUSTO TOTAL DE MOBILIZAÇÃO</span>
                 <span className="text-2xl font-black text-white font-mono">R$ {(selectedTickets.length * raffle.ticket_price).toFixed(2)}</span>
               </div>
 
@@ -312,15 +312,15 @@ export default function RaffleDetailPage() {
                 className="w-full bg-primary text-background-dark font-black py-4 text-[10px] uppercase tracking-[0.4em] hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all relative overflow-hidden group/btn"
               >
                 <span className="relative z-10 flex items-center justify-center gap-3">
-                  CONFIRM PROTOCOL
+                  CONFIRMAR PROTOCOLO
                   <span className="material-symbols-outlined text-sm group-hover/btn:translate-x-1 transition-transform">lock</span>
                 </span>
                 <div className="absolute inset-0 bg-white translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
               </button>
 
               <p className="text-[8px] text-slate-600 font-mono text-center uppercase tracking-widest leading-relaxed">
-                SECURE ENCRYPTED TRANSACTION<br />
-                MERCADO PAGO AUTHENTICATED
+                TRANSAÇÃO SEGURA E CRIPTOGRAFADA<br />
+                AUTENTICADA PELO MERCADO PAGO
               </p>
             </div>
           </div>

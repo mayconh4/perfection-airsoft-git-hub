@@ -19,8 +19,8 @@ export default function CreateRafflePage() {
     rules: '',
     image_url: '',
     images: [] as string[],
-    rules_title: 'RULES & ENGAGEMENT',
-    logistics_title: 'LOGISTICS',
+    rules_title: 'REGRAS E ENGAJAMENTO',
+    logistics_title: 'LOGÍSTICA',
     logistics_description: 'Envio segurado para todo o Brasil via transportadora tática especializada.'
   });
 
@@ -72,8 +72,8 @@ export default function CreateRafflePage() {
           rules: data.rules || '',
           image_url: data.image_url || '',
           images: data.images || [],
-          rules_title: data.rules_title || 'RULES & ENGAGEMENT',
-          logistics_title: data.logistics_title || 'LOGISTICS',
+          rules_title: data.rules_title || 'REGRAS E ENGAJAMENTO',
+          logistics_title: data.logistics_title || 'LOGÍSTICA',
           logistics_description: data.logistics_description || 'Envio segurado para todo o Brasil via transportadora tática especializada.'
         });
       }
@@ -204,7 +204,7 @@ export default function CreateRafflePage() {
         {/* Header HUD */}
         <div className="mb-12 border-l-4 border-primary pl-8 py-4 bg-surface/10">
             <span className="text-primary font-black uppercase tracking-[0.4em] text-[10px] block mb-2">
-                {id ? 'EDIT DROP: UPDATE PRIZE' : 'NEW DROP: SETUP PRIZE'}
+                {id ? 'EDITAR DROP: ATUALIZAR PRÊMIO' : 'NOVO DROP: CONFIGURAR PRÊMIO'}
             </span>
             <h1 className="text-4xl font-black text-white uppercase tracking-tighter">
                 {id ? 'EDIÇÃO DE DROP' : 'LANÇAR NOVO DROP'}
@@ -260,7 +260,7 @@ export default function CreateRafflePage() {
                 {/* Pricing & Units */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
-                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">UNIT VALUE (TICKET PRICE)</label>
+                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">VALOR UNITÁRIO (PREÇO DO TICKET)</label>
                         <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-black text-xs">R$</span>
                             <input 
@@ -275,7 +275,7 @@ export default function CreateRafflePage() {
                         </div>
                     </div>
                     <div>
-                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">TOTAL UNITS (TICKETS)</label>
+                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">UNIDADES TOTAIS (TICKETS)</label>
                         <input 
                             type="number" 
                             required
@@ -290,7 +290,7 @@ export default function CreateRafflePage() {
                 {/* Date & Rules */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                    <div>
-                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">DATA DO SORTEIO (DRAW WINDOW)</label>
+                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">DATA DO SORTEIO (JANELA DE SORTEIO)</label>
                         <input 
                             type="datetime-local" 
                             required
@@ -320,20 +320,20 @@ export default function CreateRafflePage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
-                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">RULES SECTION HEADER</label>
+                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">TÍTULO DA SEÇÃO DE REGRAS</label>
                         <input 
                             type="text" 
-                            placeholder="EX: RULES & ENGAGEMENT ou LIVRE"
+                            placeholder="EX: REGRAS E ENGAJAMENTO ou LIVRE"
                             className="w-full bg-black/40 border border-white/10 p-4 text-white font-mono text-sm focus:border-primary outline-none transition-all placeholder:opacity-20"
                             value={formData.rules_title}
                             onChange={e => setFormData({ ...formData, rules_title: e.target.value })}
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">LOGISTICS SECTION HEADER</label>
+                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">TÍTULO DA SEÇÃO DE LOGÍSTICA</label>
                         <input 
                             type="text" 
-                            placeholder="EX: LOGISTICS ou ENVIO"
+                            placeholder="EX: LOGÍSTICA ou ENVIO"
                             className="w-full bg-black/40 border border-white/10 p-4 text-white font-mono text-sm focus:border-primary outline-none transition-all placeholder:opacity-20"
                             value={formData.logistics_title}
                             onChange={e => setFormData({ ...formData, logistics_title: e.target.value })}
@@ -342,7 +342,7 @@ export default function CreateRafflePage() {
                 </div>
 
                 <div>
-                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">DETALHES DE ENVIO (SHIPPING INFO)</label>
+                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">DETALHES DE ENVIO (LOGÍSTICA)</label>
                     <textarea 
                         rows={2}
                         placeholder="EX: ENVIO SEGURADO PARA TODO O BRASIL..."
@@ -356,9 +356,9 @@ export default function CreateRafflePage() {
             {/* Media Panel - Fazer Upload de Fotos */}
             <div className="bg-surface/20 border border-white/5 p-8 space-y-8">
                 <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                    <h3 className="text-sm font-black text-white uppercase tracking-widest">MEDIA PANEL // ARSENAL VISUAL</h3>
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest">PAINEL DE MÍDIA // ARSENAL VISUAL</h3>
                     <span className={`text-[8px] font-mono ${uploading ? 'text-primary animate-pulse' : 'text-primary/60'}`}>
-                        {uploading ? 'UPLOADING FILES...' : 'STATUS: READY FOR FILES'}
+                        {uploading ? 'ENVIANDO ARQUIVOS...' : 'STATUS: PRONTO PARA ARQUIVOS'}
                     </span>
                 </div>
 
@@ -384,13 +384,13 @@ export default function CreateRafflePage() {
                 {/* Preview e Gestão de Galeria */}
                 {(formData.image_url || formData.images.length > 0) && (
                     <div className="space-y-6">
-                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block italic">COMMAND REVIEW (GALERIA PREVIEW)</label>
+                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block italic">REVISÃO DE COMANDO (PRÉVIA DA GALERIA)</label>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                              {/* Imagem de Capa */}
                              {formData.image_url && (
                                 <div className="relative aspect-video bg-black/40 border-2 border-primary group">
                                     <img src={formData.image_url} alt="Capa" className="w-full h-full object-cover" />
-                                    <div className="absolute top-0 left-0 bg-primary text-background-dark text-[8px] font-black px-2 py-1 uppercase scale-75 origin-top-left">PRIMARY (CAPA)</div>
+                                    <div className="absolute top-0 left-0 bg-primary text-background-dark text-[8px] font-black px-2 py-1 uppercase scale-75 origin-top-left">PRIMÁRIA (CAPA)</div>
                                     <button 
                                         type="button"
                                         onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}

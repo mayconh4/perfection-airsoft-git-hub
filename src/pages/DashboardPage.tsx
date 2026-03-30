@@ -165,7 +165,7 @@ function OrderDetails({ order, onBack }: { order: Order, onBack: () => void }) {
                </div>
                <div className="flex justify-between w-full max-w-xs text-[10px] text-slate-500 uppercase font-bold tracking-widest">
                  <span>Frete e Logística</span>
-                 <span className="text-green-500">GRUÁTIS</span>
+                 <span className="text-green-500">GRÁTIS</span>
                </div>
                <div className="flex justify-between w-full max-w-xs mt-4 pt-4 border-t border-white/10">
                  <span className="text-xs font-black uppercase tracking-widest text-primary">Total da Missão</span>

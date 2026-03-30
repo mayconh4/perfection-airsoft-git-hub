@@ -80,7 +80,7 @@ function RaffleCard({ raffle }: { raffle: Raffle }) {
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 select-none opacity-20 group-hover:opacity-40 transition-opacity">
             <span className="material-symbols-outlined text-6xl">inventory_2</span>
-            <span className="text-[10px] font-black uppercase tracking-[0.3em]">Visual Intel Missing</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em]">Visual Intel Ausente</span>
           </div>
         )}
         
@@ -97,11 +97,11 @@ function RaffleCard({ raffle }: { raffle: Raffle }) {
             )}
             <span className="bg-black/80 border border-white/10 text-[8px] font-black uppercase tracking-widest px-3 py-1 flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-              LIVE OPS
+              OPERAÇÕES ATIVAS
             </span>
             {isEndingSoon && (
                <span className="bg-red-900/80 border border-red-500/30 text-red-100 text-[8px] font-black uppercase tracking-widest px-3 py-1">
-                 LAST UNITS
+                 ÚLTIMAS UNIDADES
                </span>
             )}
         </div>
@@ -162,7 +162,7 @@ function RaffleCard({ raffle }: { raffle: Raffle }) {
             to={`/drop/${raffle.id}`}
             className="flex-1 bg-primary text-background-dark font-black py-4 text-[10px] uppercase tracking-[0.3em] hover:bg-white transition-all text-center flex items-center justify-center gap-3 group/btn"
           >
-            <span>SELECT TICKETS</span>
+            <span>SELECIONAR TICKETS</span>
             <span className="material-symbols-outlined text-sm group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>
           </Link>
 
@@ -225,13 +225,13 @@ function TacticalDrafter() {
           <div className="flex items-center gap-4 mb-8">
             <span className="h-px w-12 bg-primary/40" />
             <span className={`text-[10px] font-black uppercase tracking-[0.4em] ${status === 'SCANNING' ? 'text-primary animate-pulse' : status === 'LOCKED' ? 'text-green-500' : 'text-slate-500'}`}>
-              {status === 'IDLE' ? 'SYSTEM READY' : status === 'SCANNING' ? 'SCANNING OPERATORS...' : 'TARGET ACQUIRED'}
+              {status === 'IDLE' ? 'SISTEMA PRONTO' : status === 'SCANNING' ? 'ESCANEANDO OPERADORES...' : 'ALVO ADQUIRIDO'}
             </span>
             <span className="h-px w-12 bg-primary/40" />
           </div>
 
           <div className="mb-12">
-            <h2 className="text-sm font-black text-white uppercase tracking-[0.3em] mb-4 italic">TOTAL POOL SIZE</h2>
+            <h2 className="text-sm font-black text-white uppercase tracking-[0.3em] mb-4 italic">TAMANHO TOTAL DA POOL</h2>
             <input 
               type="number" 
               value={maxNumber}
@@ -255,7 +255,7 @@ function TacticalDrafter() {
              
              {status === 'LOCKED' && (
                 <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-green-500 text-background-dark text-[8px] font-black px-4 py-1 uppercase tracking-widest whitespace-nowrap">
-                    MATCH CONFIRMED: SECTOR {result}
+                    COMBINAÇÃO CONFIRMADA: SETOR {result}
                 </div>
              )}
           </div>
@@ -266,7 +266,7 @@ function TacticalDrafter() {
             className="group relative overflow-hidden bg-primary text-background-dark font-black px-12 py-5 text-[12px] uppercase tracking-[0.5em] hover:bg-white transition-all disabled:opacity-50"
           >
             <span className="relative z-10 flex items-center gap-3">
-               {isSpinning ? 'SCANNING...' : 'INITIALIZE PROTOCOL'}
+               {isSpinning ? 'ESCANEANDO...' : 'INICIALIZAR PROTOCOLO'}
                <span className="material-symbols-outlined text-sm">target</span>
             </span>
             <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
@@ -276,9 +276,9 @@ function TacticalDrafter() {
 
       <div className="mt-12 grid grid-cols-3 gap-6">
           {[
-            { label: 'ALGORITHM', val: 'SECURE_RAND_V2' },
+            { label: 'ALGORITMO', val: 'SECURE_RAND_V2' },
             { label: 'SEED', val: Date.now().toString(16).toUpperCase() },
-            { label: 'INTEGRITY', val: 'ENCRYPTED' }
+            { label: 'INTEGRIDADE', val: 'ENCRYPTED' }
           ].map(item => (
             <div key={item.label} className="bg-white/5 p-4 border-l border-primary/20">
                <span className="text-[8px] text-slate-600 font-black uppercase tracking-widest block mb-1">{item.label}</span>
@@ -342,7 +342,7 @@ export default function DropPage() {
             <span className="h-px w-16 bg-primary"></span>
             <span className="text-primary font-black uppercase tracking-[0.5em] text-[10px] flex items-center gap-2">
                 <span className="size-1.5 rounded-full bg-primary animate-ping" />
-                COMMAND CENTER: DROP DIVISION
+                CENTRO DE COMANDO: DIVISÃO DROP
             </span>
           </div>
 
@@ -380,15 +380,15 @@ export default function DropPage() {
               <div className="flex flex-wrap gap-12 animate-in fade-in slide-in-from-left-8">
                   <div className="border-l-2 border-white/10 pl-6">
                       <span className="text-4xl font-black text-white font-mono">{raffles.length}</span>
-                      <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mt-1">ACTIVE OPS</span>
+                      <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mt-1">MISSÕES ATIVAS</span>
                   </div>
                   <div className="border-l-2 border-white/10 pl-6">
                       <span className="text-4xl font-black text-white font-mono">1.2k+</span>
-                      <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mt-1">OPERATORS JOINED</span>
+                      <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mt-1">OPERADORES ALISTADOS</span>
                   </div>
                   <div className="border-l-2 border-primary pl-6">
                       <span className="text-text-primary text-4xl font-black font-mono">100%</span>
-                      <span className="text-[9px] text-primary/60 font-black uppercase tracking-widest block mt-1">VERIFIED DRAWS</span>
+                      <span className="text-[9px] text-primary/60 font-black uppercase tracking-widest block mt-1">SORTEIOS VERIFICADOS</span>
                   </div>
               </div>
             )}
@@ -404,8 +404,8 @@ export default function DropPage() {
             {/* Filter Bar HUD */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16 pb-8 border-b border-white/5">
                 <div className="flex gap-4">
-                    {['ALL DROPS', 'HIGH STAKES', 'ENDING SOON'].map(f => (
-                        <button key={f} className={`px-6 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] border transition-all ${f === 'ALL DROPS' ? 'bg-primary text-background-dark border-primary' : 'bg-transparent text-slate-500 border-white/10 hover:border-primary/40'}`}>
+                    {['TODOS OS DROPS', 'ALTO RISCO', 'TERMINANDO EM BREVE'].map(f => (
+                        <button key={f} className={`px-6 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] border transition-all ${f === 'TODOS OS DROPS' ? 'bg-primary text-background-dark border-primary' : 'bg-transparent text-slate-500 border-white/10 hover:border-primary/40'}`}>
                             {f}
                         </button>
                     ))}
@@ -413,10 +413,10 @@ export default function DropPage() {
                 
                 <div className="flex items-center gap-6">
                     <div className="text-right hidden sm:block">
-                        <span className="text-[8px] text-slate-600 font-black uppercase tracking-widest block">SYSTEM STATUS</span>
+                        <span className="text-[8px] text-slate-600 font-black uppercase tracking-widest block">STATUS DO SISTEMA</span>
                         <span className="text-[10px] text-green-500 font-black uppercase tracking-widest flex items-center gap-2">
                             <span className="size-1.5 rounded-full bg-green-500 animate-pulse" />
-                            ENCRYPTION ACTIVE
+                            CRIPTOGRAFIA ATIVA
                         </span>
                     </div>
 
@@ -462,8 +462,8 @@ export default function DropPage() {
                     Todos os sorteios no Tactical Drop Hub são regidos por algoritmos de verificação pública. O vencedor é selecionado através de um sistema de semente randômica baseada em rede, garantindo 100% de imparcialidade e transparência em tempo real.
                 </p>
                 <div className="flex gap-4">
-                    <span className="bg-primary/10 text-primary border border-primary/20 px-4 py-2 text-[9px] font-black uppercase tracking-widest">PROVABLY FAIR</span>
-                    <span className="bg-primary/10 text-primary border border-primary/20 px-4 py-2 text-[9px] font-black uppercase tracking-widest">REAL-TIME SEEDING</span>
+                    <span className="bg-primary/10 text-primary border border-primary/20 px-4 py-2 text-[9px] font-black uppercase tracking-widest">JUSTIÇA COMPROVADA</span>
+                    <span className="bg-primary/10 text-primary border border-primary/20 px-4 py-2 text-[9px] font-black uppercase tracking-widest">SEMENTE EM TEMPO REAL</span>
                 </div>
             </div>
         </div>

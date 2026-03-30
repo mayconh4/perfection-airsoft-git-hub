@@ -538,7 +538,7 @@ export function AdminProducts() {
             </tbody>
           </table>
           {!products.length && (
-            <div className="text-center py-20 text-white/20 uppercase tracking-[0.5em] font-black italic">Arsenal sem munição (Vasío)</div>
+            <div className="text-center py-20 text-white/20 uppercase tracking-[0.5em] font-black italic">Arsenal sem munição (Vazio)</div>
           )}
         </div>
       )}

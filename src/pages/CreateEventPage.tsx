@@ -145,7 +145,7 @@ export default function CreateEventPage() {
         {/* Header HUD */}
         <div className="mb-12 border-l-4 border-primary pl-8 py-4 bg-surface/10">
             <span className="text-primary font-black uppercase tracking-[0.4em] text-[10px] block mb-2">
-                {id ? 'EDIT MISSION: UPDATE INTEL' : 'NEW MISSION: SETUP OPERATION'}
+                {id ? 'EDITAR MISSÃO: ATUALIZAR INTEL' : 'NOVA MISSÃO: CONFIGURAR OPERAÇÃO'}
             </span>
             <h1 className="text-4xl font-black text-white uppercase tracking-tighter">
                 {id ? 'EDIÇÃO DE MISSÃO' : 'CRIAÇÃO DE MISSÃO'}
@@ -156,7 +156,7 @@ export default function CreateEventPage() {
             <div className="bg-surface/20 border border-white/5 p-8 space-y-8">
                 {/* Title */}
                 <div>
-                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">MISSION CODE NAME (TITLE)</label>
+                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">CODENOME DA MISSÃO (TÍTULO)</label>
                     <input 
                         type="text" 
                         required
@@ -169,7 +169,7 @@ export default function CreateEventPage() {
 
                 {/* Description */}
                 <div>
-                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">SITREP (DESCRIPTION)</label>
+                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">SITREP (DESCRIÇÃO)</label>
                     <textarea 
                         required
                         rows={6}
@@ -183,7 +183,7 @@ export default function CreateEventPage() {
                 {/* Location Selection */}
                 <div>
                     <div className="flex justify-between items-center mb-3">
-                      <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block italic">L.Z. (LOCATION / CAMPO)</label>
+                      <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block italic">L.Z. (LOCALIZAÇÃO / CAMPO)</label>
                       <Link to="/mapas?register=true" className="text-[9px] text-primary hover:underline uppercase font-bold tracking-widest">
                         + Registrar Novo Campo
                       </Link>
@@ -209,7 +209,7 @@ export default function CreateEventPage() {
                 {/* Date & Capacity */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
-                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">DEPLOIMENT DATE (DATA/HORA)</label>
+                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">DATA DE MOBILIZAÇÃO (DATA/HORA)</label>
                         <input 
                             type="datetime-local" 
                             required
@@ -219,7 +219,7 @@ export default function CreateEventPage() {
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">MAX OPERATORS (CAPACIDADE)</label>
+                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">MÁX. OPERADORES (CAPACIDADE)</label>
                         <input 
                             type="number" 
                             required
@@ -234,7 +234,7 @@ export default function CreateEventPage() {
                 {/* Price & Status */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
-                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">TICKET VALUE (PREÇO)</label>
+                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">VALOR DO TICKET (PREÇO)</label>
                         <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-black text-xs">R$</span>
                             <input 
@@ -249,16 +249,16 @@ export default function CreateEventPage() {
                         </div>
                     </div>
                     <div>
-                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">MISSION STATUS</label>
+                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">STATUS DA MISSÃO</label>
                         <select 
                             required
                             className="w-full bg-black/40 border border-white/10 p-4 text-white font-mono text-sm focus:border-primary outline-none transition-all"
                             value={formData.status}
                             onChange={e => setFormData({ ...formData, status: e.target.value as any })}
                         >
-                            <option value="draft">DRAFT (PASCUNHO)</option>
-                            <option value="published">PUBLISHED (ATIVO NO SITE)</option>
-                            <option value="closed">CLOSED (ENCERRADO)</option>
+                            <option value="draft">RASCUNHO</option>
+                            <option value="published">PUBLICADO (ATIVO NO SITE)</option>
+                            <option value="closed">ENCERRADO</option>
                         </select>
                     </div>
                 </div>
@@ -267,9 +267,9 @@ export default function CreateEventPage() {
             {/* Media Panel */}
             <div className="bg-surface/20 border border-white/5 p-8 space-y-8">
                 <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                    <h3 className="text-sm font-black text-white uppercase tracking-widest">MISSION COVER // VISUAL INTEL</h3>
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest">CAPA DA MISSÃO // VISUAL INTEL</h3>
                     <span className={`text-[8px] font-mono ${uploading ? 'text-primary animate-pulse' : 'text-primary/60'}`}>
-                        {uploading ? 'UPLOADING...' : 'STATUS: READY'}
+                        {uploading ? 'ENVIANDO...' : 'STATUS: PRONTO'}
                     </span>
                 </div>
 
@@ -313,7 +313,7 @@ export default function CreateEventPage() {
                    disabled={loading || uploading}
                    className="bg-primary text-background-dark font-black py-5 px-16 text-[11px] uppercase tracking-[0.4em] hover:bg-white transition-all shadow-[0_0_30px_rgba(255,193,7,0.2)] disabled:opacity-50"
                 >
-                   {loading ? 'PROCESSING...' : id ? 'UPDATE MISSION DATA' : 'CONFIRM MISSION DEPLOY'}
+                   {loading ? 'PROCESSANDO...' : id ? 'ATUALIZAR DADOS DA MISSÃO' : 'CONFIRMAR DEPLOY DA MISSÃO'}
                 </button>
             </div>
         </form>
