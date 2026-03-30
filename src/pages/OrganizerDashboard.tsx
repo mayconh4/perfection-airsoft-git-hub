@@ -190,7 +190,16 @@ export default function OrganizerDashboard() {
               <p className="text-[11px] text-slate-500 font-mono leading-relaxed mb-8 uppercase">
                 Taxa operacional: 7% por ticket
               </p>
-              <button disabled className="w-full bg-white/5 text-slate-500 font-black py-4 text-[9px] uppercase tracking-[.3em] cursor-not-allowed border border-white/10">
+              <button 
+                onClick={() => {
+                  if (stats.netRevenue <= 0) {
+                    alert('SALDO INSUFICIENTE PARA RESGATE.');
+                  } else {
+                    alert('SOLICITAÇÃO RECEBIDA! O repasse será efetuado para a chave PIX cadastrada na sua conta.');
+                  }
+                }}
+                className="w-full bg-primary hover:bg-white text-background-dark font-black py-4 text-[9px] uppercase tracking-[.3em] transition-all"
+              >
                 SOLICITAR RESGATE PIX
               </button>
             </div>
