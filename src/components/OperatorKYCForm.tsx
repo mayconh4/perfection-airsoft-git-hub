@@ -89,8 +89,8 @@ export function OperatorKYCForm() {
       setMessage('DADOS ENVIADOS COM SUCESSO! AGUARDANDO CRIAÇÃO DA SUBCONTA. 🎖️');
     } catch (err: any) {
       setIsError(true);
-      setMessage('ERRO AO SALVAR DADOS. 🛠️');
-      console.error(err);
+      setMessage(`ERRO: ${err.message || 'FALHA DESCONHECIDA'} 🛠️`);
+      console.error('Save KYC Error:', err);
     } finally {
       setSaving(false);
     }
