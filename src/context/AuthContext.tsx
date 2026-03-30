@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email, password,
       options: { 
         data: { full_name: name },
-        emailRedirectTo: window.location.origin
+        emailRedirectTo: `${window.location.origin}/auth/callback`
       }
     });
     return { error: error as Error | null };
@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       type: 'signup',
       email,
       options: {
-        emailRedirectTo: window.location.origin
+        emailRedirectTo: `${window.location.origin}/auth/callback`
       }
     });
     return { error: error as Error | null };
