@@ -117,68 +117,64 @@ export function OperatorKYCForm() {
       </p>
 
       <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Nome Completo / Razão Social</label>
-            <input 
-              type="text" 
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              disabled={kycStatus === 'approved'}
-              className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none disabled:opacity-50"
-            />
-          </div>
-          <div>
-            <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">E-mail Operacional</label>
-            <input 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={kycStatus === 'approved'}
-              className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none disabled:opacity-50"
-            />
-          </div>
+        <div>
+          <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Nome Completo / Razão Social</label>
+          <input 
+            type="text" 
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            disabled={kycStatus === 'approved'}
+            className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none disabled:opacity-50"
+          />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-3">
-            <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">CPF ou CNPJ</label>
-            <input 
-              type="text" 
-              value={cpfCnpj}
-              onChange={(e) => setCpfCnpj(e.target.value)}
-              disabled={kycStatus === 'approved'}
-              className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none disabled:opacity-50"
-            />
-          </div>
+        <div>
+          <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">E-mail Operacional</label>
+          <input 
+            type="email" 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={kycStatus === 'approved'}
+            className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none disabled:opacity-50"
+          />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Tipo da Chave PIX</label>
-            <select 
-              value={pixKeyType}
-              onChange={(e) => setPixKeyType(e.target.value)}
-              disabled={kycStatus === 'approved'}
-              className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none disabled:opacity-50"
-            >
-              <option value="cpf">CPF</option>
-              <option value="cnpj">CNPJ</option>
-              <option value="email">E-mail</option>
-              <option value="phone">Celular</option>
-              <option value="random">Chave Aleatória</option>
-            </select>
-          </div>
-          <div className="md:col-span-2">
-            <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Chave PIX de Recebimento</label>
-            <input 
-              type="text" 
-              value={pixKey}
-              onChange={(e) => setPixKey(e.target.value)}
-              disabled={kycStatus === 'approved'}
-              className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none disabled:opacity-50"
-            />
-          </div>
+        <div>
+          <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">CPF ou CNPJ</label>
+          <input 
+            type="text" 
+            value={cpfCnpj}
+            onChange={(e) => setCpfCnpj(e.target.value)}
+            disabled={kycStatus === 'approved'}
+            className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none disabled:opacity-50"
+          />
+        </div>
+
+        <div>
+          <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Tipo da Chave PIX</label>
+          <select 
+            value={pixKeyType}
+            onChange={(e) => setPixKeyType(e.target.value)}
+            disabled={kycStatus === 'approved'}
+            className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none disabled:opacity-50"
+          >
+            <option value="cpf">CPF</option>
+            <option value="cnpj">CNPJ</option>
+            <option value="email">E-mail</option>
+            <option value="phone">Celular</option>
+            <option value="random">Chave Aleatória</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Chave PIX de Recebimento</label>
+          <input 
+            type="text" 
+            value={pixKey}
+            onChange={(e) => setPixKey(e.target.value)}
+            disabled={kycStatus === 'approved'}
+            className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none disabled:opacity-50"
+          />
         </div>
 
         <div className="pt-4 flex items-center justify-between gap-4 border-t border-white/5 mt-4">
