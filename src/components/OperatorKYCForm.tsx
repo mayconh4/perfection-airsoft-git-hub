@@ -178,9 +178,6 @@ export function OperatorKYCForm() {
 
       if (error) throw error;
       
-      // Busca a Sessao atual na mao
-      const { data: { session } } = await supabase.auth.getSession();
-      
       // FORÇANDO TEST_BYPASS para todos os usuários durante a Fase de Homologação Asaas
       // Isso mata o erro de 'Invalid JWT' que está ocorrendo em alguns navegadores/ambientes locais
       const userToken = 'TEST_BYPASS';
