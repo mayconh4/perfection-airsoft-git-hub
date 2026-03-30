@@ -71,7 +71,7 @@ foreach ($funcName in $FUNCTIONS) {
 
     $metadata    = '{"name":"' + $funcName + '","verify_jwt":false}'
     $metaContent = New-Object System.Net.Http.StringContent($metadata, [System.Text.Encoding]::UTF8, "application/json")
-    $fileContent  = New-Object System.Net.Http.ByteArrayContent($funcCode)
+    $fileContent  = New-Object System.Net.Http.ByteArrayContent(,$funcCode)
     $fileContent.Headers.ContentType = [System.Net.Http.Headers.MediaTypeHeaderValue]::Parse("application/typescript")
 
     $form = New-Object System.Net.Http.MultipartFormDataContent
@@ -92,7 +92,7 @@ foreach ($funcName in $FUNCTIONS) {
             # Tenta POST para criar a funcao se nao existir
             $form2 = New-Object System.Net.Http.MultipartFormDataContent
             $metaContent2 = New-Object System.Net.Http.StringContent($metadata, [System.Text.Encoding]::UTF8, "application/json")
-            $fileContent2  = New-Object System.Net.Http.ByteArrayContent($funcCode)
+            $fileContent2  = New-Object System.Net.Http.ByteArrayContent(,$funcCode)
             $fileContent2.Headers.ContentType = [System.Net.Http.Headers.MediaTypeHeaderValue]::Parse("application/typescript")
             $form2.Add($metaContent2, "metadata")
             $form2.Add($fileContent2, "file", "index.ts")
