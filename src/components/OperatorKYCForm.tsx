@@ -122,6 +122,21 @@ export function OperatorKYCForm() {
     setBirthDate(val);
   };
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/\D/g, '');
+    if (val.length > 11) val = val.slice(0, 11);
+    
+    // Mascara visual de Celular (00) 0 0000-0000
+    if (val.length === 11) {
+      val = '(' + val.slice(0, 2) + ') ' + val.slice(2, 3) + ' ' + val.slice(3, 7) + '-' + val.slice(7);
+    } else if (val.length > 6) {
+      val = '(' + val.slice(0, 2) + ') ' + val.slice(2, 6) + '-' + val.slice(6);
+    } else if (val.length > 2) {
+      val = '(' + val.slice(0, 2) + ') ' + val.slice(2);
+    }
+    setPhone(val);
+  };
+
   const handleNext = () => setStep(prev => Math.min(prev + 1, 3));
   const handlePrev = () => setStep(prev => Math.max(prev - 1, 1));
 
@@ -172,7 +187,8 @@ export function OperatorKYCForm() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userToken}`
+          'Authorization': `Bearer ${userToken}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
         },
         body: JSON.stringify({
           fullName, email, cpfCnpj, phone, cep, city, street, neighborhood, addressNumber: number, complement, state, birthDate
@@ -289,9 +305,10 @@ export function OperatorKYCForm() {
               <input 
                 type="text" 
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={handlePhoneChange}
                 disabled={kycStatus === 'approved'}
-                placeholder="(00) 00000-0000"
+                placeholder="(00) 9 0000-0000"
+                maxLength={16}
                 className="w-full bg-background-dark/50 border border-white/10 p-3 text-[11px] font-mono text-white outline-none focus:border-primary transition-colors disabled:opacity-50"
               />
               <span className="text-[8px] text-slate-500 mt-1 block">Necessário para ativação e segurança da conta.</span>

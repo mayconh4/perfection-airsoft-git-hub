@@ -34,15 +34,22 @@ Deno.serve(async (req: Request) => {
     const token = authHeader.replace('Bearer ', '').trim();
     let userId = 'teste-123';
     
-    if (token !== 'TEST_BYPASS') {
-      const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-      
-      if (authError || !user) {
-        console.error('Auth Error:', authError);
-        const prefix = token ? token.substring(0, 15) + '...' : 'VAZIO';
-        throw new Error(`Auth Fatal: [${authError?.message}] | Token lido: ${prefix}`);
+    // Bypass de Teste em maiusculo/minusculo
+    if (token.toUpperCase() !== 'TEST_BYPASS') {
+      try {
+        const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+        
+        if (authError || !user) {
+          console.error('Auth Error Detalhado:', authError);
+          const prefix = token ? token.substring(0, 20) + '...' : 'VAZIO';
+          throw new Error(`BLOQUEIO DE SEGURANÇA: [${authError?.message || 'Token Rejeitado'}] | Identificador: ${prefix}`);
+        }
+        userId = user.id;
+      } catch (err: any) {
+        throw new Error(`Erro Crítico de Autenticação: ${err.message}`);
       }
-      userId = user.id;
+    } else {
+      console.log('>>> BYPASS DE TESTE ATIVADO PARA DESENVOLVIMENTO <<<');
     }
 
     // Recebe os dados validados do front-end
