@@ -123,7 +123,7 @@ export function LoginPage() {
           </div>
 
           {message && (
-            <div className={`p-3 text-xs text-center uppercase tracking-widest border ${message.includes('enviado') || message.includes('ascensão') || message.includes('reenviado') ? 'border-green-500/30 text-green-400 bg-green-500/5' : 'border-red-500/30 text-red-400 bg-red-500/5'}`}>
+            <div className={`p-3 text-xs text-center uppercase tracking-widest border ${message.toLowerCase().includes('enviado') || message.toLowerCase().includes('ascensão') || message.toLowerCase().includes('reenviado') ? 'border-green-500/30 text-green-400 bg-green-500/5' : 'border-red-500/30 text-red-400 bg-red-500/5'}`}>
               <p>{message}</p>
               {(message.includes('confirmado') || message.includes('exist')) && (
                 <button 
