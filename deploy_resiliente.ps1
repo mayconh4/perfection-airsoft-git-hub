@@ -45,6 +45,7 @@ if ([string]::IsNullOrWhiteSpace($gitStatus)) {
     while ($pushAttempts -lt 3 -and -not $pushSuccess) {
         $pushAttempts++
         Write-Host "Tentativa de git push $pushAttempts/3..."
+        $LASTEXITCODE = 0
         git push
         if ($LASTEXITCODE -eq 0) {
             $pushSuccess = $true
@@ -65,7 +66,8 @@ $deployPaymentSuccess = $false
 while ($deployPaymentAttempts -lt 3 -and -not $deployPaymentSuccess) {
     $deployPaymentAttempts++
     Write-Host "Deploy mercadopago-payment (Tentativa $deployPaymentAttempts/3)..."
-    supabase functions deploy mercadopago-payment
+    $LASTEXITCODE = 0
+    npx supabase functions deploy mercadopago-payment --project-ref seewdqetyolfmqsiyban
     if ($LASTEXITCODE -eq 0) {
         $deployPaymentSuccess = $true
         $Report.DeployPayment = "OK"
@@ -80,7 +82,8 @@ $deployWebhookSuccess = $false
 while ($deployWebhookAttempts -lt 3 -and -not $deployWebhookSuccess) {
     $deployWebhookAttempts++
     Write-Host "Deploy mercadopago-webhook (Tentativa $deployWebhookAttempts/3)..."
-    supabase functions deploy mercadopago-webhook
+    $LASTEXITCODE = 0
+    npx supabase functions deploy mercadopago-webhook --project-ref seewdqetyolfmqsiyban
     if ($LASTEXITCODE -eq 0) {
         $deployWebhookSuccess = $true
         $Report.DeployWebhook = "OK"
@@ -93,7 +96,8 @@ while ($deployWebhookAttempts -lt 3 -and -not $deployWebhookSuccess) {
 Write-Host "`n========================================="
 Write-Host "5. Verificacao das funcoes"
 Write-Host "========================================="
-supabase functions list
+$LASTEXITCODE = 0
+npx supabase functions list --project-ref seewdqetyolfmqsiyban
 if ($LASTEXITCODE -eq 0) {
     $Report.Verificacao = "OK"
 } else {
