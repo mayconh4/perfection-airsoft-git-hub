@@ -64,6 +64,21 @@ export default async function handler(req: Request) {
           image = ensureAbsolute(product.image_url || '');
         }
       }
+    } else if (path.startsWith('/eventos/')) {
+      const id = path.replace('/eventos/', '');
+      if (id && id !== 'criar') {
+        const { data: event } = await supabase
+          .from('events')
+          .select('title, description, image_url')
+          .eq('id', id)
+          .single();
+
+        if (event) {
+          title = event.title;
+          description = event.description || description;
+          image = ensureAbsolute(event.image_url || '');
+        }
+      }
     }
 
     // 2. Buscar o index.html original (template)
