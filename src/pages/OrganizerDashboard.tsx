@@ -16,6 +16,7 @@ export default function OrganizerDashboard() {
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<any[]>([]);
   const [stats, setStats] = useState<EventStats>({ ticketsSold: 0, revenue: 0, netRevenue: 0 });
+  const [activeTab, setActiveTab] = useState<'missions' | 'logistics' | 'reports'>('missions');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -127,15 +128,35 @@ export default function OrganizerDashboard() {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-12">
-          {/* Active Missions */}
-          <div className="lg:col-span-2">
-            <h2 className="text-lg font-black text-white uppercase tracking-widest mb-6 flex items-center gap-4">
-              Minhas Missões
-              <span className="h-px flex-1 bg-white/5"></span>
-            </h2>
+        {/* Tab Headers */}
+        <div className="flex items-center gap-8 border-b border-white/5 mb-12">
+          <button 
+            onClick={() => setActiveTab('missions')}
+            className={`pb-4 text-[10px] uppercase font-black tracking-[0.3em] transition-all relative ${activeTab === 'missions' ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
+          >
+            Minhas Missões
+            {activeTab === 'missions' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></span>}
+          </button>
+          <button 
+            onClick={() => setActiveTab('logistics')}
+            className={`pb-4 text-[10px] uppercase font-black tracking-[0.3em] transition-all relative ${activeTab === 'logistics' ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
+          >
+            Logística de Recebimento
+            {activeTab === 'logistics' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></span>}
+          </button>
+          <button 
+            onClick={() => setActiveTab('reports')}
+            className={`pb-4 text-[10px] uppercase font-black tracking-[0.3em] transition-all relative ${activeTab === 'reports' ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
+          >
+            Relatórios e Auditoria
+            {activeTab === 'reports' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></span>}
+          </button>
+        </div>
 
-            <div className="space-y-4">
+        {/* Tab Content */}
+        <div className="min-h-[400px]">
+          {activeTab === 'missions' && (
+            <div className="space-y-4 max-w-4xl">
               {events.length > 0 ? (
                 events.map(event => (
                   <div key={event.id} className="bg-surface/20 border border-white/10 p-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-primary/30 transition-all">
@@ -170,49 +191,72 @@ export default function OrganizerDashboard() {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-20 border border-dashed border-white/5">
+                <div className="text-center py-20 border border-dashed border-white/5 bg-surface/10">
                   <span className="material-symbols-outlined text-4xl text-white/5 mb-4 block">event_busy</span>
                   <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Nenhuma missão em andamento.</p>
                 </div>
               )}
             </div>
-          </div>
+          )}
 
-          {/* Right Sidebar */}
-          <div className="lg:col-span-1 space-y-8">
-            <h2 className="text-lg font-black text-white uppercase tracking-widest mb-6">Logística de Recebimento</h2>
-            
-            <OperatorKYCForm />
+          {activeTab === 'logistics' && (
+            <div className="max-w-xl mx-auto space-y-8">
+              <div className="text-center mb-8">
+                <h3 className="text-xl font-black text-white uppercase tracking-widest mb-2">Carteira do Organizador</h3>
+                <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">Gerencie seus recebimentos via Pix Split</p>
+              </div>
+              
+              <OperatorKYCForm />
 
-            <div className="bg-primary/5 border border-primary/20 p-8">
-              <span className="material-symbols-outlined text-primary text-3xl mb-4">info</span>
-              <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6">Regras Operacionais</h3>
-              <p className="text-[11px] text-slate-500 font-mono leading-relaxed mb-8 uppercase">
-                Taxa operacional: 7% por ticket
-              </p>
-              <button 
-                onClick={() => {
-                  if (stats.netRevenue <= 0) {
-                    alert('SALDO INSUFICIENTE PARA RESGATE.');
-                  } else {
-                    alert('SOLICITAÇÃO RECEBIDA! O repasse será efetuado para a chave PIX cadastrada na sua conta.');
-                  }
-                }}
-                className="w-full bg-primary hover:bg-white text-background-dark font-black py-4 text-[9px] uppercase tracking-[.3em] transition-all"
-              >
-                SOLICITAR RESGATE PIX
-              </button>
+              <div className="bg-primary/5 border border-primary/20 p-8 mt-12">
+                <span className="material-symbols-outlined text-primary text-3xl mb-4">info</span>
+                <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6">Regras de Saque</h3>
+                <p className="text-[11px] text-slate-500 font-mono leading-relaxed mb-8 uppercase">
+                  Taxa operacional: 7% por ticket. <br/>
+                  Liberação: Saldo disponível para resgate imediato após confirmação do webhook.
+                </p>
+                <button 
+                  onClick={() => {
+                    if (stats.netRevenue <= 0) {
+                      alert('SALDO INSUFICIENTE PARA RESGATE.');
+                    } else {
+                      alert('SOLICITAÇÃO RECEBIDA! O repasse será efetuado para a chave PIX cadastrada na sua conta.');
+                    }
+                  }}
+                  className="w-full bg-primary hover:bg-white text-background-dark font-black py-4 text-[9px] uppercase tracking-[.3em] transition-all"
+                >
+                  SOLICITAR RESGATE PIX
+                </button>
+              </div>
             </div>
+          )}
 
-            <div className="mt-8 border border-white/5 p-8">
-               <h4 className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-4">Relatórios</h4>
-               <ul className="space-y-3">
-                 <li><button className="text-[10px] text-white/50 hover:text-primary transition-all font-mono uppercase">Lista de Operadores (CSV)</button></li>
-                 <li><button className="text-[10px] text-white/50 hover:text-primary transition-all font-mono uppercase">Extrato Financeiro Mensal</button></li>
-                 <li><button className="text-[10px] text-white/50 hover:text-primary transition-all font-mono uppercase">Performance de Marketing</button></li>
-               </ul>
+          {activeTab === 'reports' && (
+            <div className="max-w-2xl mx-auto border border-white/5 p-12 bg-surface/20">
+               <div className="flex items-center gap-4 mb-8">
+                 <span className="material-symbols-outlined text-3xl text-primary">analytics</span>
+                 <h3 className="text-xl font-black text-white uppercase tracking-widest">Relatórios e Auditoria</h3>
+               </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <button className="flex flex-col items-start gap-2 p-6 bg-white/5 border border-white/10 text-white/50 hover:text-primary hover:border-primary/40 transition-all text-left">
+                   <span className="text-[10px] font-black uppercase tracking-widest text-white">Lista de Operadores</span>
+                   <span className="text-[9px] font-mono text-slate-500">Exportar dados em CSV</span>
+                 </button>
+                 <button className="flex flex-col items-start gap-2 p-6 bg-white/5 border border-white/10 text-white/50 hover:text-primary hover:border-primary/40 transition-all text-left">
+                   <span className="text-[10px] font-black uppercase tracking-widest text-white">Extrato Financeiro</span>
+                   <span className="text-[9px] font-mono text-slate-500">Consolidado mensal de vendas</span>
+                 </button>
+                 <button className="flex flex-col items-start gap-2 p-6 bg-white/5 border border-white/10 text-white/50 hover:text-primary hover:border-primary/40 transition-all text-left">
+                   <span className="text-[10px] font-black uppercase tracking-widest text-white">Performance de Marketing</span>
+                   <span className="text-[9px] font-mono text-slate-500">Taxas de clique e conversão</span>
+                 </button>
+                 <button className="flex flex-col items-start gap-2 p-6 bg-white/5 border border-white/10 text-white/50 hover:text-primary hover:border-primary/40 transition-all text-left">
+                   <span className="text-[10px] font-black uppercase tracking-widest text-white">Histórico de Saques</span>
+                   <span className="text-[9px] font-mono text-slate-500">Logs de transferências PIX</span>
+                 </button>
+               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
