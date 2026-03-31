@@ -23,11 +23,11 @@ export default function SecurityNoticePage() {
         {/* Messaging Body */}
         <div className="space-y-8 border-l-2 border-primary/30 pl-8 py-2">
           <p className="text-xs text-slate-400 font-mono leading-relaxed uppercase tracking-widest">
-            PARA GARANTIR A SEGURANÇA DA NOSSA COMUNIDADE DE OPERADORES E CUMPRIR AS NORMAS DE COMBATE A FRAUDES E LAVAGEM DE DINHEIRO (AML), SOLICITAMOS A VERIFICAÇÃO OBRIGATÓRIA DE SUA IDENTIDADE.
+            PARA GARANTIR A SEGURANÇA DA NOSSA COMUNIDADE DE OPERADORES E CUMPRIR AS NORMAS DE COMBATE A FRAUDES E GOLPES, SOLICITAMOS A VERIFICAÇÃO OBRIGATÓRIA DE SUA IDENTIDADE.
           </p>
           
           <p className="text-xs text-slate-400 font-mono leading-relaxed uppercase tracking-widest">
-            SEUS DADOS SÃO CRIPTOGRAFADOS E USADOS EXCLUSIVAMENTE PARA VALIDAR SUA CONTA DE RECEBIMENTOS NO GATEWAY FINANCEIRO (ASAAS), PERMITINDO SAQUES INSTANTÂNEOS E LIQUIDEZ TOTAL NAS SUAS MISSÕES.
+            SEUS DADOS SÃO CRIPTOGRAFADOS E USADOS EXCLUSIVAMENTE PARA VALIDAR SUA CONTA DE RECEBIMENTOS, PERMITINDO SAQUES DAS SUAS MISSÕES.
           </p>
         </div>
 
