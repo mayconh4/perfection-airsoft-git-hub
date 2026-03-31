@@ -75,14 +75,17 @@ Deno.serve(async (req: Request) => {
           // Cálculo: Organizador paga a taxa do ADM (7%) + Custo do Asaas (R$ 0,99)
           const operatorShare = amount - (amount * platformFeePercent) - asaasPixCost;
           
-          // 4. Buscar Nível de Confiança do Organizador
-          const { data: profile } = await supabase.from('profiles').select('trust_level').eq('id', raffle.creator_id).single();
-          const isElite = (profile?.trust_level || 0) >= 3;
-
+          // 4. Buscar Nível de Confiança e Status de Verificação do Organizador
+          const { data: profile } = await supabase.from('profiles').select('trust_level, kyc_status').eq('id', raffle.creator_id).single();
+          
+          // REQUERIMENTO KILLSTREAK NÍVEL 3 (CARE PACKAGE):
+          // 3 Entregas Concluídas + Documentos Aprovados
+          const isElite = (profile?.trust_level || 0) >= 3 && profile?.kyc_status === 'approved';
+ 
           const { data: balance } = await supabase.from('user_balances').select('*').eq('user_id', raffle.creator_id).single();
           
           const creditField = isElite ? 'available_balance' : 'pending_balance';
-          console.log(`[ASAAS-WEBHOOK] Organizador Elite: ${isElite} -> Jogando p/ ${creditField}`);
+          console.log(`[ASAAS-WEBHOOK] Organizador Elite (Level 3 + KYC): ${isElite} -> Jogando p/ ${creditField}`);
 
           if (balance) {
             const updatePayload: any = {
