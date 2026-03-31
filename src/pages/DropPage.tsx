@@ -404,7 +404,7 @@ export default function DropPage() {
             {/* Filter Bar HUD */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16 pb-8 border-b border-white/5">
                 <div className="flex gap-4">
-                    {['TODOS OS DROPS', 'ALTO RISCO', 'TERMINANDO EM BREVE'].map(f => (
+                    {['TODOS OS DROPS', 'DROPS DE ELITE', 'TERMINANDO EM BREVE'].map(f => (
                         <button key={f} className={`px-6 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] border transition-all ${f === 'TODOS OS DROPS' ? 'bg-primary text-background-dark border-primary' : 'bg-transparent text-slate-500 border-white/10 hover:border-primary/40'}`}>
                             {f}
                         </button>
