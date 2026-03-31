@@ -91,7 +91,7 @@ export function HomePage() {
 
   return (
     <>
-      <SEO />
+      <SEO image="https://www.perfectionairsoft.com.br/og-image.png" />
       <div className="flex flex-col">
       {/* Hero Section - Elite Operator Carousel */}
       <section className="relative min-h-[450px] lg:h-[500px] w-full flex items-center overflow-hidden border-b border-white/5 bg-background-dark">
