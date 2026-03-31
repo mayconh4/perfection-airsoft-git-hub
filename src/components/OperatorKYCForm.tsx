@@ -28,6 +28,12 @@ export function OperatorKYCForm() {
   const [pixKeyType, setPixKeyType] = useState('cpf');
   const [pixKey, setPixKey] = useState('');
   
+  // Etapa 4: Identificação Tática (Arquivos)
+  const [docFront, setDocFront] = useState<File | null>(null);
+  const [docBack, setDocBack] = useState<File | null>(null);
+  const [selfie, setSelfie] = useState<File | null>(null);
+  const [uploadingDocs, setUploadingDocs] = useState(false);
+  
   // Status Local
   const [role, setRole] = useState('user');
   const [kycStatus, setKycStatus] = useState('pending');
@@ -171,7 +177,7 @@ export function OperatorKYCForm() {
     setPhone(val);
   };
 
-  const handleNext = () => setStep(prev => Math.min(prev + 1, 3));
+  const handleNext = () => setStep(prev => Math.min(prev + 1, 4));
   const handlePrev = () => setStep(prev => Math.max(prev - 1, 1));
 
   const handleSave = async () => {
@@ -186,13 +192,34 @@ export function OperatorKYCForm() {
     if (!cep) { setIsError(true); setMessage('ERRO: PREENCHA SEU CEP. 🛠️'); setStep(2); return; }
     if (!number) { setIsError(true); setMessage('ERRO: PREENCHA O NÚMERO DO ENDEREÇO. 🛠️'); setStep(2); return; }
     if (!pixKey) { setIsError(true); setMessage('ERRO: PREENCHA SUA CHAVE PIX. 🛠️'); setStep(3); return; }
+    if (!docFront || !docBack || !selfie) { setIsError(true); setMessage('ERRO: FAÇA O UPLOAD DE TODOS OS DOCUMENTOS NA ETAPA 4. 🛠️'); setStep(4); return; }
 
+    setUploadingDocs(true);
     setSaving(true);
     setIsError(false);
-    setMessage('ENVIANDO DADOS PARA VERIFICAÇÃO...');
-    
+    setMessage('UPLINK DE DOCUMENTOS... 🛰️');
+
     try {
-      // 1. Atualiza o banco de dados (Supabase) com todos os campos novos
+      if (!user) return;
+      
+      // 1. Upload de Documentos para o Supabase Storage
+      const uploadDoc = async (file: File, type: string) => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}_${type}_${Math.random()}.${fileExt}`;
+        const { data, error } = await supabase.storage
+          .from('operator-docs')
+          .upload(fileName, file);
+        if (error) throw error;
+        return data.path;
+      };
+
+      const docFrontPath = await uploadDoc(docFront, 'front');
+      const docBackPath = await uploadDoc(docBack, 'back');
+      const selfiePath = await uploadDoc(selfie, 'selfie');
+
+      setMessage('ATUALIZANDO PERFIL TÁTICO...');
+      
+      // 2. Atualiza o banco de dados (Supabase) com todos os campos e documentos
       const { error } = await supabase
         .from('profiles')
         .update({ 
@@ -206,7 +233,11 @@ export function OperatorKYCForm() {
           street: street,
           neighborhood: neighborhood,
           address_number: number,
-          complement: complement
+          complement: complement,
+          document_front_url: docFrontPath,
+          document_back_url: docBackPath,
+          selfie_url: selfiePath,
+          kyc_status: 'waiting_approval' 
         })
         .eq('id', user.id);
 
@@ -261,6 +292,7 @@ export function OperatorKYCForm() {
       console.error('Save KYC Error:', err);
     } finally {
       setSaving(false);
+      setUploadingDocs(false);
     }
   };
 
@@ -269,7 +301,12 @@ export function OperatorKYCForm() {
       {/* Overlay para contas aprovadas */}
       {kycStatus === 'approved' && (
         <div className="absolute top-0 right-0 bg-green-500/20 text-green-400 text-[10px] font-black uppercase tracking-widest px-4 py-1 border-b border-l border-green-500/30">
-          CONTA VERIFICADA
+          IDENTIDADE VALIDADA
+        </div>
+      )}
+      {kycStatus === 'waiting_approval' && (
+        <div className="absolute top-0 right-0 bg-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest px-4 py-1 border-b border-l border-blue-500/30 animate-pulse">
+          AGUARDANDO VALIDAÇÃO
         </div>
       )}
 
@@ -289,6 +326,7 @@ export function OperatorKYCForm() {
         <div className={`h-1 flex-1 transition-all duration-300 ${step >= 1 ? 'bg-primary' : 'bg-white/10'}`} />
         <div className={`h-1 flex-1 transition-all duration-300 ${step >= 2 ? 'bg-primary' : 'bg-white/10'}`} />
         <div className={`h-1 flex-1 transition-all duration-300 ${step >= 3 ? 'bg-primary' : 'bg-white/10'}`} />
+        <div className={`h-1 flex-1 transition-all duration-300 ${step >= 4 ? 'bg-primary' : 'bg-white/10'}`} />
       </div>
 
       <div className="space-y-4">
@@ -480,6 +518,51 @@ export function OperatorKYCForm() {
           </div>
         )}
 
+        {step === 4 && (
+          <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+            <h4 className="text-[10px] text-white font-black uppercase tracking-widest mb-4 border-b border-white/5 pb-2">4. Identificação Tática</h4>
+            
+            <p className="text-[9px] text-slate-500 font-mono uppercase italic leading-tight">
+              Anexe fotos nítidas do seu documento (RG ou CNH) e uma Selfie segurando o documento ao lado do rosto.
+            </p>
+
+            <div className="space-y-4">
+              <div className="bg-background-dark/30 border border-dashed border-white/10 p-4 relative">
+                <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-2">FRENTE DO DOCUMENTO (RG/CNH)</label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => setDocFront(e.target.files?.[0] || null)}
+                  className="text-[10px] text-slate-400 file:bg-primary file:text-background-dark file:border-0 file:px-4 file:py-1 file:mr-4 file:font-black file:uppercase file:cursor-pointer w-full"
+                />
+                {docFront && <span className="text-[10px] text-primary mt-1 block font-mono">✓ {docFront.name}</span>}
+              </div>
+
+              <div className="bg-background-dark/30 border border-dashed border-white/10 p-4">
+                <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-2">VERSO DO DOCUMENTO (RG/CNH)</label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => setDocBack(e.target.files?.[0] || null)}
+                  className="text-[10px] text-slate-400 file:bg-primary file:text-background-dark file:border-0 file:px-4 file:py-1 file:mr-4 file:font-black file:uppercase file:cursor-pointer w-full"
+                />
+                {docBack && <span className="text-[10px] text-primary mt-1 block font-mono">✓ {docBack.name}</span>}
+              </div>
+
+              <div className="bg-background-dark/30 border border-dashed border-white/10 p-4">
+                <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-2">SELFIE COM DOCUMENTO</label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => setSelfie(e.target.files?.[0] || null)}
+                  className="text-[10px] text-slate-400 file:bg-primary file:text-background-dark file:border-0 file:px-4 file:py-1 file:mr-4 file:font-black file:uppercase file:cursor-pointer w-full"
+                />
+                {selfie && <span className="text-[10px] text-primary mt-1 block font-mono">✓ {selfie.name}</span>}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="pt-6 flex items-center justify-between gap-4 border-t border-white/5 mt-8">
             <div className="hidden md:block">
                 <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Nível de Acesso</label>
@@ -502,7 +585,7 @@ export function OperatorKYCForm() {
                 </button>
               )}
               
-              {step < 3 ? (
+              {step < 4 ? (
                 <button 
                   onClick={handleNext}
                   className="bg-primary hover:bg-white text-background-dark font-black py-4 px-8 text-[9px] uppercase tracking-[0.2em] transition-all w-full md:w-auto"
@@ -516,7 +599,7 @@ export function OperatorKYCForm() {
                     disabled={saving}
                     className="bg-primary hover:bg-white text-background-dark font-black py-4 px-8 text-[9px] uppercase tracking-[0.2em] transition-all disabled:opacity-50 w-full md:w-auto"
                   >
-                    {saving ? 'PROCESSANDO...' : 'ENVIAR DADOS'}
+                    {saving ? (uploadingDocs ? 'UPLINK DE ARQUIVOS...' : 'PROCESSANDO...') : 'FINALIZAR VERIFICAÇÃO'}
                   </button>
                 )
               )}

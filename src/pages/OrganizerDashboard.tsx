@@ -157,18 +157,14 @@ export default function OrganizerDashboard() {
             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Tickets Vendidos</span>
             <span className="text-4xl font-black text-white">{stats.ticketsSold}</span>
           </div>
-          <div className="bg-surface/30 border border-white/5 p-8 border-l-orange-500/40 border-l-4">
-            <span className="text-[10px] text-orange-500/60 font-black uppercase tracking-widest block mb-1 font-mono italic">Saldo em Garantia</span>
-            <span className="text-4xl font-black text-white">R$ {stats.pendingBalance.toFixed(2)}</span>
-            <span className="text-[8px] text-slate-500 block mt-2 uppercase">Liberado após confirmação de entrega</span>
-          </div>
           <div className="bg-surface/30 border border-white/5 p-8 border-l-primary/40 border-l-4">
             <span className="text-[10px] text-primary/60 font-black uppercase tracking-widest block mb-1 font-mono italic">Saldo Disponível</span>
             <span className="text-4xl font-black text-primary">R$ {stats.netRevenue.toFixed(2)}</span>
+            <span className="text-[8px] text-slate-500 block mt-2 uppercase italic">Saque liberado instantaneamente</span>
           </div>
           <div className="bg-surface/30 border border-white/5 p-8">
             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Total Acumulado</span>
-            <span className="text-sm font-black text-white uppercase tracking-widest">R$ {stats.revenue.toFixed(2)}</span>
+            <span className="text-4xl font-black text-white">R$ {stats.revenue.toFixed(2)}</span>
           </div>
         </div>
 

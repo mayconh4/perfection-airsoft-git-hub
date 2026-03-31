@@ -79,15 +79,15 @@ Deno.serve(async (req: Request) => {
           
           if (balance) {
             await supabase.from('user_balances').update({
-              pending_balance: Number(balance.pending_balance || 0) + operatorShare,
+              available_balance: Number(balance.available_balance || 0) + operatorShare,
               total_earned: Number(balance.total_earned || 0) + operatorShare,
               updated_at: new Date().toISOString()
             }).eq('user_id', raffle.creator_id);
           } else {
             await supabase.from('user_balances').insert({
               user_id: raffle.creator_id,
-              pending_balance: operatorShare,
-              available_balance: 0,
+              available_balance: operatorShare,
+              pending_balance: 0,
               total_earned: operatorShare
             });
           }
