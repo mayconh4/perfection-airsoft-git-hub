@@ -28,71 +28,76 @@ export default async function handler(req: Request) {
     const ensureAbsolute = (urlStr: string) => {
       if (!urlStr) return image;
       if (urlStr.startsWith('http')) return urlStr;
-      return `${url.origin}${urlStr.startsWith('/') ? '' : '/'}${urlStr}`;
+      // Forçar o domínio de produção para garantir que crawlers externos acessem a imagem
+      const productionDomain = 'https://www.perfectionairsoft.com.br';
+      return `${productionDomain}${urlStr.startsWith('/') ? '' : '/'}${urlStr}`;
     };
 
+    // ... (restante da lógica de extração permanece igual)
     // 1. Extração de Identificadores (Busca Dual: ID ou Slug)
+    // ...
+    // (Pulei para a injeção para ser breve no replacement, mas a lógica de extração deve ser mantida)
+    
+    // (Recriando o bloco completo para evitar erro de match)
     if (path.startsWith('/drop/')) {
-      const slugOrId = path.replace('/drop/', '');
-      if (slugOrId && slugOrId !== 'criar') {
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
-        const { data: raffle } = await supabase
-          .from('raffles')
-          .select('title, description, image_url')
-          .or(isUUID ? `id.eq.${slugOrId}` : `slug.eq.${slugOrId}`)
-          .single();
-
-        if (raffle) {
-          title = raffle.title;
-          description = raffle.description || description;
-          image = ensureAbsolute(raffle.image_url || '');
+        const slugOrId = path.replace('/drop/', '');
+        if (slugOrId && slugOrId !== 'criar') {
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+          const { data: raffle } = await supabase
+            .from('raffles')
+            .select('title, description, image_url')
+            .or(isUUID ? `id.eq.${slugOrId}` : `slug.eq.${slugOrId}`)
+            .single();
+  
+          if (raffle) {
+            title = raffle.title;
+            description = raffle.description || description;
+            image = ensureAbsolute(raffle.image_url || '');
+          }
+        }
+      } else if (path.startsWith('/produto/')) {
+        const slugOrId = path.replace('/produto/', '');
+        if (slugOrId) {
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+          const { data: product } = await supabase
+            .from('products')
+            .select('name, description, image_url')
+            .or(isUUID ? `id.eq.${slugOrId}` : `slug.eq.${slugOrId}`)
+            .single();
+  
+          if (product) {
+            title = product.name;
+            description = product.description || description;
+            image = ensureAbsolute(product.image_url || '');
+          }
+        }
+      } else if (path.startsWith('/eventos/')) {
+        const id = path.replace('/eventos/', '');
+        if (id && id !== 'criar') {
+          const { data: event } = await supabase
+            .from('events')
+            .select('title, description, image_url')
+            .eq('id', id)
+            .single();
+  
+          if (event) {
+            title = event.title;
+            description = event.description || description;
+            image = ensureAbsolute(event.image_url || '');
+          }
         }
       }
-    } else if (path.startsWith('/produto/')) {
-      const slugOrId = path.replace('/produto/', '');
-      if (slugOrId) {
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
-        const { data: product } = await supabase
-          .from('products')
-          .select('name, description, image_url')
-          .or(isUUID ? `id.eq.${slugOrId}` : `slug.eq.${slugOrId}`)
-          .single();
-
-        if (product) {
-          title = product.name;
-          description = product.description || description;
-          image = ensureAbsolute(product.image_url || '');
-        }
-      }
-    } else if (path.startsWith('/eventos/')) {
-      const id = path.replace('/eventos/', '');
-      if (id && id !== 'criar') {
-        const { data: event } = await supabase
-          .from('events')
-          .select('title, description, image_url')
-          .eq('id', id)
-          .single();
-
-        if (event) {
-          title = event.title;
-          description = event.description || description;
-          image = ensureAbsolute(event.image_url || '');
-        }
-      }
-    }
 
     // 2. Buscar o index.html original (template)
-    // Usamos um fallback para localhost em desenvolvimento e o host real em produção
-    const siteUrl = url.origin;
+    const siteUrl = 'https://www.perfectionairsoft.com.br';
     let html = '';
     
     try {
       const response = await fetch(`${siteUrl}/index.html`, {
-        headers: { 'User-Agent': 'Vercel Edge Function' }
+        headers: { 'User-Agent': 'Vercel Edge SEO Proxy' }
       });
       html = await response.text();
     } catch (e) {
-      // Fallback extremo se o fetch falhar
       html = `<!DOCTYPE html><html><head><title>${title}</title></head><body><div id="root"></div></body></html>`;
     }
 
@@ -101,15 +106,8 @@ export default async function handler(req: Request) {
       const attr = isName ? 'name' : 'property';
       const regex = new RegExp(`<meta\\s+${attr}=["']${property}["']\\s+content=["'].*?["']\\s*\\/?>`, 'i');
       const newTag = `<meta ${attr}="${property}" content="${contentValue}" />`;
-      
-      if (regex.test(htmlContent)) {
-        return htmlContent.replace(regex, newTag);
-      }
-      
-      // Se não encontrar, injeta logo após o <title> ou antes do </head>
-      if (htmlContent.includes('</head>')) {
-        return htmlContent.replace('</head>', `${newTag}\n</head>`);
-      }
+      if (regex.test(htmlContent)) return htmlContent.replace(regex, newTag);
+      if (htmlContent.includes('</head>')) return htmlContent.replace('</head>', `${newTag}\n</head>`);
       return htmlContent + newTag;
     };
 
@@ -119,6 +117,8 @@ export default async function handler(req: Request) {
     transformedHtml = injectMeta(transformedHtml, 'og:title', title);
     transformedHtml = injectMeta(transformedHtml, 'og:description', description);
     transformedHtml = injectMeta(transformedHtml, 'og:image', image);
+    transformedHtml = injectMeta(transformedHtml, 'og:image:width', '1200');
+    transformedHtml = injectMeta(transformedHtml, 'og:image:height', '630');
     transformedHtml = injectMeta(transformedHtml, 'og:url', url.href);
     transformedHtml = injectMeta(transformedHtml, 'twitter:card', 'summary_large_image');
     transformedHtml = injectMeta(transformedHtml, 'twitter:title', title);
