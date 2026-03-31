@@ -25,6 +25,12 @@ export default async function handler(req: Request) {
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   try {
+    const ensureAbsolute = (urlStr: string) => {
+      if (!urlStr) return image;
+      if (urlStr.startsWith('http')) return urlStr;
+      return `${url.origin}${urlStr.startsWith('/') ? '' : '/'}${urlStr}`;
+    };
+
     // 1. Extração de Identificadores (Busca Dual: ID ou Slug)
     if (path.startsWith('/drop/')) {
       const slugOrId = path.replace('/drop/', '');
@@ -37,9 +43,9 @@ export default async function handler(req: Request) {
           .single();
 
         if (raffle) {
-          title = `${raffle.title} | Premium Drop`;
+          title = raffle.title;
           description = raffle.description || description;
-          image = raffle.image_url || image;
+          image = ensureAbsolute(raffle.image_url || '');
         }
       }
     } else if (path.startsWith('/produto/')) {
@@ -53,9 +59,9 @@ export default async function handler(req: Request) {
           .single();
 
         if (product) {
-          title = `${product.name} | Arsenal Elite`;
+          title = product.name;
           description = product.description || description;
-          image = product.image_url || image;
+          image = ensureAbsolute(product.image_url || '');
         }
       }
     }
