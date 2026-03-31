@@ -19,6 +19,8 @@ export default function OrganizerDashboard() {
   const [stats, setStats] = useState<EventStats>({ ticketsSold: 0, revenue: 0, netRevenue: 0, pendingBalance: 0 });
   const [activeTab, setActiveTab] = useState<'missions' | 'logistics' | 'reports'>('missions');
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
+  const [winners, setWinners] = useState<any[]>([]);
+  const [updatingLogisticsId, setUpdatingLogisticsId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -62,6 +64,14 @@ export default function OrganizerDashboard() {
         netRevenue: balanceData?.available_balance ? Number(balanceData.available_balance) : 0,
         pendingBalance: balanceData?.pending_balance ? Number(balanceData.pending_balance) : 0
       });
+
+      // 3. Buscar Ganhadores (Logística)
+      const { data: winnersData } = await supabase
+        .from('raffle_winners')
+        .select('*, raffles(title, creator_id)')
+        .order('created_at', { ascending: false });
+
+      setWinners(winnersData || []);
 
     } catch (err: any) {
       console.error('Erro no Dashboard:', err.message);
@@ -107,6 +117,29 @@ export default function OrganizerDashboard() {
       alert(`ERRO NA OPERAÇÃO: ${err.message}`);
     } finally {
       setIsProcessingPayout(false);
+    }
+  };
+
+  const handleUpdateTracking = async (winnerId: string, trackingCode: string) => {
+    if (!trackingCode) return;
+    setUpdatingLogisticsId(winnerId);
+    try {
+      const { error } = await supabase
+        .from('raffle_winners')
+        .update({ 
+          tracking_code: trackingCode,
+          delivery_status: 'shipped',
+          shipped_at: new Date().toISOString()
+        })
+        .eq('id', winnerId);
+
+      if (error) throw error;
+      alert('Logística Atualizada! O prazo de liberação do saldo começará a contar.');
+      fetchDashboardData();
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`);
+    } finally {
+      setUpdatingLogisticsId(null);
     }
   };
 
@@ -160,7 +193,12 @@ export default function OrganizerDashboard() {
           <div className="bg-surface/30 border border-white/5 p-8 border-l-primary/40 border-l-4">
             <span className="text-[10px] text-primary/60 font-black uppercase tracking-widest block mb-1 font-mono italic">Saldo Disponível</span>
             <span className="text-4xl font-black text-primary">R$ {stats.netRevenue.toFixed(2)}</span>
-            <span className="text-[8px] text-slate-500 block mt-2 uppercase italic">Saque liberado instantaneamente</span>
+            <span className="text-[8px] text-slate-500 block mt-2 uppercase italic font-mono">Saque liberado para resgate</span>
+          </div>
+          <div className="bg-surface/30 border border-white/5 p-8">
+            <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest block mb-1">Saldo em Garantia</span>
+            <span className="text-2xl font-black text-white/60">R$ {stats.pendingBalance.toFixed(2)}</span>
+            <span className="text-[8px] text-slate-500 block mt-2 uppercase italic font-mono">Liberado após entrega do material</span>
           </div>
           <div className="bg-surface/30 border border-white/5 p-8">
             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Total Acumulado</span>
@@ -240,39 +278,108 @@ export default function OrganizerDashboard() {
           )}
 
           {activeTab === 'logistics' && (
-            <div className="max-w-xl mx-auto space-y-8">
-              <div className="text-center mb-8">
-                <h3 className="text-xl font-black text-white uppercase tracking-widest mb-2">Carteira do Organizador</h3>
-                <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">Gerencie seus recebimentos via Pix Split</p>
-              </div>
-              
-              <OperatorKYCForm />
+            <div className="space-y-12">
+              {/* Seção 1: KYC e Carteira (Existente) */}
+              <div className="max-w-xl mx-auto space-y-8">
+                <div className="text-center mb-8">
+                  <h3 className="text-xl font-black text-white uppercase tracking-widest mb-2">Carteira do Organizador</h3>
+                  <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">Gerencie seus recebimentos via Pix Split</p>
+                </div>
+                
+                <OperatorKYCForm />
 
-              <div className="bg-primary/5 border border-primary/20 p-8 mt-12">
-                <span className="material-symbols-outlined text-primary text-3xl mb-4">info</span>
-                <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6">Regras de Saque</h3>
-                <p className="text-[11px] text-slate-500 font-mono leading-relaxed mb-8 uppercase">
-                  Taxa operacional: 7% por ticket. <br/>
-                  Liberação: Saldo disponível para resgate imediato após confirmação do webhook.
-                </p>
-                <button 
-                  onClick={handleRequestPayout}
-                  disabled={isProcessingPayout}
-                  className={`w-full font-black py-4 text-[9px] uppercase tracking-[.3em] transition-all flex items-center justify-center gap-2 ${
-                    isProcessingPayout 
-                      ? 'bg-white/10 text-white/30 cursor-not-allowed' 
-                      : 'bg-primary hover:bg-white text-background-dark'
-                  }`}
-                >
-                  {isProcessingPayout ? (
-                    <>
-                      <div className="size-3 border-2 border-primary border-t-transparent animate-spin rounded-full"></div>
-                      PROCESSANDO...
-                    </>
+                <div className="bg-primary/5 border border-primary/20 p-8 mt-12">
+                  <span className="material-symbols-outlined text-primary text-3xl mb-4">info</span>
+                  <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6">Regras de Saque</h3>
+                  <p className="text-[11px] text-slate-500 font-mono leading-relaxed mb-8 uppercase">
+                    Taxa operacional: 7% por ticket. <br/>
+                    Liberação: Saldo disponível 24h após confirmação de entrega do produto ao ganhador.
+                  </p>
+                  <button 
+                    onClick={handleRequestPayout}
+                    disabled={isProcessingPayout}
+                    className={`w-full font-black py-4 text-[9px] uppercase tracking-[.3em] transition-all flex items-center justify-center gap-2 ${
+                      isProcessingPayout 
+                        ? 'bg-white/10 text-white/30 cursor-not-allowed' 
+                        : 'bg-primary hover:bg-white text-background-dark'
+                    }`}
+                  >
+                    {isProcessingPayout ? (
+                      <>
+                        <div className="size-3 border-2 border-primary border-t-transparent animate-spin rounded-full"></div>
+                        PROCESSANDO...
+                      </>
+                    ) : (
+                      'SOLICITAR RESGATE PIX'
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Seção 2: Pendências Logísticas (Nova) */}
+              <div className="max-w-4xl mx-auto">
+                <div className="flex items-center gap-4 mb-8">
+                  <span className="material-symbols-outlined text-primary">local_shipping</span>
+                  <h3 className="text-xl font-black text-white uppercase tracking-widest">Pendências Logísticas</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  {winners.length > 0 ? (
+                    winners.map(winner => (
+                      <div key={winner.id} className="bg-surface/20 border border-white/10 p-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-primary/20 transition-all">
+                        <div className="flex gap-6 items-center flex-1">
+                          <div className="size-12 bg-white/5 flex items-center justify-center rounded relative">
+                            <span className="material-symbols-outlined text-primary text-2xl">trophy</span>
+                            {winner.payout_released && (
+                                <div className="absolute -top-1 -right-1 bg-green-500 rounded-full size-4 border-2 border-black flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-[8px] text-black font-black">check</span>
+                                </div>
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-black text-white uppercase tracking-widest mb-1">
+                                {winner.raffles?.title || 'RIFA FINALIZADA'}
+                            </h4>
+                            <p className="text-[9px] text-slate-500 font-mono uppercase tracking-widest">
+                                Status: <span className={winner.payout_released ? 'text-green-500' : 'text-primary'}>
+                                    {winner.delivery_status === 'pending_shipment' ? 'Aguardando Postagem' : winner.delivery_status === 'shipped' ? 'Em Trânsito' : 'Entregue'}
+                                </span> • {new Date(winner.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-4 w-full md:w-auto">
+                          {!winner.tracking_code ? (
+                              <div className="flex gap-2 w-full md:w-auto">
+                                <input 
+                                    id={`track-${winner.id}`}
+                                    type="text" 
+                                    placeholder="CÓDIGO DE RASTREIO"
+                                    className="bg-black/40 border border-white/10 text-[10px] font-mono p-3 w-48 focus:border-primary outline-none transition-colors text-white"
+                                />
+                                <button 
+                                    onClick={() => handleUpdateTracking(winner.id, (document.getElementById(`track-${winner.id}`) as HTMLInputElement)?.value)}
+                                    disabled={updatingLogisticsId === winner.id}
+                                    className="bg-primary hover:bg-white text-background-dark px-6 py-3 text-[9px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                                >
+                                    {updatingLogisticsId === winner.id ? '...' : 'ATUALIZAR'}
+                                </button>
+                              </div>
+                          ) : (
+                              <div className="bg-white/5 border border-white/10 px-4 py-2 rounded font-mono text-[10px] text-slate-400">
+                                  RASTREIO: <span className="text-white ml-2">{winner.tracking_code}</span>
+                              </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
                   ) : (
-                    'SOLICITAR RESGATE PIX'
+                    <div className="bg-surface/10 border border-dashed border-white/5 p-12 text-center">
+                      <span className="material-symbols-outlined text-white/10 text-4xl mb-4">package_2</span>
+                      <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest">Nenhuma pendência logística ativa.</p>
+                    </div>
                   )}
-                </button>
+                </div>
               </div>
             </div>
           )}
