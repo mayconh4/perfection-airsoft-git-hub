@@ -36,6 +36,7 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminProducts } from './pages/admin/AdminProducts';
 import { AdminOrders } from './pages/admin/AdminOrders';
 import { AdminMessages } from './pages/admin/AdminMessages';
+import AdminModeration from './pages/AdminModeration';
 
 import { PricingProvider } from './context/PricingContext';
 
@@ -85,6 +86,7 @@ function App() {
                 <Route path="produtos" element={<AdminProducts />} />
                 <Route path="pedidos" element={<AdminOrders />} />
                 <Route path="mensagens" element={<AdminMessages />} />
+                <Route path="moderacao" element={<AdminModeration />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

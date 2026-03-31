@@ -23,6 +23,7 @@ export default function OrganizerDashboard() {
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
   const [winners, setWinners] = useState<any[]>([]);
   const [updatingLogisticsId, setUpdatingLogisticsId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -60,12 +61,16 @@ export default function OrganizerDashboard() {
         totalSold = eventsData.reduce((sum, e) => sum + (e.sold_count || 0), 0);
       }
 
-      // 2.5 Buscar Dados de Confiança do Perfil
+      // 2.5 Buscar Dados de Confiança e Role do Perfil
       const { data: profile } = await supabase
         .from('profiles')
-        .select('trust_level, completed_drops')
+        .select('trust_level, completed_drops, role')
         .eq('id', user?.id)
         .single();
+
+      if (profile?.role === 'admin') {
+        setIsAdmin(true);
+      }
 
       setStats({
         ticketsSold: totalSold,
@@ -173,6 +178,14 @@ export default function OrganizerDashboard() {
             <div className="flex items-center gap-3 mb-4">
               <span className="h-px w-8 bg-primary"></span>
               <span className="text-primary font-black uppercase tracking-[0.3em] text-[10px]">Command Center</span>
+              {isAdmin && (
+                <Link 
+                  to="/admin/moderacao" 
+                  className="ml-4 bg-primary/20 text-primary border border-primary/30 px-3 py-1 text-[9px] font-black uppercase italic hover:bg-primary hover:text-black transition-all"
+                >
+                  MODERAÇÃO ADMIN
+                </Link>
+              )}
             </div>
             <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter leading-none italic">
               PAINEL DE <span className="text-primary">ELITE</span>

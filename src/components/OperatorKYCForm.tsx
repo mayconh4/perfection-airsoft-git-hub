@@ -36,8 +36,14 @@ export function OperatorKYCForm() {
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
+    // Pré-carregar o áudio para evitar atrasos ou bloqueios
+    const audio = new Audio('/sounds/level1.wav');
+    audio.load();
+    (window as any).levelUpAudio = audio;
+
     // 1. Tentar carregar da Memória Local (localStorage) para agilizar redigitação
     const savedData = localStorage.getItem('kyc_form_memory');
     if (savedData) {
@@ -172,8 +178,35 @@ export function OperatorKYCForm() {
     setPhone(val);
   };
 
-  const handleNext = () => setStep(prev => Math.min(prev + 1, 3));
-  const handlePrev = () => setStep(prev => Math.max(prev - 1, 1));
+  const handleNext = () => {
+    // Validação tática antes de avançar
+    if (step === 1) {
+      if (!fullName || !email || !cpfCnpj || !birthDate || !phone) {
+        setIsError(true);
+        setMessage('COMPLETE TODOS OS CAMPOS DO PASSO 1 ANTES DE AVANÇAR. 🛠️');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    } else if (step === 2) {
+      if (!cep || !number || !street || !neighborhood || !city || !state) {
+        setIsError(true);
+        setMessage('COMPLETE TODOS OS CAMPOS DE ENDEREÇO. 🛠️');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    }
+    
+    setIsError(false);
+    setMessage('');
+    setStep(prev => Math.min(prev + 1, 3));
+    // Rolar para o topo do formulário ao mudar de passo
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePrev = () => {
+    setStep(prev => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -189,7 +222,9 @@ export function OperatorKYCForm() {
     if (!pixKey) { setIsError(true); setMessage('ERRO: PREENCHA SUA CHAVE PIX. 🛠️'); setStep(3); return; }
     setSaving(true);
     setIsError(false);
-    setMessage('PROCESSANDO DADOS... 🛰️');
+    const clickAudio = new Audio('/sounds/level1.wav');
+    clickAudio.volume = 0;
+    clickAudio.play().catch(() => {}); // Desbloqueia o contexto de áudio no clique do usuário
 
     try {
       if (!user) return;
@@ -253,10 +288,31 @@ export function OperatorKYCForm() {
         throw new Error(asaasData.error || asaasData.message || `Erro do Gateway: ${asaasRes.statusText}`);
       }
 
+      // 3. Salva o ID da Carteira Asaas no Perfil
+      if (asaasData.id) {
+        await supabase
+          .from('profiles')
+          .update({ asaas_wallet_id: asaasData.id })
+          .eq('id', user.id);
+      }
+
       // Sucesso total
       setIsError(false);
       setMessage('DADOS ENVIADOS PARA O QG! VERIFICAÇÃO INTERNA EM ANDAMENTO. 🎖️');
+      setShowSuccess(true);
       
+      // Rolar para o topo automaticamente para ver a mensagem de sucesso
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Reproduzir Áudio de Conclusão (Level Up) - Contexto já desbloqueado no início da função
+      try {
+        clickAudio.currentTime = 0;
+        clickAudio.volume = 0.25;
+        clickAudio.play().catch((e: any) => console.warn('Audio playback prevented by browser:', e));
+      } catch (e) {
+        console.error('Failed to play completion sound:', e);
+      }
+
       // Atualiza status na tela
       setKycStatus('waiting_approval');
 
@@ -271,6 +327,28 @@ export function OperatorKYCForm() {
 
   return (
     <div className="bg-surface/20 border border-white/5 p-6 md:p-8 relative overflow-hidden">
+      {/* Overlay de Sucesso Tático */}
+      {showSuccess && (
+        <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center animate-[fadeIn_0.5s_ease-out] text-center p-8">
+          <div className="w-24 h-24 rounded-full border-4 border-green-500/30 flex items-center justify-center mb-8 bg-green-500/10">
+            <span className="material-symbols-outlined text-green-500 text-6xl animate-bounce">check_circle</span>
+          </div>
+          <h2 className="text-2xl font-black text-white italic uppercase tracking-[0.5em] mb-4">Missão Concluída</h2>
+          <div className="h-[3px] w-16 bg-green-500 mb-8" />
+          <p className="text-[12px] text-slate-400 font-mono uppercase leading-relaxed max-w-[320px] tracking-widest">
+            Seus dados foram verificados no QG. 
+            Conta operacional <span className="text-green-500 font-bold">ATIVA</span> e protegida.
+          </p>
+          <div className="mt-12 group">
+            <button 
+              onClick={() => setShowSuccess(false)}
+              className="bg-green-500 text-black text-[10px] font-black uppercase tracking-[0.3em] px-10 py-4 hover:bg-white transition-all transform hover:scale-105"
+            >
+              RETORNAR AO CAMPO
+            </button>
+          </div>
+        </div>
+      )}
       {/* Protocolo de Verificação Tática - Intro Section */}
       <div className="mb-12 border-b border-white/5 pb-8">
         <div className="flex items-center gap-4 mb-8">

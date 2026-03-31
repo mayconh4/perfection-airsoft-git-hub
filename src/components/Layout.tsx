@@ -453,7 +453,7 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </div>
 
-      <main className="flex-1 w-full flex flex-col pt-24 sm:pt-36">
+      <main className="flex-1 w-full flex flex-col pt-32 sm:pt-48">
         <div className="w-full max-w-7xl mx-auto px-4 lg:px-8 flex-1 flex flex-col">
           {children}
         </div>
@@ -502,11 +502,11 @@ export function Layout({ children }: LayoutProps) {
               <div className="bg-surface border border-white/5 p-4 space-y-4">
                 <div className="flex gap-3">
                   <span className="material-symbols-outlined text-primary text-xl">location_on</span>
-                  <p className="text-[10px] text-white/60 tracking-widest leading-relaxed uppercase">Setor Tático G11, Av. Principal, São Paulo - SP</p>
+                  <p className="text-[10px] text-white/60 tracking-widest leading-relaxed uppercase">Rua Durvalino Jose Ferreira 715 - Minas Gerais Brasil</p>
                 </div>
                 <div className="flex gap-3">
                   <span className="material-symbols-outlined text-primary text-xl">call</span>
-                  <p className="text-[10px] text-white/60 tracking-widest leading-relaxed uppercase">0800 889 0211</p>
+                  <p className="text-[10px] text-white/60 tracking-widest leading-relaxed uppercase">+55 (37) 991065120</p>
                 </div>
               </div>
             </div>

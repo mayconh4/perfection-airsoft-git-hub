@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { formatPrice } from '../types/database';
 import { ProductImageSlider } from '../components/ProductImageSlider';
 import { SEO } from '../components/SEO';
+import { supabase } from '../lib/supabase';
 
 function shortName(name: string, words = 4): string {
   return name.split(' ').slice(0, words).join(' ');
@@ -18,19 +19,42 @@ export function HomePage() {
   const { products, loading } = useProducts();
   const { addItem } = useCart();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [subscribeStatus, setSubscribeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail) return;
+    setSubscribeStatus('loading');
+    
+    try {
+      const { error } = await supabase
+        .from('newsletters')
+        .insert([{ email: newsletterEmail }]);
+        
+      if (error) throw error;
+      setSubscribeStatus('success');
+      setNewsletterEmail('');
+      setTimeout(() => setSubscribeStatus('idle'), 5000);
+    } catch (err) {
+      console.error('Newsletter error:', err);
+      setSubscribeStatus('error');
+      setTimeout(() => setSubscribeStatus('idle'), 5000);
+    }
+  };
   
   const slides = [
-    {
+    /* {
       id: 'forge',
       subtitle: "Lançamento de Equipamentos",
       title: "FORJA DO <br /><span className='text-primary'>OPERADOR</span>",
       description: "Customização de nível militar. Monte seu loadout com as peças de precisão mais avançadas do mercado global.",
       buttonText: "Montar Agora",
       link: "/produtos",
-      image: "/hero-bg.png",
+      image: "/assets/forge-banner.png",
       accent: "text-primary",
       glow: "shadow-[0_0_30px_rgba(255,193,7,0.3)]"
-    },
+    }, */
     {
       id: 'drop',
       subtitle: "Marketplace de Sorteios",
@@ -38,7 +62,7 @@ export function HomePage() {
       description: "Transforme seu equipamento em lucro. Crie um sorteio tático hoje mesmo com nossa plataforma de rifas automatizada.",
       buttonText: "Criar Missão",
       link: "/drop/criar",
-      image: "/hero-bg.png",
+      image: "/assets/drop-banner.png",
       accent: "text-blue-500",
       glow: "shadow-[0_0_30px_rgba(59,130,246,0.3)]"
     },
@@ -49,7 +73,7 @@ export function HomePage() {
       description: "Expanda sua missão. Cadastre seu campo de Airsoft e gerencie eventos de elite com nosso sistema de ingressos e check-in.",
       buttonText: "Cadastrar Campo",
       link: "/eventos",
-      image: "/hero-bg.png",
+      image: "/assets/field-banner.png",
       accent: "text-green-500",
       glow: "shadow-[0_0_30px_rgba(34,197,94,0.3)]"
     }
@@ -70,7 +94,7 @@ export function HomePage() {
       <SEO />
       <div className="flex flex-col">
       {/* Hero Section - Elite Operator Carousel */}
-      <section className="relative h-[650px] w-full flex items-center overflow-hidden border-b border-white/5 bg-background-dark">
+      <section className="relative min-h-[450px] lg:h-[500px] w-full flex items-center overflow-hidden border-b border-white/5 bg-background-dark">
         {slides.map((slide, index) => (
           <div 
             key={slide.id}
@@ -78,49 +102,48 @@ export function HomePage() {
           >
             <div className="absolute inset-0 z-0">
               <img src={slide.image} alt={slide.subtitle} className={`w-full h-full object-cover object-center transition-transform duration-[6000ms] ease-linear ${index === currentSlide ? 'scale-110' : 'scale-100'} opacity-60`} />
-              <div className={`absolute inset-0 bg-gradient-to-r from-background-dark via-background-dark/40 to-transparent`}></div>
+              <div className={`absolute inset-0 bg-gradient-to-r from-background-dark via-transparent to-background-dark/20`}></div>
               <div className="absolute inset-0 bg-gradient-to-t from-background-dark via-transparent to-transparent"></div>
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 h-full flex items-center w-full">
-              <div className={`max-w-2xl space-y-6 transition-all duration-700 delay-300 ${index === currentSlide ? 'translate-x-0 opacity-100' : '-translate-x-12 opacity-0'}`}>
+            <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 h-full flex flex-col lg:flex-row lg:items-start lg:justify-between pt-12 lg:pt-20 w-full">
+              {/* Headline Block - Left Side */}
+              <div className={`max-w-2xl space-y-4 lg:space-y-6 transition-all duration-700 delay-300 ${index === currentSlide ? 'translate-x-0 opacity-100' : '-translate-x-12 opacity-0'}`}>
                 <div className="flex items-center gap-4">
-                  <div className={`h-[2px] w-12 transition-colors duration-500 ${slide.accent === 'text-primary' ? 'bg-primary' : slide.accent === 'text-blue-500' ? 'bg-blue-500' : 'bg-green-500'}`}></div>
-                  <span className={`font-black tracking-[0.4em] text-[10px] uppercase ${slide.accent}`}>{slide.subtitle}</span>
+                  <div className={`h-[2px] w-8 lg:w-12 transition-colors duration-500 ${slide.accent === 'text-primary' ? 'bg-primary' : slide.accent === 'text-blue-500' ? 'bg-blue-500' : 'bg-green-500'}`}></div>
+                  <span className={`font-black tracking-[0.4em] text-[8px] lg:text-[10px] uppercase ${slide.accent}`}>{slide.subtitle}</span>
                 </div>
                 
                 <h1 
-                  className="text-6xl sm:text-7xl lg:text-8xl font-black text-white leading-tight tracking-tighter uppercase italic"
+                  className="text-4xl sm:text-5xl lg:text-7xl font-black text-white leading-tight tracking-tighter uppercase italic"
                   dangerouslySetInnerHTML={{ __html: slide.title }}
                 />
                 
-                <p className="text-white/40 text-sm sm:text-lg leading-relaxed uppercase tracking-[0.1em] font-medium max-w-lg italic">
+                <p className="text-white/40 text-[10px] lg:text-sm leading-relaxed uppercase tracking-[0.1em] font-medium max-w-lg italic">
                   {slide.description}
                 </p>
+              </div>
 
-                <div className="flex flex-wrap gap-4 pt-4">
-                  <Link 
-                    to={slide.link}
-                    className={`text-black font-black py-4 px-10 uppercase tracking-widest text-xs hover:bg-white transition-all flex items-center gap-3 ${slide.accent === 'text-primary' ? 'bg-primary shadow-[0_0_30px_rgba(255,193,7,0.3)]' : slide.accent === 'text-blue-500' ? 'bg-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)]' : 'bg-green-500 shadow-[0_0_30px_rgba(34,197,94,0.3)]'}`}
-                  >
-                    {slide.buttonText} <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                  </Link>
-                  <button className="border border-white/20 text-white font-black py-4 px-10 uppercase tracking-widest text-xs hover:bg-white/10 transition-all backdrop-blur-sm">
-                    Ver Inteligência
-                  </button>
-                </div>
+              {/* Action Buttons - Right Side */}
+              <div className={`flex flex-wrap lg:flex-col gap-3 lg:gap-4 pt-6 lg:pt-0 lg:items-end lg:mt-6 transition-all duration-700 delay-500 ${index === currentSlide ? 'translate-x-0 opacity-100' : 'translate-x-12 opacity-0'}`}>
+                <Link 
+                  to={slide.link}
+                  className={`text-black font-black py-3 lg:py-4 px-6 lg:px-10 uppercase tracking-widest text-[9px] lg:text-xs hover:bg-white transition-all flex items-center gap-3 w-full lg:w-[240px] justify-center ${slide.accent === 'text-primary' ? 'bg-primary shadow-[0_0_30px_rgba(255,193,7,0.3)]' : slide.accent === 'text-blue-500' ? 'bg-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)]' : 'bg-green-500 shadow-[0_0_30px_rgba(34,197,94,0.3)]'}`}
+                >
+                  {slide.buttonText} <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                </Link>
               </div>
             </div>
           </div>
         ))}
 
         {/* Carousel Indicators */}
-        <div className="absolute bottom-10 left-6 lg:left-8 z-20 flex gap-3">
+        <div className="absolute bottom-6 lg:bottom-10 left-6 lg:left-8 z-20 flex gap-2 lg:gap-3">
           {slides.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrentSlide(i)}
-              className={`h-1 transition-all duration-500 ${i === currentSlide ? 'w-12 bg-primary' : 'w-4 bg-white/10 hover:bg-white/30'}`}
+              className={`h-[3px] lg:h-1 transition-all duration-500 ${i === currentSlide ? 'w-8 lg:w-12 bg-primary' : 'w-2 lg:w-4 bg-white/10 hover:bg-white/30'}`}
             />
           ))}
         </div>
@@ -133,38 +156,12 @@ export function HomePage() {
           </div>
           <div>
             <span className="block text-[8px] font-bold text-white/30 uppercase tracking-[0.3em] mb-1">Coordenadas</span>
-            <span className="text-primary font-black text-xs tracking-widest uppercase italic font-mono">[23.5505° S, 46.6333° W]</span>
+            <span className="text-primary font-black text-xs tracking-widest uppercase italic font-mono">[18.91° S, 48.28° W]</span>
           </div>
         </div>
       </section>
 
       <div className="max-w-7xl mx-auto px-4 lg:px-8 w-full py-20 space-y-32">
-        {/* Categorias Principais */}
-        <section>
-          <div className="flex items-center gap-4 mb-12">
-            <h3 className="text-xs font-black tracking-[0.4em] text-white/30 uppercase italic">Categorias Principais</h3>
-            <div className="h-[1px] flex-1 bg-white/5"></div>
-          </div>
-          
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-            {[
-              { label: 'Sniper de Precisão', slug: 'snipers', icon: 'gps_fixed', count: 'EXTREME' },
-              { label: 'Equipamento Tático', slug: 'equipamentos', icon: 'shield', count: 'GEAR' },
-            ].map((cat, i) => (
-              <Link to={`/categoria/${cat.slug}`} key={i} className={`group relative aspect-square border border-white/5 bg-surface/30 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-primary transition-all overflow-hidden`}>
-                <span className="absolute top-2 right-3 text-[8px] font-black text-white/20 tracking-widest group-hover:text-primary transition-colors">{cat.count}</span>
-                <span className={`material-symbols-outlined text-4xl text-white/20 group-hover:text-primary group-hover:scale-110 transition-all duration-500`}>
-                  {cat.icon}
-                </span>
-                <span className={`text-[10px] font-black tracking-[0.3em] uppercase text-white/40 group-hover:text-white transition-colors`}>
-                  {cat.label}
-                </span>
-                {/* HUD Corner Decor */}
-                <div className="absolute bottom-0 right-0 w-2 h-2 border-r border-b border-primary scale-0 group-hover:scale-100 transition-transform"></div>
-              </Link>
-            ))}
-          </div>
-        </section>
 
         {/* Weekly Ops */}
         <section>
@@ -246,15 +243,42 @@ export function HomePage() {
               <p className="text-white/40 text-sm tracking-widest uppercase mt-4 leading-relaxed">Assine nossa newsletter para receber alertas de novos drops, códigos de desconto exclusivos e guias de manutenção.</p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <input className="flex-1 bg-black/40 border border-white/10 p-4 text-xs font-bold text-white tracking-widest uppercase focus:border-primary transition-colors outline-none" 
-                     placeholder="ENDEREÇO DE E-MAIL // [EMAIL]" type="email"/>
-              <button className="bg-primary text-black font-black px-12 py-4 uppercase tracking-[0.3em] text-[10px] hover:bg-white transition-colors">
-                Assinar
+            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-4">
+              <input 
+                className="flex-1 bg-black/40 border border-white/10 p-4 text-xs font-bold text-white tracking-widest uppercase focus:border-primary transition-colors outline-none disabled:opacity-50" 
+                placeholder={subscribeStatus === 'success' ? "ARSENAL CADASTRADO!" : "ENDEREÇO DE E-MAIL // [EMAIL]"}
+                type="email"
+                required
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                disabled={subscribeStatus === 'loading' || subscribeStatus === 'success'}
+              />
+              <button 
+                type="submit"
+                disabled={subscribeStatus === 'loading' || subscribeStatus === 'success'}
+                className={`bg-primary text-black font-black px-12 py-4 uppercase tracking-[0.3em] text-[10px] hover:bg-white transition-all flex items-center justify-center gap-2 min-w-[180px] disabled:opacity-50`}
+              >
+                {subscribeStatus === 'loading' ? (
+                  <span className="size-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></span>
+                ) : subscribeStatus === 'success' ? (
+                  <>CONCLUÍDO <span className="material-symbols-outlined text-sm">check</span></>
+                ) : (
+                  'Assinar'
+                )}
               </button>
-            </div>
+            </form>
+            
+            {subscribeStatus === 'error' && (
+              <p className="text-red-500 text-[10px] font-black uppercase tracking-widest animate-pulse">Falha na extração. Tente outro canal.</p>
+            )}
           </div>
         </section>
+
+        {/* Featured Footer - Just a subtle HUD decoration */}
+        <div className="pt-20 opacity-10 flex flex-col items-center gap-1">
+          <div className="w-[1px] h-12 bg-primary"></div>
+          <span className="text-[8px] font-black tracking-[0.5em] text-white uppercase italic">End of Tactical View</span>
+        </div>
       </div>
     </div>
     </>

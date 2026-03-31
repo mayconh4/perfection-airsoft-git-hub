@@ -100,11 +100,11 @@ Deno.serve(async (req: Request) => {
     const asaasAccountPayload = {
       name: fullName,
       email: email,
-      // loginEmail removido para evitar que o Asaas envie e-mail de ativação/boas-vindas ao cliente
+      loginEmail: email, // Re-ativado para permitir que o usuário defina senha e entre no Asaas diretamente
       cpfCnpj: cleanCpfCnpj,
       companyType: companyType,
       phone: cleanPhone,
-      mobilePhone: cleanPhone,
+      // mobilePhone: cleanPhone, // Desativado para evitar gatilho de SMS automático de verificação do Asaas
       address: street,
       addressNumber: addressNumber,
       complement: complement || '',

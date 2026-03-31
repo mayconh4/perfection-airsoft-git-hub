@@ -156,176 +156,301 @@ export default function RaffleDetailPage() {
 
 
   return (
-    <div className="min-h-screen pb-20 bg-background-dark">
-      <SEO title={`${raffle.title} | Tactical Drop`} />
+    <div className="min-h-screen pb-20 bg-background-dark selection:bg-primary selection:text-black">
+      <div className="scanline opacity-10"></div>
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_-20%,#fbbf2415,transparent_50%)] pointer-events-none"></div>
+      
+      <SEO title={`${raffle.title} | Premium Drop`} />
 
-      {/* Header HUD */}
-      <div className="border-b border-primary/20 bg-surface/10 py-12">
-        <div className="max-w-7xl mx-auto px-6">
-          <Link to="/drop" className="text-[10px] font-black text-primary/60 uppercase tracking-[0.3em] flex items-center gap-2 mb-8 hover:text-primary transition-colors">
-            <span className="material-symbols-outlined text-sm">arrow_back</span>
-            ABORTAR MISSÃO / VOLTAR AO HUB
+      {/* Top Navigation HUD */}
+      <nav className="border-b border-white/5 bg-black/40 backdrop-blur-md py-4 px-6">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <Link to="/drop" className="text-[10px] font-black text-primary/60 uppercase tracking-[0.3em] flex items-center gap-2 hover:text-primary transition-all group">
+            <span className="material-symbols-outlined text-sm group-hover:-translate-x-1 transition-transform">arrow_back</span>
+            RETORNAR AO HUB
           </Link>
-
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
-            <div>
-              <span className="bg-primary/20 text-primary border border-primary/40 text-[8px] font-black uppercase tracking-widest px-3 py-1 mb-4 inline-block">
-                OBJETIVO: {raffle.id.substring(0, 8).toUpperCase()}
-              </span>
-              <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none">
-                {raffle.title}
-              </h1>
-            </div>
-
-            <div className="bg-white/5 border-l-2 border-primary p-6 md:text-right">
-              <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-2">VALOR DO ALVO / TICKET</span>
-              <span className="text-4xl font-black text-white">R$ {raffle.ticket_price.toFixed(2)}</span>
-            </div>
+          <div className="hidden md:flex items-center gap-4 text-[9px] font-mono text-slate-500 uppercase tracking-widest">
+            <span className="text-primary/40">SISTEMA: ATIVO</span>
+            <span className="h-3 w-px bg-white/10"></span>
+            <span>OBJETIVO: {raffle.id.substring(0, 8).toUpperCase()}</span>
           </div>
         </div>
-      </div>
+      </nav>
 
-      <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <main className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
+          
+          {/* LEFT COLUMN: Visual Arsenal */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="relative group">
+              <div className="aspect-square md:aspect-video bg-black/60 overflow-hidden border border-white/5 relative shadow-2xl">
+                {allImages.length > 0 ? (
+                  <img 
+                    src={allImages[activeImageIndex]} 
+                    alt={raffle.title} 
+                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105" 
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 opacity-10">
+                    <span className="material-symbols-outlined text-9xl">photo_camera</span>
+                    <span className="text-xs font-black uppercase tracking-[0.4em]">Visual Feed Offline</span>
+                  </div>
+                )}
+                
+                {/* HUD Overlay Indicators */}
+                <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md border border-white/10 px-3 py-1.5 flex items-center gap-3">
+                  <div className="flex gap-1.5">
+                    <div className="size-1.5 rounded-full bg-primary animate-pulse" />
+                    <div className="size-1.5 rounded-full bg-primary/40" />
+                  </div>
+                  <span className="text-[8px] font-black text-white/60 tracking-widest uppercase">HD LIVE FEED</span>
+                </div>
 
-        {/* Left Column: Intel & Media */}
-        <div className="lg:col-span-7 flex flex-col gap-12">
-          <div className="flex flex-col gap-4">
-            <div className="aspect-video bg-surface overflow-hidden border border-white/5 relative group">
-              {allImages.length > 0 ? (
-                <img src={allImages[activeImageIndex]} alt={raffle.title} className="w-full h-full object-cover transition-all duration-500" />
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 opacity-10">
-                  <span className="material-symbols-outlined text-9xl">photo_camera</span>
-                  <span className="text-xs font-black uppercase tracking-[0.4em]">Visual Feed Offline</span>
+                {/* Progress Mini-HUD (Mobile Overlay) */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 md:hidden">
+                   <div className="flex justify-between items-end">
+                      <h1 className="text-2xl font-black text-white uppercase tracking-tighter italic leading-none">{raffle.title}</h1>
+                      <div className="text-right">
+                        <span className="text-[8px] text-primary font-black block tracking-widest">A PARTIR DE</span>
+                        <span className="text-2xl font-black text-white leading-none">R$ {raffle.ticket_price.toFixed(2)}</span>
+                      </div>
+                   </div>
+                </div>
+              </div>
+
+              {/* Gallery Thumbnails */}
+              {allImages.length > 1 && (
+                <div className="grid grid-cols-5 gap-2 mt-2">
+                  {allImages.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`aspect-square border-2 transition-all duration-300 ${activeImageIndex === idx ? 'border-primary' : 'border-transparent opacity-40 hover:opacity-100'}`}
+                    >
+                      <img src={img} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
                 </div>
               )}
-              {/* Overlay HUD indicators */}
-              <div className="absolute top-4 right-4 flex gap-2">
-                <div className="size-2 rounded-full bg-primary animate-pulse" />
-                <div className="size-2 rounded-full bg-primary/40" />
-                <div className="size-2 rounded-full bg-primary/20" />
-              </div>
             </div>
 
-            {/* Gallery Thumbnails */}
-            {allImages.length > 1 && (
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                {allImages.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveImageIndex(idx)}
-                    className={`aspect-video border-2 transition-all overflow-hidden ${activeImageIndex === idx ? 'border-primary' : 'border-white/5 hover:border-white/20'}`}
-                  >
-                    <img src={img} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
-                  </button>
-                ))}
+            {/* Mission Intel (Briefing) - Tablet/Desktop View */}
+            <div className="hidden lg:block space-y-8 pt-8">
+              <div className="border-b border-white/5 pb-4">
+                <h3 className="text-sm font-black text-white uppercase tracking-[0.4em] flex items-center gap-3 italic">
+                  <span className="h-px w-8 bg-primary" />
+                  Briefing da Missão
+                </h3>
               </div>
-            )}
-          </div>
-
-          <div className="bg-surface/20 border border-white/5 p-8">
-            <h3 className="text-[10px] font-black text-primary/60 uppercase tracking-[0.4em] mb-6 flex items-center gap-3">
-              <span className="h-px w-8 bg-primary/40" />
-              BRIEFING DA MISSÃO
-            </h3>
-            <p className="text-sm text-slate-400 font-mono leading-relaxed uppercase mb-8">
-              {raffle.description}
-            </p>
-
-            <div className="grid grid-cols-2 gap-8 border-t border-white/5 pt-8">
-              <div>
-                <h4 className="text-[9px] font-black text-white uppercase tracking-widest mb-4">
-                  {raffle.rules_title || 'REGRAS E ENGAJAMENTO'}
-                </h4>
-                <p className="text-[10px] text-slate-500 font-mono leading-relaxed uppercase">
-                  {raffle.rules || 'Sorteio baseado na extração da Loteria Federal ou hash de rede blockchain verificado.'}
-                </p>
-              </div>
-              <div>
-                <h4 className="text-[9px] font-black text-white uppercase tracking-widest mb-4">
-                  {raffle.logistics_title || 'LOGÍSTICA'}
-                </h4>
-                <p className="text-[10px] text-slate-500 font-mono leading-relaxed uppercase">
-                  {raffle.logistics_description || 'Envio segurado para todo o Brasil via transportadora tática especializada.'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: Ticket Selector HUD */}
-        <div className="lg:col-span-5 flex flex-col gap-8">
-          <div className="bg-surface border border-primary/20 p-8 sticky top-32">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">SELETOR DE TICKETS</h3>
-              <div className="text-right">
-                <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest block">SELECIONADOS</span>
-                <span className="text-lg font-black text-primary font-mono">{selectedTickets.length}</span>
-              </div>
-            </div>
-
-            {/* Progress HUD */}
-            <div className="mb-8 p-4 bg-black/40 border-l border-primary/40">
-              <div className="flex justify-between text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2">
-                <span>CAPACIDADE OPERACIONAL</span>
-                <span>{((raffle.sold_tickets / raffle.total_tickets) * 100).toFixed(1)}%</span>
-              </div>
-              <div className="h-1 bg-white/5 w-full overflow-hidden">
-                <div className="h-full bg-green-400 shadow-[0_0_15px_rgba(74,222,128,0.3)]" style={{ width: `${(raffle.sold_tickets / raffle.total_tickets) * 100}%` }} />
-              </div>
-            </div>
-
-            {/* Ticket Grid Overlay (Visual representation) */}
-            <div className="grid grid-cols-10 gap-1 mb-8 overflow-y-auto max-h-80 p-1 bg-black/20">
-              {Array.from({ length: raffle.total_tickets }).map((_, i) => {
-                const ticketNum = i + 1;
-                const isSold = soldTicketNumbers.includes(ticketNum);
-                const isSelected = selectedTickets.includes(ticketNum);
-
-                return (
-                  <button
-                    key={i}
-                    disabled={isSold}
-                    onClick={() => toggleTicket(ticketNum)}
-                    className={`aspect-square text-[8px] font-black transition-all flex items-center justify-center border
-                          ${isSold ? 'bg-red-900/40 text-red-500/40 border-transparent cursor-not-allowed' :
-                        isSelected ? 'bg-primary text-background-dark border-primary scale-110 z-10 shadow-[0_0_10px_rgba(255,193,7,0.5)]' :
-                          'bg-white/5 text-slate-500 border-white/10 hover:border-primary/40 hover:text-primary'}
-                        `}
-                  >
-                    {ticketNum}
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Summary & Checkout */}
-            <div className="border-t border-white/5 pt-8 flex flex-col gap-6">
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">CUSTO TOTAL DE MOBILIZAÇÃO</span>
-                <span className="text-2xl font-black text-white font-mono">R$ {(selectedTickets.length * raffle.ticket_price).toFixed(2)}</span>
-              </div>
-
-              <button
-                disabled={selectedTickets.length === 0 || loading}
-                onClick={handlePurchase}
-                className="w-full bg-primary text-background-dark font-black py-4 text-[10px] uppercase tracking-[0.4em] hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all relative overflow-hidden group/btn"
-              >
-                <span className="relative z-10 flex items-center justify-center gap-3">
-                  CONFIRMAR PROTOCOLO
-                  <span className="material-symbols-outlined text-sm group-hover/btn:translate-x-1 transition-transform">lock</span>
-                </span>
-                <div className="absolute inset-0 bg-white translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
-              </button>
-
-              <p className="text-[8px] text-slate-600 font-mono text-center uppercase tracking-widest leading-relaxed">
-                TRANSAÇÃO SEGURA E CRIPTOGRAFADA<br />
-                AUTENTICADA PELO MERCADO PAGO
+              <p className="text-sm text-slate-400 font-mono leading-relaxed uppercase whitespace-pre-line bg-white/5 p-6 border-l-2 border-primary/40">
+                {raffle.description}
               </p>
+              
+              <div className="grid grid-cols-2 gap-12 pt-4">
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sm">gavel</span>
+                    {raffle.rules_title || 'REGRAS E ENGAJAMENTO'}
+                  </h4>
+                  <p className="text-[10px] text-slate-500 font-mono leading-relaxed uppercase italic">
+                    {raffle.rules || 'Sorteio baseado na extração da Loteria Federal ou hash de rede blockchain verificado.'}
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sm">local_shipping</span>
+                    {raffle.logistics_title || 'PROTOCOLO DE LOGÍSTICA'}
+                  </h4>
+                  <p className="text-[10px] text-slate-500 font-mono leading-relaxed uppercase italic">
+                    {raffle.logistics_description || 'Envio segurado para todo o Brasil via transportadora tática especializada.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: Control Panel & Purchase */}
+          <div className="lg:col-span-5 space-y-8">
+            <div className="sticky top-28 space-y-8">
+              
+              {/* Product Header (Desktop Only) */}
+              <div className="hidden lg:block space-y-4 border-b border-white/5 pb-8">
+                <span className="text-[10px] font-black text-primary uppercase tracking-[0.5em] block animate-in slide-in-from-left duration-500">TACTICAL DROP // ATIVO</span>
+                <h1 className="text-5xl font-black text-white uppercase tracking-tighter italic leading-[0.8]">{raffle.title}</h1>
+                <div className="flex items-center justify-between pt-4">
+                  <div className="flex flex-col">
+                    <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">PREÇO POR UNIDADE</span>
+                    <span className="text-4xl font-black text-white tracking-tight">R$ {raffle.ticket_price.toFixed(2)}</span>
+                  </div>
+                  <div className="text-right">
+                     <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">DISPONIBILIDADE</span>
+                     <span className="text-xs font-black text-green-400 block tracking-widest italic uppercase">Estoque Operacional</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Purchase HUD Selector */}
+              <div className="bg-surface border border-white/10 p-6 md:p-8 space-y-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden backdrop-blur-xl">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                
+                <header className="flex justify-between items-center relative z-10">
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-black text-white uppercase tracking-tighter italic">SELETOR DE ARSENAL</h3>
+                    <div className="flex items-center gap-2">
+                       <span className="size-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                       <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">Selecione seus números da sorte</span>
+                    </div>
+                  </div>
+                  <div className="bg-white/5 px-4 py-2 border-r-2 border-primary">
+                    <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest block text-right">ORDENS</span>
+                    <span className="text-xl font-black text-primary font-mono">{selectedTickets.length}</span>
+                  </div>
+                </header>
+
+                {/* Quick Select Buttons */}
+                <div className="grid grid-cols-4 gap-2 relative z-10">
+                   {[5, 10, 25, 50].map((num) => (
+                      <button 
+                        key={num}
+                        onClick={() => {
+                          const available = Array.from({ length: raffle.total_tickets }, (_, i) => i + 1)
+                            .filter(n => !soldTicketNumbers.includes(n) && !selectedTickets.includes(n))
+                            .slice(0, num);
+                          setSelectedTickets(prev => [...prev, ...available]);
+                        }}
+                        className="bg-white/5 border border-white/10 py-2 text-[9px] font-black text-white/60 hover:bg-primary hover:text-black hover:border-primary transition-all uppercase tracking-widest"
+                      >
+                         +{num}
+                      </button>
+                   ))}
+                </div>
+
+                {/* Ticket Grid Overlay */}
+                <div className="relative z-10 group/grid">
+                  <div className="grid grid-cols-10 gap-1 overflow-y-auto max-h-64 p-2 bg-black/40 border border-white/5 scrollbar-thin scrollbar-thumb-primary/20">
+                    {Array.from({ length: raffle.total_tickets }).map((_, i) => {
+                      const ticketNum = i + 1;
+                      const isSold = soldTicketNumbers.includes(ticketNum);
+                      const isSelected = selectedTickets.includes(ticketNum);
+
+                      return (
+                        <button
+                          key={i}
+                          disabled={isSold}
+                          onClick={() => toggleTicket(ticketNum)}
+                          className={`aspect-square text-[9px] font-bold transition-all flex items-center justify-center border
+                                ${isSold ? 'bg-red-900/20 text-red-500/20 border-transparent cursor-not-allowed grayscale' :
+                              isSelected ? 'bg-primary text-background-dark border-primary scale-110 z-10 shadow-[0_0_15px_rgba(251,191,36,0.4)] rotate-3' :
+                                'bg-white/5 text-slate-500 border-white/10 hover:border-primary/50 hover:text-white backdrop-blur-sm'}
+                              `}
+                        >
+                          {ticketNum}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {/* Grid Shadow Overlay to suggest scroll */}
+                  <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-surface to-transparent pointer-events-none opacity-60"></div>
+                </div>
+
+                {/* Order Summary & Mobilization */}
+                <div className="pt-6 space-y-6 relative z-10">
+                  <div className="flex justify-between items-end">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">INVESTIMENTO OPERACIONAL</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-3xl font-black text-white font-mono tracking-tighter">R$ {(selectedTickets.length * raffle.ticket_price).toFixed(2)}</span>
+                        {selectedTickets.length > 0 && (
+                          <span className="text-[10px] text-primary font-black animate-pulse bg-primary/10 px-2 py-0.5 border border-primary/20">READY</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    disabled={selectedTickets.length === 0 || loading}
+                    onClick={handlePurchase}
+                    className="w-full bg-primary text-background-dark font-black py-5 text-[11px] uppercase tracking-[0.5em] hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-all relative overflow-hidden group/btn shadow-[0_0_30px_rgba(251,191,36,0.15)]"
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-4 italic">
+                      {loading ? 'PROCESSANDO...' : 'INICIALIZAR COMPRA'}
+                      <span className="material-symbols-outlined text-sm group-hover/btn:translate-x-2 transition-transform">bolt</span>
+                    </span>
+                    <div className="absolute inset-0 bg-white translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500"></div>
+                  </button>
+
+                  <div className="flex items-center justify-center gap-6 opacity-60">
+                    <img src="https://logopng.com.br/logos/mercado-pago-23.png" alt="Mercado Pago" className="h-5 object-contain grayscale hover:grayscale-0 transition-all brightness-200" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" alt="Visa" className="h-2 object-contain grayscale hover:grayscale-0 transition-all invert brightness-200" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" alt="Mastercard" className="h-8 object-contain grayscale hover:grayscale-0 transition-all brightness-125" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress HUD (Desktop Column) */}
+              <div className="bg-black/20 border border-white/5 p-6 space-y-4">
+                <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  <span className="flex items-center gap-2">
+                    <span className="size-1.5 rounded-full bg-primary animate-ping" />
+                    CAPACIDADE OPERACIONAL DO DROP
+                  </span>
+                  <span className="text-white font-mono">{((raffle.sold_tickets / raffle.total_tickets) * 100).toFixed(1)}%</span>
+                </div>
+                <div className="h-1.5 bg-white/5 w-full overflow-hidden rounded-full p-[2px]">
+                  <div className="h-full bg-primary shadow-[0_0_15px_rgba(251,191,36,0.5)] rounded-full transition-all duration-1000" style={{ width: `${(raffle.sold_tickets / raffle.total_tickets) * 100}%` }} />
+                </div>
+                <p className="text-[8px] text-slate-600 font-mono text-center uppercase tracking-widest">
+                   {raffle.total_tickets - raffle.sold_tickets} unidades restantes para completar a missão
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+
+        {/* Mobile-Only Description & Rules (Moved down) */}
+        <div className="lg:hidden mt-12 space-y-12">
+           <div className="space-y-6">
+              <h3 className="text-xl font-black text-white uppercase tracking-tighter italic border-l-4 border-primary pl-4">Briefing da Missão</h3>
+              <p className="text-sm text-slate-400 font-mono leading-relaxed uppercase bg-white/5 p-4 border border-white/5">
+                {raffle.description}
+              </p>
+           </div>
+           
+           <div className="grid grid-cols-1 gap-8">
+              <div className="bg-white/5 p-6 border-t border-primary/20">
+                <h4 className="text-xs font-black text-primary uppercase tracking-widest mb-4">REGRAS E ENGAJAMENTO</h4>
+                <p className="text-[10px] text-slate-500 font-mono leading-relaxed uppercase">
+                  {raffle.rules || 'Sorteio baseado na extração da Loteria Federal.'}
+                </p>
+              </div>
+              <div className="bg-white/5 p-6 border-t border-primary/20">
+                <h4 className="text-xs font-black text-primary uppercase tracking-widest mb-4">PROTOCOLO DE LOGÍSTICA</h4>
+                <p className="text-[10px] text-slate-500 font-mono leading-relaxed uppercase">
+                  {raffle.logistics_description || 'Envio segurado para todo o Brasil.'}
+                </p>
+              </div>
+           </div>
+        </div>
+      </main>
+
+      {/* STICKY BOTTOM BAR (MOBILE ONLY) */}
+      {selectedTickets.length > 0 && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background-dark/95 backdrop-blur-xl border-t border-primary/30 p-4 z-[100] animate-in slide-in-from-bottom duration-500">
+           <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
+              <div className="flex-1">
+                 <span className="text-[10px] font-black text-primary uppercase tracking-widest block">{selectedTickets.length} UNIDADES</span>
+                 <span className="text-lg font-black text-white font-mono">R$ {(selectedTickets.length * raffle.ticket_price).toFixed(2)}</span>
+              </div>
+              <button
+                onClick={handlePurchase}
+                className="bg-primary text-background-dark font-black py-4 px-8 text-[11px] uppercase tracking-widest italic flex items-center gap-2 active:scale-95 transition-transform"
+              >
+                CONFIRMAR
+                <span className="material-symbols-outlined text-sm">bolt</span>
+              </button>
+           </div>
+        </div>
+      )}
     </div>
   );
 }

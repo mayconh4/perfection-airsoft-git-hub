@@ -12,6 +12,7 @@ export function AdminLayout() {
     { path: '/drop', icon: 'military_tech', label: 'Sorteador' },
     { path: '/admin/pedidos', icon: 'assignment', label: 'Missões' },
     { path: '/admin/mensagens', icon: 'mail', label: 'Rádio' },
+    { path: '/admin/moderacao', icon: 'verified_user', label: 'Moderação' },
   ];
 
   if (!user || !isAdmin) {
