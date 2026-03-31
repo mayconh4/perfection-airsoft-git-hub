@@ -148,8 +148,9 @@ export function CheckoutPage() {
         orderId = order.id;
       }
 
-      // MP Call (Unificado para Guest e Auth)
-      const functionUrl = `https://seewdqetyolfmqsiyban.supabase.co/functions/v1/mercadopago-payment?t=${Date.now()}`;
+      // [ROTEAMENTO TÁTICO] Escolha do Motor de Pagamento
+      const motorPath = isPureRaffle ? 'asaas-payment' : 'mercadopago-payment';
+      const functionUrl = `https://seewdqetyolfmqsiyban.supabase.co/functions/v1/${motorPath}?t=${Date.now()}`;
       
       const payload = {
         orderId: isGuestFlow ? 'GUEST_NEW' : orderId,
@@ -170,6 +171,8 @@ export function CheckoutPage() {
           metadata: i.metadata
         }))
       };
+
+      console.log(`[CHECKOUT] Redirecionando para Motor: ${motorPath}`);
 
       const response = await fetch(functionUrl, {
         method: 'POST',
