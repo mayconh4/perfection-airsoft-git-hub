@@ -379,24 +379,25 @@ export default function RaffleDetailPage() {
                     <div className="absolute inset-0 bg-white translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500"></div>
                   </button>
 
-                  <div className="flex items-center justify-center gap-10 mt-8 border-t border-white/5 pt-8">
-                    {/* Logos de Pagamento Otimizados [Design Premium - Fix] */}
+                  <div className="flex items-center justify-center gap-10 mt-10 border-t border-white/5 pt-8">
+                    {/* Logos de Pagamento Brancos Puros [Design Premium v4] */}
                     <img 
                       src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/mercadopago.svg" 
                       alt="Mercado Pago" 
-                      className="h-5 object-contain opacity-50 hover:opacity-100 transition-all cursor-crosshair filter invert brightness-[10] grayscale" 
+                      className="h-5 object-contain opacity-40 hover:opacity-100 transition-all cursor-crosshair brightness-0 invert" 
                     />
                     <img 
                       src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/visa.svg" 
                       alt="Visa" 
-                      className="h-4 object-contain opacity-50 hover:opacity-100 transition-all cursor-crosshair filter invert brightness-[10] grayscale" 
+                      className="h-3 object-contain opacity-40 hover:opacity-100 transition-all cursor-crosshair brightness-0 invert" 
                     />
                     <img 
                       src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/mastercard.svg" 
                       alt="Mastercard" 
-                      className="h-7 object-contain opacity-50 hover:opacity-100 transition-all cursor-crosshair filter invert brightness-[10] grayscale" 
+                      className="h-6 object-contain opacity-40 hover:opacity-100 transition-all cursor-crosshair brightness-0 invert" 
                     />
                   </div>
+
 
 
 
