@@ -380,9 +380,10 @@ export default function RaffleDetailPage() {
                   </button>
 
                   <div className="flex items-center justify-center gap-6 opacity-60">
-                    <img src="https://logopng.com.br/logos/mercado-pago-23.png" alt="Mercado Pago" className="h-5 object-contain grayscale hover:grayscale-0 transition-all brightness-200" />
+                    <img src="/mercado-pago.webp" alt="Mercado Pago" className="h-5 object-contain grayscale hover:grayscale-0 transition-all brightness-200" />
                     <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" alt="Visa" className="h-2 object-contain grayscale hover:grayscale-0 transition-all invert brightness-200" />
                     <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" alt="Mastercard" className="h-8 object-contain grayscale hover:grayscale-0 transition-all brightness-125" />
+
                   </div>
                 </div>
               </div>
