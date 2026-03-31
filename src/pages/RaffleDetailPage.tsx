@@ -379,24 +379,38 @@ export default function RaffleDetailPage() {
                     <div className="absolute inset-0 bg-white translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500"></div>
                   </button>
 
-                  <div className="flex items-center justify-center gap-10 mt-10 border-t border-white/5 pt-8">
-                    {/* Logos de Pagamento Brancos Puros [Design Premium v4] */}
-                    <img 
-                      src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/mercadopago.svg" 
-                      alt="Mercado Pago" 
-                      className="h-5 object-contain opacity-40 hover:opacity-100 transition-all cursor-crosshair brightness-0 invert" 
-                    />
-                    <img 
-                      src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/visa.svg" 
-                      alt="Visa" 
-                      className="h-3 object-contain opacity-40 hover:opacity-100 transition-all cursor-crosshair brightness-0 invert" 
-                    />
-                    <img 
-                      src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/mastercard.svg" 
-                      alt="Mastercard" 
-                      className="h-6 object-contain opacity-40 hover:opacity-100 transition-all cursor-crosshair brightness-0 invert" 
-                    />
+                  {/* Seção de Pagamentos - Visual Perfection HQ [SAMA Protocol] */}
+                  <div className="mt-10 pt-8 border-t border-white/5 space-y-6">
+                    <div className="flex items-center justify-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
+                      <span className="material-symbols-outlined text-[12px] text-primary">verified_user</span>
+                      SISTEMA DE PAGAMENTO CRIPTOGRAFADO
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-6">
+                      <div className="h-6 flex items-center justify-center">
+                        <img 
+                          src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/mercadopago.svg" 
+                          alt="Mercado Pago" 
+                          className="h-full w-auto object-contain brightness-0 invert opacity-40 hover:opacity-100 transition-all cursor-crosshair" 
+                        />
+                      </div>
+                      <div className="h-4 flex items-center justify-center">
+                        <img 
+                          src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/visa.svg" 
+                          alt="Visa" 
+                          className="h-full w-auto object-contain brightness-0 invert opacity-40 hover:opacity-100 transition-all cursor-crosshair" 
+                        />
+                      </div>
+                      <div className="h-8 flex items-center justify-center">
+                        <img 
+                          src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/mastercard.svg" 
+                          alt="Mastercard" 
+                          className="h-full w-auto object-contain brightness-0 invert opacity-40 hover:opacity-100 transition-all cursor-crosshair" 
+                        />
+                      </div>
+                    </div>
                   </div>
+
 
 
 
