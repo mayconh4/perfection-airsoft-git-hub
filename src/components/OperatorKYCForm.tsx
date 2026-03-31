@@ -41,7 +41,6 @@ export function OperatorKYCForm() {
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
-  const [hasAgreed, setHasAgreed] = useState(false);
 
   useEffect(() => {
     // 1. Tentar carregar da Memória Local (localStorage) para agilizar redigitação
@@ -297,46 +296,34 @@ export function OperatorKYCForm() {
     }
   };
 
-  if (!hasAgreed && kycStatus === 'pending') {
-    return (
-      <div className="bg-surface/20 border border-white/5 p-8 relative overflow-hidden backdrop-blur-sm">
-        <div className="flex items-center gap-3 mb-6">
-          <span className="material-symbols-outlined text-primary text-2xl">verified_user</span>
-          <h3 className="text-[12px] font-black text-white uppercase tracking-[0.4em] italic">
-            Protocolo de Verificação Tática
-          </h3>
+  return (
+    <div className="bg-surface/20 border border-white/5 p-6 md:p-8 relative overflow-hidden">
+      {/* Protocolo de Verificação Tática - Intro Section */}
+      <div className="mb-12 border-b border-white/5 pb-8">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="size-12 rounded-full border-2 border-primary flex items-center justify-center bg-primary/10">
+             <span className="material-symbols-outlined text-primary text-2xl font-black">verified_user</span>
+          </div>
+          <h1 className="text-xl font-black text-white italic uppercase tracking-widest">
+            PROTOCOLO DE VERIFICAÇÃO TÁTICA
+          </h1>
         </div>
         
-        <div className="space-y-6 border-l-2 border-primary/20 pl-6 py-2">
-          <p className="text-[10px] text-slate-400 font-mono uppercase leading-relaxed text-justify">
-            Para garantir a segurança da nossa comunidade de operadores e cumprir as normas de combate a fraudes e lavagem de dinheiro (AML), solicitamos a verificação obrigatória de sua identidade. 
+        <div className="space-y-6 border-l-2 border-primary/30 pl-6 py-1">
+          <p className="text-[10px] text-slate-400 font-mono leading-relaxed uppercase tracking-widest">
+            PARA GARANTIR A SEGURANÇA DA NOSSA COMUNIDADE DE OPERADORES E CUMPRIR AS NORMAS DE COMBATE A FRAUDES E GOLPES, SOLICITAMOS A VERIFICAÇÃO OBRIGATÓRIA DE SUA IDENTIDADE.
           </p>
-          <p className="text-[10px] text-slate-400 font-mono uppercase leading-relaxed text-justify">
-            Seus dados são criptografados e usados exclusivamente para validar sua conta de recebimentos no gateway financeiro (Asaas), permitindo saques instantâneos e liquidez total nas suas missões.
+          <p className="text-[10px] text-slate-400 font-mono leading-relaxed uppercase tracking-widest">
+            SEUS DADOS SÃO CRIPTOGRAFADOS E USADOS EXCLUSIVAMENTE PARA VALIDAR SUA CONTA DE RECEBIMENTOS, PERMITINDO SAQUES DAS SUAS MISSÕES.
           </p>
-          <div className="bg-primary/5 p-4 border border-primary/10">
-            <p className="text-[9px] text-primary/80 font-black uppercase tracking-widest leading-loose">
-              <span className="text-primary text-base align-middle mr-2">🛡️</span> 
-              AO CONTINUAR, VOCÊ CONCORDA QUE AS INFORMAÇÕES E DOCUMENTOS ENVIADOS SÃO VERDADEIROS E AUTÊNTICOS.
+          <div className="bg-black/40 border border-white/10 p-4 mt-4">
+            <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em] leading-relaxed">
+               AO CONTINUAR E PREENCHER OS DADOS ABAIXO, VOCÊ CONCORDA QUE AS INFORMAÇÕES E DOCUMENTOS ENVIADOS SÃO VERDADEIROS E AUTÊNTICOS.
             </p>
           </div>
         </div>
-
-        <div className="mt-10">
-          <button 
-            onClick={() => setHasAgreed(true)}
-            className="w-full bg-primary hover:bg-white text-background-dark font-black py-5 px-8 text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 group"
-          >
-            CONCORDAR E PROSSEGUIR
-            <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
-          </button>
-        </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="bg-surface/20 border border-white/5 p-6 md:p-8 relative overflow-hidden">
       {/* Overlay para contas aprovadas */}
       {kycStatus === 'approved' && (
         <div className="absolute top-0 right-0 bg-green-500/20 text-green-400 text-[10px] font-black uppercase tracking-widest px-4 py-1 border-b border-l border-green-500/30">
