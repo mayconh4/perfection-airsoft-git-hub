@@ -75,21 +75,31 @@ Deno.serve(async (req: Request) => {
           // Cálculo: Organizador paga a taxa do ADM (7%) + Custo do Asaas (R$ 0,99)
           const operatorShare = amount - (amount * platformFeePercent) - asaasPixCost;
           
+          // 4. Buscar Nível de Confiança do Organizador
+          const { data: profile } = await supabase.from('profiles').select('trust_level').eq('id', raffle.creator_id).single();
+          const isElite = (profile?.trust_level || 0) >= 3;
+
           const { data: balance } = await supabase.from('user_balances').select('*').eq('user_id', raffle.creator_id).single();
           
+          const creditField = isElite ? 'available_balance' : 'pending_balance';
+          console.log(`[ASAAS-WEBHOOK] Organizador Elite: ${isElite} -> Jogando p/ ${creditField}`);
+
           if (balance) {
-            await supabase.from('user_balances').update({
-              pending_balance: Number(balance.pending_balance || 0) + operatorShare,
+            const updatePayload: any = {
               total_earned: Number(balance.total_earned || 0) + operatorShare,
               updated_at: new Date().toISOString()
-            }).eq('user_id', raffle.creator_id);
+            };
+            updatePayload[creditField] = Number(balance[creditField] || 0) + operatorShare;
+
+            await supabase.from('user_balances').update(updatePayload).eq('user_id', raffle.creator_id);
           } else {
-            await supabase.from('user_balances').insert({
+            const insertPayload: any = {
               user_id: raffle.creator_id,
-              available_balance: 0,
-              pending_balance: operatorShare,
+              available_balance: isElite ? operatorShare : 0,
+              pending_balance: isElite ? 0 : operatorShare,
               total_earned: operatorShare
-            });
+            };
+            await supabase.from('user_balances').insert(insertPayload);
           }
         }
       }

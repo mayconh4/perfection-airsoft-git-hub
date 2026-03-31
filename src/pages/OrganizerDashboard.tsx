@@ -10,13 +10,15 @@ interface EventStats {
   revenue: number;
   netRevenue: number;
   pendingBalance: number;
+  trustLevel: number;
+  completedDrops: number;
 }
 export default function OrganizerDashboard() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<any[]>([]);
-  const [stats, setStats] = useState<EventStats>({ ticketsSold: 0, revenue: 0, netRevenue: 0, pendingBalance: 0 });
+  const [stats, setStats] = useState<EventStats>({ ticketsSold: 0, revenue: 0, netRevenue: 0, pendingBalance: 0, trustLevel: 0, completedDrops: 0 });
   const [activeTab, setActiveTab] = useState<'missions' | 'logistics' | 'reports'>('missions');
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
   const [winners, setWinners] = useState<any[]>([]);
@@ -58,11 +60,20 @@ export default function OrganizerDashboard() {
         totalSold = eventsData.reduce((sum, e) => sum + (e.sold_count || 0), 0);
       }
 
+      // 2.5 Buscar Dados de Confiança do Perfil
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('trust_level, completed_drops')
+        .eq('id', user?.id)
+        .single();
+
       setStats({
         ticketsSold: totalSold,
         revenue: balanceData?.total_earned ? Number(balanceData.total_earned) : 0,
         netRevenue: balanceData?.available_balance ? Number(balanceData.available_balance) : 0,
-        pendingBalance: balanceData?.pending_balance ? Number(balanceData.pending_balance) : 0
+        pendingBalance: balanceData?.pending_balance ? Number(balanceData.pending_balance) : 0,
+        trustLevel: profile?.trust_level || 0,
+        completedDrops: profile?.completed_drops || 0
       });
 
       // 3. Buscar Ganhadores (Logística)
@@ -182,6 +193,50 @@ export default function OrganizerDashboard() {
               Nova Missão (Evento)
             </Link>
           </div>
+        </div>
+
+        {/* Tactical Trust HUD */}
+        <div className="bg-surface/40 border border-white/5 p-8 mb-8 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 -rotate-45 translate-x-16 -translate-y-16 pointer-events-none"></div>
+            
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                <div className="flex items-center gap-6">
+                    <div className="size-20 bg-black/40 border-2 border-primary/40 flex items-center justify-center relative group-hover:border-primary transition-colors">
+                        <span className="material-symbols-outlined text-4xl text-primary">military_tech</span>
+                        <div className="absolute -bottom-2 -right-2 bg-primary text-black font-black text-[8px] px-2 py-0.5 rounded-sm">
+                            RANK {stats.trustLevel}
+                        </div>
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-black text-white uppercase tracking-widest mb-1">
+                            {stats.trustLevel === 0 ? 'RECRUTA' : 
+                             stats.trustLevel === 1 ? 'SOLDADO' : 
+                             stats.trustLevel === 2 ? 'CABO' : 
+                             stats.trustLevel === 3 ? 'SARGENTO' : 
+                             stats.trustLevel === 4 ? 'CAPITÃO' : 'COMANDANTE'}
+                        </h3>
+                        <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">
+                            {stats.trustLevel >= 3 ? 'STATUS ELITE: SAQUE INSTANTÂNEO ATIVADO' : 'STATUS PADRÃO: SALDO EM GARANTIA POR ENTREGA'}
+                        </p>
+                    </div>
+                </div>
+                
+                <div className="flex-1 max-w-md w-full">
+                    <div className="flex justify-between text-[9px] font-black uppercase tracking-widest mb-2">
+                        <span className="text-slate-500">Progresso de Confiança</span>
+                        <span className="text-primary">{stats.completedDrops} / {stats.trustLevel < 3 ? '10' : '25'} ENTREGAS</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                        <div 
+                            className="h-full bg-primary transition-all duration-1000" 
+                            style={{ width: `${Math.min(100, (stats.completedDrops / (stats.trustLevel < 3 ? 10 : 25)) * 100)}%` }}
+                        ></div>
+                    </div>
+                    <p className="text-[8px] text-slate-600 mt-2 uppercase italic text-right">
+                        {stats.trustLevel < 3 ? 'Próximo Rank: Sargento (Libera Saque Real-time)' : 'Próximo Rank: Capitão (Taxas Reduzidas)'}
+                    </p>
+                </div>
+            </div>
         </div>
 
         {/* Stats Grid */}
