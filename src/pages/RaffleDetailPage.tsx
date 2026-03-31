@@ -379,12 +379,23 @@ export default function RaffleDetailPage() {
                     <div className="absolute inset-0 bg-white translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500"></div>
                   </button>
 
-                  <div className="flex items-center justify-center gap-6 opacity-60">
-                    <img src="/mercado-pago.png" alt="Mercado Pago" className="h-5 object-contain grayscale hover:grayscale-0 transition-all brightness-200" />
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" alt="Visa" className="h-2 object-contain grayscale hover:grayscale-0 transition-all invert brightness-200" />
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" alt="Mastercard" className="h-8 object-contain grayscale hover:grayscale-0 transition-all brightness-125" />
+                    {/* Logos de Pagamento Otimizados [Design Premium] */}
+                    <img 
+                      src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/mercadopago.svg" 
+                      alt="Mercado Pago" 
+                      className="h-4 object-contain opacity-40 hover:opacity-100 transition-all cursor-crosshair filter brightness-0 invert" 
+                    />
+                    <img 
+                      src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/visa.svg" 
+                      alt="Visa" 
+                      className="h-3 object-contain opacity-40 hover:opacity-100 transition-all cursor-crosshair filter brightness-0 invert" 
+                    />
+                    <img 
+                      src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/mastercard.svg" 
+                      alt="Mastercard" 
+                      className="h-6 object-contain opacity-40 hover:opacity-100 transition-all cursor-crosshair filter brightness-0 invert" 
+                    />
 
-                  </div>
                 </div>
               </div>
 
