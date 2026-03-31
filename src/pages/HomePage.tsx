@@ -185,7 +185,7 @@ export function HomePage() {
               {featured.map(p => (
                 <div key={p.id} className="group bg-surface/20 border border-white/5 hover:border-primary/40 transition-all overflow-hidden shadow-2xl">
                   {/* Thumbnail */}
-                  <Link to={`/produto/${p.id}`} className="block">
+                  <Link to={`/produto/${p.slug || p.id}`} className="block">
                     <ProductImageSlider 
                       mainImage={p.image_url}
                       images={p.images}
@@ -202,7 +202,7 @@ export function HomePage() {
                   <div className="p-6 space-y-4">
                     <div className="space-y-1">
                       <span className="text-[9px] font-black text-primary tracking-[0.2em] uppercase">{p.brand}</span>
-                      <Link to={`/produto/${p.id}`}>
+                      <Link to={`/produto/${p.slug || p.id}`}>
                         <h4 className="text-lg font-black text-white hover:text-primary leading-tight uppercase tracking-tight italic relative group/name transition-colors">
                           <div className="truncate">{shortName(p.name)}</div>
                           {restName(p.name) && (

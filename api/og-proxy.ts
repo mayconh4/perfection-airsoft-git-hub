@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://seewdqetyolfmqsiyban.supabase.co';
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || '';
+// @ts-ignore - Vercel Edge Runtime handles process.env
+const SUPABASE_URL = (globalThis as any).process?.env?.VITE_SUPABASE_URL || 'https://seewdqetyolfmqsiyban.supabase.co';
+// @ts-ignore
+const SUPABASE_ANON_KEY = (globalThis as any).process?.env?.VITE_SUPABASE_ANON_KEY || '';
 
 export const config = {
   runtime: 'edge',

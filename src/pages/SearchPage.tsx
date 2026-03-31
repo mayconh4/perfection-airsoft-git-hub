@@ -35,14 +35,14 @@ export function SearchPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {results.map(p => (
           <div key={p.id} className="bg-surface/50 border border-border-tactical group hover:border-primary transition-all duration-300">
-            <Link to={`/produto/${p.id}`}>
+            <Link to={`/produto/${p.slug || p.id}`}>
               <div className="relative aspect-square overflow-hidden bg-surface">
                 <img className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" src={p.image_url || ''} alt={p.name}/>
               </div>
             </Link>
             <div className="p-4 space-y-2">
               <span className="text-[10px] font-bold text-primary tracking-[0.15em] uppercase">{p.brand}</span>
-              <Link to={`/produto/${p.id}`}><h4 className="text-sm font-bold tracking-tight text-slate-100 uppercase leading-tight hover:text-primary transition-colors">{p.name}</h4></Link>
+              <Link to={`/produto/${p.slug || p.id}`}><h4 className="text-sm font-bold tracking-tight text-slate-100 uppercase leading-tight hover:text-primary transition-colors">{p.name}</h4></Link>
               <div className="text-lg font-bold text-primary tracking-tighter">{formatPrice(p.price)}</div>
               <button onClick={() => addItem(p.id)}
                       className="w-full mt-2 flex items-center justify-center gap-2 bg-primary text-background-dark font-bold text-xs tracking-widest uppercase py-3 hover:bg-white transition-colors">

@@ -70,7 +70,7 @@ export function CategoryPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {products.length > 0 ? products.map(p => (
                 <div key={p.id} className="bg-surface/50 border border-border-tactical group hover:border-primary transition-all duration-300">
-                  <Link to={`/produto/${p.id}`}>
+                  <Link to={`/produto/${p.slug || p.id}`}>
                     <ProductImageSlider
                       mainImage={p.image_url}
                       images={p.images}
@@ -83,7 +83,7 @@ export function CategoryPage() {
                   </Link>
                   <div className="p-4 sm:p-6 space-y-2">
                     <span className="text-[10px] font-bold text-primary tracking-[0.15em] uppercase">{p.brand}</span>
-                    <Link to={`/produto/${p.id}`}>
+                    <Link to={`/produto/${p.slug || p.id}`}>
                       <h4 className="text-sm sm:text-lg font-bold tracking-tight text-slate-100 uppercase leading-tight hover:text-primary transition-colors relative group/name">
                         <div className="truncate">{shortName(p.name)}</div>
                         {restName(p.name) && (

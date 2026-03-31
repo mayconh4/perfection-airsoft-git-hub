@@ -40,7 +40,7 @@ export function WishlistPage() {
               <button onClick={() => toggleWishlist(item.product_id)} className="absolute top-3 right-3 z-10 text-red-500 hover:text-red-400">
                 <span className="material-symbols-outlined" style={{fontVariationSettings: "'FILL' 1"}}>favorite</span>
               </button>
-              <Link to={`/produto/${item.product_id}`}>
+              <Link to={`/produto/${item.product?.slug || item.product_id}`}>
                 <div className="aspect-square overflow-hidden bg-surface">
                   <img className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" src={item.product?.image_url || ''} alt={item.product?.name}/>
                 </div>
