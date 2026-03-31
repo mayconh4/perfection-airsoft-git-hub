@@ -147,7 +147,7 @@ Deno.serve(async (req: Request) => {
       throw new Error(asaasData.errors?.[0]?.description || 'Erro ao criar subconta no Asaas');
     }
 
-    const { id: walletId, apiKey: subAccountApiKey } = asaasData;
+    const { id: walletId, apiKey: subAccountApiKey, object } = asaasData;
 
     if (object !== 'account' || !walletId) {
       throw new Error('Falha na geração do Wallet ID no Asaas.');
