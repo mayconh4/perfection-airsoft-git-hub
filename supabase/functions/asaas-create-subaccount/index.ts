@@ -126,14 +126,28 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify(asaasAccountPayload)
     });
 
-    const asaasData = await asaasRes.json();
+    let asaasData = await asaasRes.json();
 
-    if (!asaasRes.ok) {
+    // LÓGICA DE RECUPERAÇÃO TÁTICA (Se CPF já existe, buscar a conta existente no Asaas)
+    if (!asaasRes.ok && (asaasData.errors?.[0]?.code === 'account_already_exists' || asaasData.errors?.[0]?.description?.includes('em uso'))) {
+      console.log('>>> CPF/CNPJ JÁ EM USO. TENTANDO RECUPERAR CONTA NO ASAAS...');
+      const searchRes = await fetch(`${asaasApiUrl}/accounts?cpfCnpj=${cleanCpfCnpj}`, {
+        method: 'GET',
+        headers: { 'access_token': asaasApiKey }
+      });
+      const searchData = await searchRes.json();
+      if (searchRes.ok && searchData.data && searchData.data.length > 0) {
+        asaasData = searchData.data[0];
+        console.log('>>> CONTA RECUPERADA COM SUCESSO:', asaasData.id);
+      } else {
+         throw new Error(asaasData.errors?.[0]?.description || 'Erro ao criar subconta e falha na recuperação.');
+      }
+    } else if (!asaasRes.ok) {
       console.error('Erro na API Asaas:', asaasData);
       throw new Error(asaasData.errors?.[0]?.description || 'Erro ao criar subconta no Asaas');
     }
 
-    const { id: walletId, apiKey: subAccountApiKey, object } = asaasData;
+    const { id: walletId, apiKey: subAccountApiKey } = asaasData;
 
     if (object !== 'account' || !walletId) {
       throw new Error('Falha na geração do Wallet ID no Asaas.');
