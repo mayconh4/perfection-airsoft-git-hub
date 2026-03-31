@@ -379,21 +379,22 @@ export default function RaffleDetailPage() {
                     <div className="absolute inset-0 bg-white translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500"></div>
                   </button>
 
-                  {/* Alinhamento Tipográfico Total [SAMA Protocol - v7] */}
+                  {/* Ajuste de Fluxo e Escala [SAMA Protocol - v8] */}
                   <div className="mt-10 pt-8 border-t border-white/5 space-y-6">
                     <div className="flex items-center justify-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
                       <span className="material-symbols-outlined text-[14px] text-emerald-500">verified</span>
                       SISTEMA DE PAGAMENTO CRIPTOGRAFADO
                     </div>
                     
-                    <div className="flex items-baseline justify-center gap-6 font-black text-[12px] text-white/40 uppercase tracking-[0.2em]">
-                      <span className="hover:text-white transition-colors cursor-crosshair">MERCADO PAGO</span>
-                      <span className="text-white/10">•</span>
-                      <span className="hover:text-white transition-colors cursor-crosshair">VISA</span>
-                      <span className="text-white/10">•</span>
-                      <span className="hover:text-white transition-colors cursor-crosshair">MASTERCARD</span>
+                    <div className="flex flex-nowrap items-baseline justify-center gap-4 font-black text-[11px] text-white/40 uppercase tracking-[0.2em] overflow-hidden">
+                      <span className="hover:text-white transition-colors cursor-crosshair whitespace-nowrap">MERCADO PAGO</span>
+                      <span className="text-white/10 flex-shrink-0">•</span>
+                      <span className="hover:text-white transition-colors cursor-crosshair whitespace-nowrap">VISA</span>
+                      <span className="text-white/10 flex-shrink-0">•</span>
+                      <span className="hover:text-white transition-colors cursor-crosshair whitespace-nowrap">MASTERCARD</span>
                     </div>
                   </div>
+
 
 
 
