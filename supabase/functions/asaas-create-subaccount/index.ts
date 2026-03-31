@@ -104,7 +104,8 @@ Deno.serve(async (req: Request) => {
       complement: complement || '',
       province: neighborhood,
       postalCode: cleanCep,
-      birthDate: asaasBirthDate // Exigido para INDIVIDUAL
+      birthDate: asaasBirthDate, // Exigido para INDIVIDUAL
+      incomeValue: 5000 // Renda Mensal (Exigido pelo Asaas para PF)
       // 'city' omitido pois o Asaas exige código IBGE (número). Com o postalCode o Asaas deduz automático.
     };
 
