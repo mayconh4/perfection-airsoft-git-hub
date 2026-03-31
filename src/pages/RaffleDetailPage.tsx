@@ -181,7 +181,11 @@ export default function RaffleDetailPage() {
       <div className="scanline opacity-10"></div>
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_-20%,#fbbf2415,transparent_50%)] pointer-events-none"></div>
       
-      <SEO title={`${raffle.title} | Premium Drop`} />
+      <SEO 
+        title={`${raffle.title} | Premium Drop`} 
+        description={raffle.description}
+        image={raffle.image_url || undefined}
+      />
 
       {/* Top Navigation HUD */}
       <nav className="border-b border-white/5 bg-black/40 backdrop-blur-md py-4 px-6">

@@ -185,6 +185,7 @@ export default function EventDetailPage() {
       <SEO 
         title={`${event.title} | Perfection Airsoft`} 
         description={event.description}
+        image={event.image_url || undefined}
       />
 
       {/* Hero Header */}
