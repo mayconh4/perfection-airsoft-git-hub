@@ -47,7 +47,10 @@ export function CheckoutPage() {
   });
 
   const isPureRaffle = items.length > 0 && items.every(i => i.product?.brand === 'DROP');
-  const grandTotal = total + (isPureRaffle ? 0 : (selectedShipping?.price || 0));
+  
+  // Taxa Unificada: 7% Operacional + R$ 1,00 de custo fixo do Asaas
+  const serviceFee = isPureRaffle ? (total * 0.07) + 1.00 : 0;
+  const grandTotal = total + serviceFee + (isPureRaffle ? 0 : (selectedShipping?.price || 0));
 
   const [memory, setMemory] = useState<Record<string, string[]>>(() => {
     const saved = localStorage.getItem('operator_memory');
@@ -156,6 +159,8 @@ export function CheckoutPage() {
         orderId: isGuestFlow ? 'GUEST_NEW' : orderId,
         isGuest: isGuestFlow,
         total: grandTotal,
+        subtotal: total,
+        serviceFee: serviceFee,
         paymentMethod: methodToUse,
         customerData: { 
           name: form.name, 
@@ -454,6 +459,12 @@ export function CheckoutPage() {
                 <span>Logística</span>
                 <span className="font-mono text-white/50">{isPureRaffle ? 'FRETE GRÁTIS' : (selectedShipping ? formatPrice(selectedShipping.price, true) : 'Calculado no Próximo Passo')}</span>
               </div>
+              {serviceFee > 0 && (
+                <div className="flex justify-between text-[11px] font-bold text-primary/60 uppercase tracking-[0.2em]">
+                  <span>Taxa de Serviço</span>
+                  <span className="font-mono">{formatPrice(serviceFee, true)}</span>
+                </div>
+              )}
               <div className="flex justify-between items-end pt-4 bg-primary/5 p-4 rounded-lg border border-primary/10">
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50 italic">Total a Investir</span>
                 <span className="text-3xl font-black text-primary font-mono tracking-tighter italic">{formatPrice(grandTotal, true)}</span>

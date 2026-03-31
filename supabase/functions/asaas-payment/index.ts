@@ -18,9 +18,9 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const body = await req.json();
-    const { orderId, total, items, customerData, isGuest } = body;
+    const { orderId, total, subtotal, serviceFee, items, customerData, isGuest } = body;
 
-    console.log(`[ASAAS-PAYMENT] Processando Pedido: ${orderId} | Total: ${total}`);
+    console.log(`[ASAAS-PAYMENT] Processando Pedido: ${orderId} | Total: ${total} | Subtotal: ${subtotal}`);
 
     // 1. Criar Pedido se for Guest (Padrão tático do sistema)
     let finalOrderId = orderId;
@@ -99,7 +99,17 @@ Deno.serve(async (req: Request) => {
       if (reserveError) throw new Error(`Erro na reserva de tickets: ${reserveError.message}`);
     }
 
-    // 4. Chamada tática ao Asaas para gerar Cobrança PIX com SPLIT (93% para o operador)
+    // 4. Chamada tática ao Asaas para gerar Cobrança PIX com SPLIT
+    // Se o subtotal foi enviado, garantimos que o operador receba exatamente esse valor (Valor Limpo)
+    // Caso contrário, usamos o padrão tático de 93%
+    const splitConfig = subtotal ? {
+      walletId: walletId,
+      fixedValue: Number(subtotal)
+    } : {
+      walletId: walletId,
+      percentualValue: 93
+    };
+
     const asaasPayload = {
       customer: null, // Criaremos o cliente dinamicamente se necessário, mas o Asaas aceita dados diretos em alguns endpoints
       billingType: "PIX",
@@ -107,12 +117,7 @@ Deno.serve(async (req: Request) => {
       dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString().split('T')[0], // 24h expiração
       description: `Pedido ${finalOrderId} - Perfection Airsoft`,
       externalReference: finalOrderId,
-      split: [
-        {
-          walletId: walletId,
-          percentualValue: 93 // 93% para o operador, 7% fica na conta principal
-        }
-      ]
+      split: [splitConfig]
     };
 
     // Primeiro precisamos de um CUSTOMER no Asaas para criar a cobrança
