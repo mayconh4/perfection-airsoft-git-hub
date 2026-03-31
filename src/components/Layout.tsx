@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -140,6 +140,24 @@ export function Layout({ children }: LayoutProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  // Click outside profile box
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    if (isProfileOpen) {
+      document.addEventListener('click', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isProfileOpen]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -209,7 +227,7 @@ export function Layout({ children }: LayoutProps) {
             {/* Actions */}
             <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
               {/* User Account */}
-              <div className="relative group/profile">
+              <div className="relative group/profile" ref={profileRef}>
                 {user ? (
                   <button 
                     onClick={() => setIsProfileOpen(!isProfileOpen)}

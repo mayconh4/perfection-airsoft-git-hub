@@ -10,6 +10,7 @@ export function LoginPage() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const { signIn, signUp, resendConfirmation, resetPassword, user } = useAuth();
   const navigate = useNavigate();
 
@@ -48,7 +49,7 @@ export function LoginPage() {
     setMessage('');
 
     if (isLogin) {
-      const { error } = await signIn(email, password);
+      const { error } = await signIn(email, password, rememberMe);
       if (error) { 
         if (error.message.includes('confirmed')) {
           setMessage('Seu e-mail ainda não foi confirmado.');
@@ -121,6 +122,24 @@ export function LoginPage() {
               </span>
             </button>
           </div>
+
+          {isLogin && (
+            <div className="flex items-center space-x-2 py-2">
+              <div 
+                onClick={() => setRememberMe(!rememberMe)}
+                className="group cursor-pointer flex items-center space-x-2"
+              >
+                <div className={`w-4 h-4 border ${rememberMe ? 'bg-primary border-primary' : 'bg-transparent border-border-tactical'} flex items-center justify-center transition-all duration-200`}>
+                  {rememberMe && (
+                    <span className="material-symbols-outlined text-[12px] text-background-dark font-black">check</span>
+                  )}
+                </div>
+                <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase group-hover:text-primary transition-colors">
+                  Manter-me conectado
+                </span>
+              </div>
+            </div>
+          )}
 
           {message && (
             <div className={`p-3 text-xs text-center uppercase tracking-widest border ${message.toLowerCase().includes('enviado') || message.toLowerCase().includes('ascensão') || message.toLowerCase().includes('reenviado') ? 'border-green-500/30 text-green-400 bg-green-500/5' : 'border-red-500/30 text-red-400 bg-red-500/5'}`}>
