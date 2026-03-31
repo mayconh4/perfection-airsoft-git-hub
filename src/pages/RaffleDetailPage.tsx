@@ -379,31 +379,22 @@ export default function RaffleDetailPage() {
                     <div className="absolute inset-0 bg-white translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500"></div>
                   </button>
 
-                  {/* Refinamento Estético: Verde Verificado & Logos Completos [SAMA Protocol] */}
-                  <div className="mt-10 pt-8 border-t border-white/5 space-y-8">
-                    <div className="flex items-center justify-center gap-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
-                      <span className="material-symbols-outlined text-[16px] text-emerald-500">shield_with_heart</span>
+                  {/* Alinhamento Tipográfico Total [SAMA Protocol - v7] */}
+                  <div className="mt-10 pt-8 border-t border-white/5 space-y-6">
+                    <div className="flex items-center justify-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
+                      <span className="material-symbols-outlined text-[14px] text-emerald-500">verified</span>
                       SISTEMA DE PAGAMENTO CRIPTOGRAFADO
                     </div>
                     
-                    <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
-                      <img 
-                        src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/mercadopago.svg" 
-                        alt="Mercado Pago" 
-                        className="h-7 object-contain brightness-0 invert opacity-60 hover:opacity-100 transition-all cursor-crosshair" 
-                      />
-                      <img 
-                        src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/visa.svg" 
-                        alt="Visa" 
-                        className="h-5 object-contain brightness-0 invert opacity-60 hover:opacity-100 transition-all cursor-crosshair" 
-                      />
-                      <img 
-                        src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/mastercard.svg" 
-                        alt="Mastercard" 
-                        className="h-10 object-contain brightness-0 invert opacity-60 hover:opacity-100 transition-all cursor-crosshair" 
-                      />
+                    <div className="flex items-baseline justify-center gap-6 font-black text-[12px] text-white/40 uppercase tracking-[0.2em]">
+                      <span className="hover:text-white transition-colors cursor-crosshair">MERCADO PAGO</span>
+                      <span className="text-white/10">•</span>
+                      <span className="hover:text-white transition-colors cursor-crosshair">VISA</span>
+                      <span className="text-white/10">•</span>
+                      <span className="hover:text-white transition-colors cursor-crosshair">MASTERCARD</span>
                     </div>
                   </div>
+
 
 
 
