@@ -2,19 +2,19 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/api/og-proxy"
+      "destination": "/api/og"
     },
     {
       "source": "/drop/(.*)",
-      "destination": "/api/og-proxy"
+      "destination": "/api/og"
     },
     {
       "source": "/eventos/(.*)",
-      "destination": "/api/og-proxy"
+      "destination": "/api/og"
     },
     {
       "source": "/produto/(.*)",
-      "destination": "/api/og-proxy"
+      "destination": "/api/og"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
