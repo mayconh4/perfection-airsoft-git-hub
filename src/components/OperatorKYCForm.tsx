@@ -41,6 +41,7 @@ export function OperatorKYCForm() {
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
+  const [hasAgreed, setHasAgreed] = useState(false);
 
   useEffect(() => {
     // 1. Tentar carregar da Memória Local (localStorage) para agilizar redigitação
@@ -295,6 +296,44 @@ export function OperatorKYCForm() {
       setUploadingDocs(false);
     }
   };
+
+  if (!hasAgreed && kycStatus === 'pending') {
+    return (
+      <div className="bg-surface/20 border border-white/5 p-8 relative overflow-hidden backdrop-blur-sm">
+        <div className="flex items-center gap-3 mb-6">
+          <span className="material-symbols-outlined text-primary text-2xl">verified_user</span>
+          <h3 className="text-[12px] font-black text-white uppercase tracking-[0.4em] italic">
+            Protocolo de Verificação Tática
+          </h3>
+        </div>
+        
+        <div className="space-y-6 border-l-2 border-primary/20 pl-6 py-2">
+          <p className="text-[10px] text-slate-400 font-mono uppercase leading-relaxed text-justify">
+            Para garantir a segurança da nossa comunidade de operadores e cumprir as normas de combate a fraudes e lavagem de dinheiro (AML), solicitamos a verificação obrigatória de sua identidade. 
+          </p>
+          <p className="text-[10px] text-slate-400 font-mono uppercase leading-relaxed text-justify">
+            Seus dados são criptografados e usados exclusivamente para validar sua conta de recebimentos no gateway financeiro (Asaas), permitindo saques instantâneos e liquidez total nas suas missões.
+          </p>
+          <div className="bg-primary/5 p-4 border border-primary/10">
+            <p className="text-[9px] text-primary/80 font-black uppercase tracking-widest leading-loose">
+              <span className="text-primary text-base align-middle mr-2">🛡️</span> 
+              AO CONTINUAR, VOCÊ CONCORDA QUE AS INFORMAÇÕES E DOCUMENTOS ENVIADOS SÃO VERDADEIROS E AUTÊNTICOS.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-10">
+          <button 
+            onClick={() => setHasAgreed(true)}
+            className="w-full bg-primary hover:bg-white text-background-dark font-black py-5 px-8 text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 group"
+          >
+            CONCORDAR E PROSSEGUIR
+            <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-surface/20 border border-white/5 p-6 md:p-8 relative overflow-hidden">
