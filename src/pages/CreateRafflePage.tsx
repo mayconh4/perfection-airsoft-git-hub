@@ -21,7 +21,8 @@ export default function CreateRafflePage() {
     images: [] as string[],
     rules_title: 'REGRAS E ENGAJAMENTO',
     logistics_title: 'LOGÍSTICA',
-    logistics_description: 'Envio segurado para todo o Brasil via transportadora tática especializada.'
+    logistics_description: 'Envio segurado para todo o Brasil via transportadora tática especializada.',
+    slug: ''
   });
 
   const [hasPixKey, setHasPixKey] = useState<boolean | null>(null);
@@ -74,7 +75,8 @@ export default function CreateRafflePage() {
           images: data.images || [],
           rules_title: data.rules_title || 'REGRAS E ENGAJAMENTO',
           logistics_title: data.logistics_title || 'LOGÍSTICA',
-          logistics_description: data.logistics_description || 'Envio segurado para todo o Brasil via transportadora tática especializada.'
+          logistics_description: data.logistics_description || 'Envio segurado para todo o Brasil via transportadora tática especializada.',
+          slug: data.slug || ''
         });
       }
     } catch (err: any) {
@@ -161,6 +163,7 @@ export default function CreateRafflePage() {
             rules_title: formData.rules_title,
             logistics_title: formData.logistics_title,
             logistics_description: formData.logistics_description,
+            slug: formData.slug || undefined,
           })
           .eq('id', id);
         if (error) throw error;
@@ -181,6 +184,7 @@ export default function CreateRafflePage() {
             rules_title: formData.rules_title,
             logistics_title: formData.logistics_title,
             logistics_description: formData.logistics_description,
+            slug: formData.slug || undefined,
             status: 'ativo'
           }
         ]);
@@ -274,6 +278,26 @@ export default function CreateRafflePage() {
                         onChange={e => setFormData({ ...formData, description: e.target.value })}
                     />
                 </div>
+
+                {/* Slug Amigável */}
+                <div>
+                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">LINK AMIGÁVEL (URL SLUG)</label>
+                    <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 font-mono text-[10px]">/drop/</span>
+                        <input 
+                            type="text" 
+                            placeholder="ex: rifle-sniper-pro"
+                            className="w-full bg-black/40 border border-white/10 p-4 pl-16 text-primary font-mono text-sm focus:border-primary outline-none transition-all placeholder:opacity-20"
+                            value={formData.slug}
+                            onChange={e => {
+                                const clean = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                                setFormData({ ...formData, slug: clean });
+                            }}
+                        />
+                    </div>
+                    <p className="text-[9px] text-slate-600 mt-2 uppercase font-black tracking-widest">DEIXE EM BRANCO PARA GERAR AUTOMATICAMENTE BASEADO NO TÍTULO.</p>
+                </div>
+
 
                 {/* Pricing & Units */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

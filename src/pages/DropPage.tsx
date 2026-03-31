@@ -13,6 +13,7 @@ interface Raffle {
   sold_tickets: number;
   status: 'ativo' | 'finalizado' | 'cancelado';
   draw_date: string;
+  slug?: string;
 }
 
 const MOCK_RAFFLES: Raffle[] = [

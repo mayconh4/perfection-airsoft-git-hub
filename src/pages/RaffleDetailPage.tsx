@@ -19,6 +19,7 @@ interface Raffle {
   rules_title?: string;
   logistics_title?: string;
   logistics_description?: string;
+  slug?: string;
 }
 
 export default function RaffleDetailPage() {
@@ -128,16 +129,6 @@ export default function RaffleDetailPage() {
     }
   };
 
-        if (!ticketsError && tickets) {
-          setSoldTicketNumbers(tickets.map(t => t.ticket_number));
-        }
-      }
-    } catch {
-      // Mock fallback
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading && !raffle) return <div className="p-20 text-white font-mono uppercase tracking-widest animate-pulse">Sincronizando com o Hub do QG...</div>;
   if (!raffle) return <div className="p-20 text-white font-black uppercase tracking-widest">PROTOCOLO NÃO ENCONTRADO OU DESATIVADO.</div>;
