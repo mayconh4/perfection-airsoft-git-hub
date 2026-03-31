@@ -37,11 +37,45 @@ export function OperatorKYCForm() {
   const [loadingCep, setLoadingCep] = useState(false);
 
   useEffect(() => {
+    // 1. Tentar carregar da Memória Local (localStorage) para agilizar redigitação
+    const savedData = localStorage.getItem('kyc_form_memory');
+    if (savedData) {
+      try {
+        const data = JSON.parse(savedData);
+        if (data.fullName) setFullName(data.fullName);
+        if (data.cpfCnpj) setCpfCnpj(data.cpfCnpj);
+        if (data.phone) setPhone(data.phone);
+        if (data.birthDate) setBirthDate(data.birthDate);
+        if (data.cep) setCep(data.cep);
+        if (data.state) setState(data.state);
+        if (data.city) setCity(data.city);
+        if (data.street) setStreet(data.street);
+        if (data.neighborhood) setNeighborhood(data.neighborhood);
+        if (data.number) setNumber(data.number);
+        if (data.complement) setComplement(data.complement);
+        if (data.pixKeyType) setPixKeyType(data.pixKeyType);
+        if (data.pixKey) setPixKey(data.pixKey);
+        console.log('[KYC] Memória Tática Carregada do LocalStorage. ✅');
+      } catch (e) {
+        console.error('Erro ao carregar memória local:', e);
+      }
+    }
+
     if (user) {
       setEmail(user.email || '');
       fetchProfile();
     }
   }, [user]);
+
+  // Efeito para Salvar Memória (Persistence)
+  useEffect(() => {
+    const dataToSave = {
+      fullName, cpfCnpj, phone, birthDate,
+      cep, state, city, street, neighborhood, number, complement,
+      pixKeyType, pixKey
+    };
+    localStorage.setItem('kyc_form_memory', JSON.stringify(dataToSave));
+  }, [fullName, cpfCnpj, phone, birthDate, cep, state, city, street, neighborhood, number, complement, pixKeyType, pixKey]);
 
   const fetchProfile = async () => {
     try {
