@@ -240,7 +240,7 @@ export default function CreateRafflePage() {
                         </p>
                     </div>
                     <Link 
-                        to="/organizador" 
+                        to="/seguranca-comunidade" 
                         className="bg-red-500 text-white font-black py-3 px-8 text-[10px] uppercase tracking-widest hover:bg-white hover:text-red-500 transition-all"
                     >
                         CONFIGURAR CHAVE PIX AGORA

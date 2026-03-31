@@ -28,6 +28,7 @@ import DropPage from './pages/DropPage';
 import RaffleDetailPage from './pages/RaffleDetailPage';
 import CreateRafflePage from './pages/CreateRafflePage';
 import OrganizerDashboard from './pages/OrganizerDashboard';
+import SecurityNoticePage from './pages/SecurityNoticePage';
 import DashboardDemo from './pages/DashboardDemo';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 import { AdminLayout } from './components/AdminLayout';
@@ -72,6 +73,7 @@ function App() {
               <Route path="/drop/criar" element={<CreateRafflePage />} />
               <Route path="/drop/editar/:id" element={<CreateRafflePage />} />
               <Route path="/drop/:id" element={<RaffleDetailPage />} />
+              <Route path="/seguranca-comunidade" element={<SecurityNoticePage />} />
               <Route path="/organizador" element={<OrganizerDashboard />} />
               <Route path="/dashboard-demo" element={<DashboardDemo />} />
               <Route path="/organizador/eventos/:id" element={<CreateEventPage />} />
