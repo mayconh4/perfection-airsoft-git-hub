@@ -17,6 +17,7 @@ export default function OrganizerDashboard() {
   const [events, setEvents] = useState<any[]>([]);
   const [stats, setStats] = useState<EventStats>({ ticketsSold: 0, revenue: 0, netRevenue: 0 });
   const [activeTab, setActiveTab] = useState<'missions' | 'logistics' | 'reports'>('missions');
+  const [isProcessingPayout, setIsProcessingPayout] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -64,6 +65,46 @@ export default function OrganizerDashboard() {
       console.error('Erro no Dashboard:', err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRequestPayout = async () => {
+    if (stats.netRevenue <= 0) {
+      alert('SALDO INSUFICIENTE PARA RESGATE.');
+      return;
+    }
+
+    if (!confirm('DESEJA SOLICITAR O RESGATE TOTAL DO SEU SALDO PARA SUA CONTA BANCÁRIA CADASTRADA?')) {
+      return;
+    }
+
+    setIsProcessingPayout(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/asaas-request-payout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({ userId: user?.id })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Falha ao processar saque.');
+      }
+
+      alert(`MISSÃO CUMPRIDA! Resgate de R$ ${result.value.toFixed(2)} processado com sucesso.`);
+      fetchDashboardData(); // Atualiza saldo
+    } catch (err: any) {
+      console.error('Erro no Saque:', err.message);
+      alert(`ERRO NA OPERAÇÃO: ${err.message}`);
+    } finally {
+      setIsProcessingPayout(false);
     }
   };
 
@@ -216,16 +257,22 @@ export default function OrganizerDashboard() {
                   Liberação: Saldo disponível para resgate imediato após confirmação do webhook.
                 </p>
                 <button 
-                  onClick={() => {
-                    if (stats.netRevenue <= 0) {
-                      alert('SALDO INSUFICIENTE PARA RESGATE.');
-                    } else {
-                      alert('SOLICITAÇÃO RECEBIDA! O repasse será efetuado para a chave PIX cadastrada na sua conta.');
-                    }
-                  }}
-                  className="w-full bg-primary hover:bg-white text-background-dark font-black py-4 text-[9px] uppercase tracking-[.3em] transition-all"
+                  onClick={handleRequestPayout}
+                  disabled={isProcessingPayout}
+                  className={`w-full font-black py-4 text-[9px] uppercase tracking-[.3em] transition-all flex items-center justify-center gap-2 ${
+                    isProcessingPayout 
+                      ? 'bg-white/10 text-white/30 cursor-not-allowed' 
+                      : 'bg-primary hover:bg-white text-background-dark'
+                  }`}
                 >
-                  SOLICITAR RESGATE PIX
+                  {isProcessingPayout ? (
+                    <>
+                      <div className="size-3 border-2 border-primary border-t-transparent animate-spin rounded-full"></div>
+                      PROCESSANDO...
+                    </>
+                  ) : (
+                    'SOLICITAR RESGATE PIX'
+                  )}
                 </button>
               </div>
             </div>
