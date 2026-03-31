@@ -12,10 +12,14 @@ export default async function handler(req: any, res: any) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
 
-    // Suporta req.url do Vercel
+    // Recupera a rota original via Query Param passado pelo vercel.json
+    const type = req.query?.type;
+    const slugOrId = req.query?.slug;
+
+    // Constrói a URL original para o cache e injeção do og:url
     const host = req.headers.host || 'www.perfectionairsoft.com.br';
-    const url = new URL(req.url || '/', `https://${host}`);
-    const path = url.pathname;
+    const originalPath = type && slugOrId ? `/${type}/${slugOrId}` : '/';
+    const fullUrl = `https://${host}${originalPath}`;
 
     let title = 'Perfection Airsoft | Conectando quem domina o jogo';
     let description = 'O ponto de encontro da elite tática. Onde a irmandade do Airsoft se une por equipamentos de alta performance e drops exclusivos.';
@@ -28,35 +32,28 @@ export default async function handler(req: any, res: any) {
       return `${productionDomain}${urlStr.startsWith('/') ? '' : '/'}${urlStr}`;
     };
 
-    if (SUPABASE_ANON_KEY) {
+    if (SUPABASE_ANON_KEY && type && slugOrId) {
       const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      if (path.startsWith('/drop/')) {
-        const slugOrId = path.replace('/drop/', '');
-        if (slugOrId && slugOrId !== 'criar') {
-          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
-          const { data } = await supabase.from('raffles').select('title, description, image_url').or(isUUID ? `id.eq.${slugOrId}` : `slug.eq.${slugOrId}`).single();
-          if (data) {
-            title = data.title;
-            description = data.description || description;
-            image = ensureAbsolute(data.image_url);
-          }
+      if (type === 'drop') {
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+        const { data } = await supabase.from('raffles').select('title, description, image_url').or(isUUID ? `id.eq.${slugOrId}` : `slug.eq.${slugOrId}`).single();
+        if (data) {
+          title = data.title;
+          description = data.description || description;
+          image = ensureAbsolute(data.image_url);
         }
-      } else if (path.startsWith('/produto/')) {
-        const slugOrId = path.replace('/produto/', '');
-        if (slugOrId) {
-          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
-          const { data } = await supabase.from('products').select('name, description, image_url').or(isUUID ? `id.eq.${slugOrId}` : `slug.eq.${slugOrId}`).single();
-          if (data) {
-            title = data.name;
-            description = data.description || description;
-            image = ensureAbsolute(data.image_url);
-          }
+      } else if (type === 'produto') {
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+        const { data } = await supabase.from('products').select('name, description, image_url').or(isUUID ? `id.eq.${slugOrId}` : `slug.eq.${slugOrId}`).single();
+        if (data) {
+          title = data.name;
+          description = data.description || description;
+          image = ensureAbsolute(data.image_url);
         }
-      } else if (path.startsWith('/eventos/')) {
-        const id = path.replace('/eventos/', '');
-        if (id && id !== 'criar') {
-          const { data } = await supabase.from('events').select('title, description, image_url').eq('id', id).single();
+      } else if (type === 'eventos') {
+        if (slugOrId !== 'criar') {
+          const { data } = await supabase.from('events').select('title, description, image_url').eq('id', slugOrId).single();
           if (data) {
             title = data.title;
             description = data.description || description;
@@ -98,7 +95,7 @@ export default async function handler(req: any, res: any) {
     transformedHtml = injectMeta(transformedHtml, 'og:image:width', '1200');
     transformedHtml = injectMeta(transformedHtml, 'og:image:height', '630');
     // Forçar URL absoluta
-    transformedHtml = injectMeta(transformedHtml, 'og:url', `https://www.perfectionairsoft.com.br${path}`);
+    transformedHtml = injectMeta(transformedHtml, 'og:url', fullUrl);
     
     transformedHtml = injectMeta(transformedHtml, 'twitter:card', 'summary_large_image');
     transformedHtml = injectMeta(transformedHtml, 'twitter:title', title);
