@@ -107,7 +107,25 @@ while ($deployAsaasAttempts -lt 3 -and -not $deployAsaasSuccess) {
         Start-Sleep -Seconds 5
     }
 }
-
+# 4.3 Outras Funções Asaas
+$asaasFunctions = @("asaas-payment", "asaas-webhook", "asaas-request-payout")
+foreach ($func in $asaasFunctions) {
+    $deployAttempts = 0
+    $deploySuccess = $false
+    while ($deployAttempts -lt 3 -and -not $deploySuccess) {
+        $deployAttempts++
+        Write-Host "Deploy $func (Tentativa $deployAttempts/3)..."
+        $LASTEXITCODE = 0
+        npx supabase functions deploy $func --project-ref seewdqetyolfmqsiyban
+        if ($LASTEXITCODE -eq 0) {
+            $deploySuccess = $true
+            Write-Host "Deploy de $func OK."
+        } else {
+            Write-Host "Falha no deploy de $func. Aguardando 5 segundos..."
+            Start-Sleep -Seconds 5
+        }
+    }
+}
 
 Write-Host "`n========================================="
 Write-Host "5. Verificacao das funcoes"
