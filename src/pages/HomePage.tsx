@@ -168,7 +168,7 @@ export function HomePage() {
           <div className="flex items-center justify-between gap-4 mb-12">
             <div>
               <span className="text-[9px] font-black tracking-[0.5em] text-primary uppercase">Operações Semanais</span>
-              <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic mt-1">Ofertas da Semana</h2>
+              <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic mt-1">Arsenal em Destaque</h2>
             </div>
             <Link to="/produtos" className="text-[10px] font-black text-white/30 hover:text-primary tracking-widest uppercase transition-colors flex items-center gap-2">
               Ver Todo o Arsenal <span className="material-symbols-outlined text-sm">arrow_outward</span>
