@@ -163,13 +163,20 @@ Deno.serve(async (req: Request) => {
 
     // 2. ATUALIZA O PROFILE NO SUPABASE
     // Como a criação deu certo, validamos o kyc_status como 'approved' para habilitar as funções táticas
+    const profileUpdate: any = {
+      asaas_wallet_id: walletId,
+      kyc_status: 'approved'
+    };
+
+    if (subAccountApiKey) {
+      profileUpdate.asaas_api_key = subAccountApiKey;
+    }
+
+    console.log(`>>> ATUALIZANDO PERFIL DO USUÁRIO: ${userId} | WALLET: ${walletId}`);
+
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .update({
-        asaas_wallet_id: walletId,
-        asaas_api_key: subAccountApiKey, // Opcional salvar, mas caso precise pro futuro
-        kyc_status: 'approved'
-      })
+      .update(profileUpdate)
       .eq('id', userId);
 
     if (profileError) {
