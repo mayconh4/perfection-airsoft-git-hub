@@ -379,37 +379,27 @@ export default function RaffleDetailPage() {
                     <div className="absolute inset-0 bg-white translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500"></div>
                   </button>
 
-                  {/* Seção de Pagamentos - Visual Perfection HQ [SAMA Protocol] */}
-                  <div className="mt-10 pt-8 border-t border-white/5 space-y-6">
-                    <div className="flex items-center justify-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
-                      <span className="material-symbols-outlined text-[12px] text-primary">verified_user</span>
-                      SISTEMA DE PAGAMENTO CRIPTOGRAFADO
-                    </div>
+                  {/* Seção de Pagamentos Otimizada [REESCRITA COMPLETA - ZERO BUG] */}
+                  <div className="mt-8 flex items-center justify-center gap-3">
+                    {/* Mercado Pago */}
+                    <svg viewBox="0 0 48 48" className="h-[28px] w-auto object-contain opacity-50 hover:opacity-100 transition-opacity" fill="white">
+                      <path d="M36.3,16.5c-0.9-0.9-2.2-1.3-3.7-1.3H15.4c-1.5,0-2.8,0.5-3.7,1.3c-0.9,0.9-1.3,2.2-1.3,3.7v15.6c0,1.5,0.5,2.8,1.3,3.7c0.9,0.9,2.2,1.3,3.7,1.3h17.2c1.5,0,2.8-0.5,3.7-1.3s1.3-2.2,1.3-3.7V20.2C37.6,18.7,37.2,17.4,36.3,16.5z M33.2,34.8h-18v-14h18V34.8z"/>
+                      <path d="M21.5,25.5h-2.1v4h2.1c1.1,0,2-0.9,2-2S22.6,25.5,21.5,25.5z"/>
+                      <circle cx="28.5" cy="27.5" r="2"/>
+                    </svg>
                     
-                    <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-6">
-                      <div className="h-6 flex items-center justify-center">
-                        <img 
-                          src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/mercadopago.svg" 
-                          alt="Mercado Pago" 
-                          className="h-full w-auto object-contain brightness-0 invert opacity-40 hover:opacity-100 transition-all cursor-crosshair" 
-                        />
-                      </div>
-                      <div className="h-4 flex items-center justify-center">
-                        <img 
-                          src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/visa.svg" 
-                          alt="Visa" 
-                          className="h-full w-auto object-contain brightness-0 invert opacity-40 hover:opacity-100 transition-all cursor-crosshair" 
-                        />
-                      </div>
-                      <div className="h-8 flex items-center justify-center">
-                        <img 
-                          src="https://raw.githubusercontent.com/creative-deck/payment-icons/master/svg/flat/mastercard.svg" 
-                          alt="Mastercard" 
-                          className="h-full w-auto object-contain brightness-0 invert opacity-40 hover:opacity-100 transition-all cursor-crosshair" 
-                        />
-                      </div>
-                    </div>
+                    {/* Visa */}
+                    <svg viewBox="0 0 48 48" className="h-[28px] w-auto object-contain opacity-50 hover:opacity-100 transition-opacity" fill="white">
+                      <path d="M15.4,30.3l2.4-14.7h3.8l-2.4,14.7H15.4z M32.6,16l-3.3,8.9l-0.4-2c-0.7-2.3-2.7-4.8-5.1-6.1l3.3,13.8h4l5.9-14.7H32.6z M12.8,15.6c-2.3,0-4.3,1.4-5.2,3.4l-0.1,0.5l8.1-0.1C15.1,17.4,14.1,15.6,12.8,15.6z"/>
+                    </svg>
+
+                    {/* Mastercard */}
+                    <svg viewBox="0 0 48 48" className="h-[28px] w-auto object-contain opacity-50 hover:opacity-100 transition-opacity">
+                      <circle cx="19" cy="24" r="14" fill="white" opacity="0.5"/>
+                      <circle cx="29" cy="24" r="14" fill="white" opacity="0.3"/>
+                    </svg>
                   </div>
+
 
 
 
