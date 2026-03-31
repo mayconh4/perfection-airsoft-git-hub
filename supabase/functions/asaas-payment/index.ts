@@ -100,21 +100,22 @@ Deno.serve(async (req: Request) => {
     }
 
     // 4. Chamada tática ao Asaas para gerar Cobrança PIX com SPLIT
-    // Se o subtotal foi enviado, garantimos que o operador receba exatamente esse valor (Valor Limpo)
-    // Caso contrário, usamos o padrão tático de 93%
-    const splitConfig = subtotal ? {
+    // O Organizador absorve todas as taxas: 7% operacional + R$ 0,99 de custo de PIX do Asaas
+    // Isso garante que o ADM receba os 7% limpos na conta principal
+    const platformFeePercent = 0.07;
+    const asaasPixCost = 0.99;
+    const organizerShare = Number(total) - (Number(total) * platformFeePercent) - asaasPixCost;
+
+    const splitConfig = {
       walletId: walletId,
-      fixedValue: Number(subtotal)
-    } : {
-      walletId: walletId,
-      percentualValue: 93
+      fixedValue: Number(organizerShare.toFixed(2))
     };
 
     const asaasPayload = {
-      customer: null, // Criaremos o cliente dinamicamente se necessário, mas o Asaas aceita dados diretos em alguns endpoints
+      customer: null, 
       billingType: "PIX",
       value: Number(total),
-      dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString().split('T')[0], // 24h expiração
+      dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString().split('T')[0],
       description: `Pedido ${finalOrderId} - Perfection Airsoft`,
       externalReference: finalOrderId,
       split: [splitConfig]

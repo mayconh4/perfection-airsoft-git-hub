@@ -9,13 +9,14 @@ interface EventStats {
   ticketsSold: number;
   revenue: number;
   netRevenue: number;
+  pendingBalance: number;
 }
 export default function OrganizerDashboard() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<any[]>([]);
-  const [stats, setStats] = useState<EventStats>({ ticketsSold: 0, revenue: 0, netRevenue: 0 });
+  const [stats, setStats] = useState<EventStats>({ ticketsSold: 0, revenue: 0, netRevenue: 0, pendingBalance: 0 });
   const [activeTab, setActiveTab] = useState<'missions' | 'logistics' | 'reports'>('missions');
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
 
@@ -36,7 +37,7 @@ export default function OrganizerDashboard() {
       // 1. Buscar Saldo Real da nova tabela user_balances
       const { data: balanceData } = await supabase
         .from('user_balances')
-        .select('available_balance, total_earned')
+        .select('available_balance, pending_balance, total_earned')
         .eq('user_id', user?.id)
         .single();
 
@@ -58,7 +59,8 @@ export default function OrganizerDashboard() {
       setStats({
         ticketsSold: totalSold,
         revenue: balanceData?.total_earned ? Number(balanceData.total_earned) : 0,
-        netRevenue: balanceData?.available_balance ? Number(balanceData.available_balance) : 0
+        netRevenue: balanceData?.available_balance ? Number(balanceData.available_balance) : 0,
+        pendingBalance: balanceData?.pending_balance ? Number(balanceData.pending_balance) : 0
       });
 
     } catch (err: any) {
@@ -155,17 +157,18 @@ export default function OrganizerDashboard() {
             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Tickets Vendidos</span>
             <span className="text-4xl font-black text-white">{stats.ticketsSold}</span>
           </div>
-          <div className="bg-surface/30 border border-white/5 p-8">
-            <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Receita Bruta</span>
-            <span className="text-4xl font-black text-white">R$ {stats.revenue.toFixed(2)}</span>
+          <div className="bg-surface/30 border border-white/5 p-8 border-l-orange-500/40 border-l-4">
+            <span className="text-[10px] text-orange-500/60 font-black uppercase tracking-widest block mb-1 font-mono italic">Saldo em Garantia</span>
+            <span className="text-4xl font-black text-white">R$ {stats.pendingBalance.toFixed(2)}</span>
+            <span className="text-[8px] text-slate-500 block mt-2 uppercase">Liberado após confirmação de entrega</span>
           </div>
           <div className="bg-surface/30 border border-white/5 p-8 border-l-primary/40 border-l-4">
             <span className="text-[10px] text-primary/60 font-black uppercase tracking-widest block mb-1 font-mono italic">Saldo Disponível</span>
             <span className="text-4xl font-black text-primary">R$ {stats.netRevenue.toFixed(2)}</span>
           </div>
           <div className="bg-surface/30 border border-white/5 p-8">
-            <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Status de Saque</span>
-            <span className="text-[12px] font-black text-white uppercase tracking-widest">Liberado após 48h</span>
+            <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Total Acumulado</span>
+            <span className="text-sm font-black text-white uppercase tracking-widest">R$ {stats.revenue.toFixed(2)}</span>
           </div>
         </div>
 

@@ -64,26 +64,30 @@ Deno.serve(async (req: Request) => {
         console.log(`[ASAAS-WEBHOOK] Incrementando ${count} tickets na rifa ${raffleId}`);
         await supabase.rpc('increment_raffle_sold_tickets', { rid: raffleId, count_add: count });
         
-        // 4. Atualizar Saldo do Operador (Transação Financeira)
-        // O Asaas já fez o split tático na Wallet, mas o site mantém um registro visual no dashboard.
-        // Buscamos o criador da rifa para atualizar o user_balances
+        // 4. Atualizar Saldo do Operador (Transação Financeira com Trava de Segurança)
+        // O valor entra como PENDENTE até que a entrega seja confirmada ou o prazo de segurança expire.
         const { data: raffle } = await supabase.from('raffles').select('creator_id, ticket_price').eq('id', raffleId).single();
         if (raffle) {
-          const amount = payment.value; // Valor total da transação
-          const feePercent = 0.07; // 7% plataforma
-          const operatorShare = amount * (1 - feePercent);
+          const amount = Number(payment.value);
+          const platformFeePercent = 0.07;
+          const asaasPixCost = 0.99;
           
-          const { data: balance } = await supabase.from('user_balances').select('available_balance, total_earned').eq('user_id', raffle.creator_id).single();
+          // Cálculo: Organizador paga a taxa do ADM (7%) + Custo do Asaas (R$ 0,99)
+          const operatorShare = amount - (amount * platformFeePercent) - asaasPixCost;
+          
+          const { data: balance } = await supabase.from('user_balances').select('*').eq('user_id', raffle.creator_id).single();
+          
           if (balance) {
             await supabase.from('user_balances').update({
-              available_balance: Number(balance.available_balance) + operatorShare,
-              total_earned: Number(balance.total_earned) + operatorShare,
+              pending_balance: Number(balance.pending_balance || 0) + operatorShare,
+              total_earned: Number(balance.total_earned || 0) + operatorShare,
               updated_at: new Date().toISOString()
             }).eq('user_id', raffle.creator_id);
           } else {
             await supabase.from('user_balances').insert({
               user_id: raffle.creator_id,
-              available_balance: operatorShare,
+              pending_balance: operatorShare,
+              available_balance: 0,
               total_earned: operatorShare
             });
           }
