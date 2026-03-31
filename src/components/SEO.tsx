@@ -8,7 +8,7 @@ interface SEOProps {
 }
 
 export function SEO({ 
-  title = 'Perfection Airsoft | De Operador para Operador', 
+  title = 'Perfection Airsoft | Conectando quem domina o jogo', 
   description = 'O ponto de encontro da elite tática. Onde a irmandade do Airsoft se une por equipamentos de alta performance e drops exclusivos.', 
   image = 'https://www.perfectionairsoft.com.br/og-image.png',
   url = window.location.href

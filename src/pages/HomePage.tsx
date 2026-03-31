@@ -58,8 +58,8 @@ export function HomePage() {
     {
       id: 'drop',
       subtitle: "COMUNIDADE TÁTICA",
-      title: "MAIS QUE UM JOGO, <br /><span className='text-blue-500'>UMA MISSÃO</span>",
-      description: "Conectamos operadores, campos e entusiastas em uma rede de elite. A irmandade que se forja no campo, consolidada no Hub.",
+      title: "CONECTANDO QUEM <br /><span className='text-blue-500'>DOMINA O JOGO</span>",
+      description: "A elite tática se encontra aqui. Onde a irmandade do Airsoft se une por equipamentos de alta performance e drops exclusivos.",
       buttonText: "Iniciar Protocolo",
       link: "/drop/criar",
       image: "/assets/drop-banner.png",
@@ -69,8 +69,8 @@ export function HomePage() {
     {
       id: 'field',
       subtitle: "COORDENADAS ATIVAS",
-      title: "CONECTE SUA <br /><span className='text-green-500'>EQUIPE</span>",
-      description: "Mapa tático completo de campos e missões. Organize seu esquadrão, gerencie ingressos e domine o território nacional.",
+      title: "SINCRONIZE SUA <br /><span className='text-green-500'>EQUIPE</span>",
+      description: "Mapa tático completo de campos e missões. Perfection Airsoft: conectando quem domina o jogo em território nacional.",
       buttonText: "Recrutar Campo",
       link: "/eventos",
       image: "/assets/field-banner.png",
