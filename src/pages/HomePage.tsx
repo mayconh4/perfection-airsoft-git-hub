@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../context/CartContext';
@@ -16,7 +17,51 @@ function restName(name: string, words = 4): string {
 export function HomePage() {
   const { products, loading } = useProducts();
   const { addItem } = useCart();
+  const [currentSlide, setCurrentSlide] = useState(0);
   
+  const slides = [
+    {
+      id: 'forge',
+      subtitle: "Lançamento de Equipamentos",
+      title: "FORJA DO <br /><span className='text-primary'>OPERADOR</span>",
+      description: "Customização de nível militar. Monte seu loadout com as peças de precisão mais avançadas do mercado global.",
+      buttonText: "Montar Agora",
+      link: "/produtos",
+      image: "/hero-bg.png",
+      accent: "text-primary",
+      glow: "shadow-[0_0_30px_rgba(255,193,7,0.3)]"
+    },
+    {
+      id: 'drop',
+      subtitle: "Marketplace de Sorteios",
+      title: "FAÇA SEU <br /><span className='text-blue-500'>DROP</span>",
+      description: "Transforme seu equipamento em lucro. Crie um sorteio tático hoje mesmo com nossa plataforma de rifas automatizada.",
+      buttonText: "Criar Missão",
+      link: "/drop/criar",
+      image: "/hero-bg.png",
+      accent: "text-blue-500",
+      glow: "shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+    },
+    {
+      id: 'field',
+      subtitle: "Rede de Operações",
+      title: "CADASTRE SEU <br /><span className='text-green-500'>CAMPO</span>",
+      description: "Expanda sua missão. Cadastre seu campo de Airsoft e gerencie eventos de elite com nosso sistema de ingressos e check-in.",
+      buttonText: "Cadastrar Campo",
+      link: "/eventos",
+      image: "/hero-bg.png",
+      accent: "text-green-500",
+      glow: "shadow-[0_0_30px_rgba(34,197,94,0.3)]"
+    }
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % slides.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
+
   // Pegamos apenas os 4 primeiros para as "Ofertas da Semana" como no mockup
   const featured = products.slice(0, 4);
 
@@ -24,50 +69,71 @@ export function HomePage() {
     <>
       <SEO />
       <div className="flex flex-col">
-      {/* Hero Section - Elite Operator */}
-      <section className="relative h-[600px] w-full flex items-center overflow-hidden border-b border-white/5">
-        <div className="absolute inset-0 z-0">
-          <img src="/hero-bg.png" alt="Tactical Operator" className="w-full h-full object-cover object-center scale-110 animate-pulse-slow opacity-60" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background-dark via-background-dark/40 to-transparent"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-background-dark via-transparent to-transparent"></div>
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 w-full">
-          <div className="max-w-2xl space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="h-[2px] w-12 bg-primary"></div>
-              <span className="text-primary font-black tracking-[0.4em] text-[10px] uppercase">Lançamento de Equipamentos</span>
+      {/* Hero Section - Elite Operator Carousel */}
+      <section className="relative h-[650px] w-full flex items-center overflow-hidden border-b border-white/5 bg-background-dark">
+        {slides.map((slide, index) => (
+          <div 
+            key={slide.id}
+            className={`absolute inset-0 transition-all duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+          >
+            <div className="absolute inset-0 z-0">
+              <img src={slide.image} alt={slide.subtitle} className={`w-full h-full object-cover object-center transition-transform duration-[6000ms] ease-linear ${index === currentSlide ? 'scale-110' : 'scale-100'} opacity-60`} />
+              <div className={`absolute inset-0 bg-gradient-to-r from-background-dark via-background-dark/40 to-transparent`}></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-background-dark via-transparent to-transparent"></div>
             </div>
-            
-            <h1 className="text-6xl sm:text-8xl font-black text-white leading-tight tracking-tighter uppercase italic">
-              FORJA DO <br />
-              <span className="text-primary drop-shadow-[0_0_20px_rgba(255,193,7,0.5)]">OPERADOR</span>
-            </h1>
-            
-            <p className="text-white/40 text-sm sm:text-lg leading-relaxed uppercase tracking-[0.1em] font-medium max-w-lg italic">
-              Customização de nível militar. Monte seu loadout com as peças de precisão mais avançadas do mercado global.
-            </p>
 
-            <div className="flex flex-wrap gap-4 pt-4">
-              <button className="bg-primary text-black font-black py-4 px-10 uppercase tracking-widest text-xs hover:bg-white transition-all shadow-[0_0_30px_rgba(255,193,7,0.3)] flex items-center gap-3">
-                Montar Agora <span className="material-symbols-outlined text-sm">arrow_forward</span>
-              </button>
-              <button className="border border-white/20 text-white font-black py-4 px-10 uppercase tracking-widest text-xs hover:bg-white/10 transition-all backdrop-blur-sm">
-                Ver Detalhes
-              </button>
+            <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 h-full flex items-center w-full">
+              <div className={`max-w-2xl space-y-6 transition-all duration-700 delay-300 ${index === currentSlide ? 'translate-x-0 opacity-100' : '-translate-x-12 opacity-0'}`}>
+                <div className="flex items-center gap-4">
+                  <div className={`h-[2px] w-12 transition-colors duration-500 ${slide.accent === 'text-primary' ? 'bg-primary' : slide.accent === 'text-blue-500' ? 'bg-blue-500' : 'bg-green-500'}`}></div>
+                  <span className={`font-black tracking-[0.4em] text-[10px] uppercase ${slide.accent}`}>{slide.subtitle}</span>
+                </div>
+                
+                <h1 
+                  className="text-6xl sm:text-7xl lg:text-8xl font-black text-white leading-tight tracking-tighter uppercase italic"
+                  dangerouslySetInnerHTML={{ __html: slide.title }}
+                />
+                
+                <p className="text-white/40 text-sm sm:text-lg leading-relaxed uppercase tracking-[0.1em] font-medium max-w-lg italic">
+                  {slide.description}
+                </p>
+
+                <div className="flex flex-wrap gap-4 pt-4">
+                  <Link 
+                    to={slide.link}
+                    className={`text-black font-black py-4 px-10 uppercase tracking-widest text-xs hover:bg-white transition-all flex items-center gap-3 ${slide.accent === 'text-primary' ? 'bg-primary shadow-[0_0_30px_rgba(255,193,7,0.3)]' : slide.accent === 'text-blue-500' ? 'bg-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)]' : 'bg-green-500 shadow-[0_0_30px_rgba(34,197,94,0.3)]'}`}
+                  >
+                    {slide.buttonText} <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                  </Link>
+                  <button className="border border-white/20 text-white font-black py-4 px-10 uppercase tracking-widest text-xs hover:bg-white/10 transition-all backdrop-blur-sm">
+                    Ver Inteligência
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
+        ))}
+
+        {/* Carousel Indicators */}
+        <div className="absolute bottom-10 left-6 lg:left-8 z-20 flex gap-3">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentSlide(i)}
+              className={`h-1 transition-all duration-500 ${i === currentSlide ? 'w-12 bg-primary' : 'w-4 bg-white/10 hover:bg-white/30'}`}
+            />
+          ))}
         </div>
 
         {/* Hero Metrics (Bottom Right) */}
-        <div className="absolute bottom-12 right-12 hidden lg:flex gap-12 text-right">
+        <div className="absolute bottom-12 right-12 hidden lg:flex gap-12 text-right z-20">
           <div>
-            <span className="block text-[8px] font-bold text-white/30 uppercase tracking-[0.3em] mb-1">Status do Servidor</span>
-            <span className="text-primary font-black text-xs tracking-widest uppercase italic">Conectado [BRA-01]</span>
+            <span className="block text-[8px] font-bold text-white/30 uppercase tracking-[0.3em] mb-1">Status do QG</span>
+            <span className="text-primary font-black text-xs tracking-widest uppercase italic animate-pulse">Operação Ativa</span>
           </div>
           <div>
-            <span className="block text-[8px] font-bold text-white/30 uppercase tracking-[0.3em] mb-1">Latência</span>
-            <span className="text-primary font-black text-xs tracking-widest uppercase italic font-mono">12ms</span>
+            <span className="block text-[8px] font-bold text-white/30 uppercase tracking-[0.3em] mb-1">Coordenadas</span>
+            <span className="text-primary font-black text-xs tracking-widest uppercase italic font-mono">[23.5505° S, 46.6333° W]</span>
           </div>
         </div>
       </section>
