@@ -1,38 +1,19 @@
 {
   "rewrites": [
     {
-      "source": "/eventos/(.*)",
-      "has": [
-        { "type": "header", "key": "user-agent", "value": "(.*)(bot|facebookexternalhit|whatsapp|telegram|twitterbot|googlebot|bingbot)(.*)" }
-      ],
-      "destination": "/api/og-proxy"
-    },
-    {
       "source": "/",
-      "has": [
-        { "type": "header", "key": "user-agent", "value": "(.*)(bot|facebookexternalhit|whatsapp|telegram|twitterbot|googlebot|bingbot)(.*)" }
-      ],
       "destination": "/api/og-proxy"
     },
     {
       "source": "/drop/(.*)",
-      "has": [
-        { "type": "header", "key": "user-agent", "value": "(.*)(bot|facebookexternalhit|whatsapp|telegram|twitterbot|googlebot|bingbot)(.*)" }
-      ],
       "destination": "/api/og-proxy"
     },
     {
       "source": "/eventos/(.*)",
-      "has": [
-        { "type": "header", "key": "user-agent", "value": "(.*)(bot|facebookexternalhit|whatsapp|telegram|twitterbot|googlebot|bingbot)(.*)" }
-      ],
       "destination": "/api/og-proxy"
     },
     {
       "source": "/produto/(.*)",
-      "has": [
-        { "type": "header", "key": "user-agent", "value": "(.*)(bot|facebookexternalhit|whatsapp|telegram|twitterbot|googlebot|bingbot)(.*)" }
-      ],
       "destination": "/api/og-proxy"
     },
     { "source": "/(.*)", "destination": "/index.html" }
