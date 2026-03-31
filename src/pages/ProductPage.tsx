@@ -8,9 +8,9 @@ import { formatPrice } from '../types/database';
 import { SEO } from '../components/SEO';
 
 export function ProductPage() {
-  const { id } = useParams<{ id: string }>();
+  const { idOrSlug } = useParams<{ idOrSlug: string }>();
   const [activeTab, setActiveTab] = useState<'descricao' | 'especificacoes'>('descricao');
-  const { product, loading } = useProduct(id || '');
+  const { product, loading } = useProduct(idOrSlug || '');
   const { addItem } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { user } = useAuth();

@@ -24,19 +24,28 @@ export function useProducts(categorySlug?: string) {
   return { products, loading };
 }
 
-export function useProduct(id: string) {
+export function useProduct(idOrSlug: string) {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
-      const { data } = await supabase.from('products').select('*, category:categories(*)').eq('id', id).single();
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+      
+      let query = supabase.from('products').select('*, category:categories(*)');
+      if (isUUID) {
+        query = query.eq('id', idOrSlug);
+      } else {
+        query = query.eq('slug', idOrSlug);
+      }
+      
+      const { data } = await query.single();
       setProduct(data as Product | null);
       setLoading(false);
     };
-    if (id) fetch();
-  }, [id]);
+    if (idOrSlug) fetch();
+  }, [idOrSlug]);
 
   return { product, loading };
 }

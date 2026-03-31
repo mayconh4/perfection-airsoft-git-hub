@@ -23,14 +23,15 @@ export default async function handler(req: Request) {
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   try {
-    // 1. Extração de Identificadores
+    // 1. Extração de Identificadores (Busca Dual: ID ou Slug)
     if (path.startsWith('/drop/')) {
       const slugOrId = path.replace('/drop/', '');
       if (slugOrId && slugOrId !== 'criar') {
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
         const { data: raffle } = await supabase
           .from('raffles')
           .select('title, description, image_url')
-          .or(`id.eq.${slugOrId},slug.eq.${slugOrId}`)
+          .or(isUUID ? `id.eq.${slugOrId}` : `slug.eq.${slugOrId}`)
           .single();
 
         if (raffle) {
@@ -40,12 +41,13 @@ export default async function handler(req: Request) {
         }
       }
     } else if (path.startsWith('/produto/')) {
-      const id = path.replace('/produto/', '');
-      if (id) {
+      const slugOrId = path.replace('/produto/', '');
+      if (slugOrId) {
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
         const { data: product } = await supabase
           .from('products')
           .select('name, description, image_url')
-          .eq('id', id)
+          .or(isUUID ? `id.eq.${slugOrId}` : `slug.eq.${slugOrId}`)
           .single();
 
         if (product) {
@@ -54,43 +56,38 @@ export default async function handler(req: Request) {
           image = product.image_url || image;
         }
       }
-    } else if (path.startsWith('/eventos/')) {
-      const id = path.replace('/eventos/', '');
-      if (id && id !== 'criar') {
-        const { data: event } = await supabase
-          .from('events')
-          .select('title, description, image_url')
-          .eq('id', id)
-          .single();
-
-        if (event) {
-          title = `${event.title} | Missão Confirmada`;
-          description = event.description || description;
-          image = event.image_url || image;
-        }
-      }
     }
 
     // 2. Buscar o index.html original (template)
-    // Usamos a URL base do site instalada no Vercel
     const siteUrl = `${url.protocol}//${url.host}`;
     const response = await fetch(`${siteUrl}/index.html`);
     let html = await response.text();
 
-    // 3. Injeção de Tags via Regex (Padrão SPA)
-    html = html.replace(/<title>.*?<\/title>/, `<title>${title}</title>`);
-    html = html.replace(/<meta property="og:title" content=".*?" \/>/, `<meta property="og:title" content="${title}" />`);
-    html = html.replace(/<meta property="og:description" content=".*?" \/>/, `<meta property="og:description" content="${description}" />`);
-    html = html.replace(/<meta property="og:image" content=".*?" \/>/, `<meta property="og:image" content="${image}" />`);
-    html = html.replace(/<meta name="description" content=".*?" \/>/, `<meta name="description" content="${description}" />`);
-    
-    // Twitter tags
-    html = html.replace(/<meta property="twitter:title" content=".*?" \/>/, `<meta property="twitter:title" content="${title}" />`);
-    html = html.replace(/<meta property="twitter:description" content=".*?" \/>/, `<meta property="twitter:description" content="${description}" />`);
-    html = html.replace(/<meta property="twitter:image" content=".*?" \/>/, `<meta property="twitter:image" content="${image}" />`);
+    // 3. Injeção de Tags via Regex Resiliente (Trabalha com espaços e aspas)
+    const injectMeta = (html: string, property: string, content: string, isName = false) => {
+      const attr = isName ? 'name' : 'property';
+      const regex = new RegExp(`<meta\\s+${attr}=["']${property}["']\\s+content=["'].*?["']\\s*\\/?>`, 'i');
+      const newTag = `<meta ${attr}="${property}" content="${content}" />`;
+      if (regex.test(html)) {
+        return html.replace(regex, newTag);
+      }
+      return html.replace('</head>', `${newTag}\n</head>`);
+    };
 
+    html = html.replace(/<title>.*?<\/title>/i, `<title>${title}</title>`);
+    html = injectMeta(html, 'description', description, true);
+    html = injectMeta(html, 'og:title', title);
+    html = injectMeta(html, 'og:description', description);
+    html = injectMeta(html, 'og:image', image);
+    html = injectMeta(html, 'twitter:title', title);
+    html = injectMeta(html, 'twitter:description', description);
+    html = injectMeta(html, 'twitter:image', image);
+    
     return new Response(html, {
-      headers: { 'Content-Type': 'text/html' },
+      headers: { 
+        'Content-Type': 'text/html',
+        'Cache-Control': 'public, max-age=3600'
+      },
     });
   } catch (err) {
     // Se falhar, retorna o HTML original (deve ter o og-image.png padrão que salvamos antes)
