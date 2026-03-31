@@ -1,6 +1,13 @@
 {
   "rewrites": [
     {
+      "source": "/",
+      "has": [
+        { "type": "header", "key": "user-agent", "value": "(.*)(bot|facebookexternalhit|whatsapp|telegram|twitterbot|googlebot|bingbot)(.*)" }
+      ],
+      "destination": "/api/og-proxy"
+    },
+    {
       "source": "/drop/(.*)",
       "has": [
         { "type": "header", "key": "user-agent", "value": "(.*)(bot|facebookexternalhit|whatsapp|telegram|twitterbot|googlebot|bingbot)(.*)" }

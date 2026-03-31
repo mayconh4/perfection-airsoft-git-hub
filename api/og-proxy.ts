@@ -61,39 +61,56 @@ export default async function handler(req: Request) {
     }
 
     // 2. Buscar o index.html original (template)
-    const siteUrl = `${url.protocol}//${url.host}`;
-    const response = await fetch(`${siteUrl}/index.html`);
-    let html = await response.text();
+    // Usamos um fallback para localhost em desenvolvimento e o host real em produção
+    const siteUrl = url.origin;
+    let html = '';
+    
+    try {
+      const response = await fetch(`${siteUrl}/index.html`, {
+        headers: { 'User-Agent': 'Vercel Edge Function' }
+      });
+      html = await response.text();
+    } catch (e) {
+      // Fallback extremo se o fetch falhar
+      html = `<!DOCTYPE html><html><head><title>${title}</title></head><body><div id="root"></div></body></html>`;
+    }
 
-    // 3. Injeção de Tags via Regex Resiliente (Trabalha com espaços e aspas)
-    const injectMeta = (html: string, property: string, content: string, isName = false) => {
+    // 3. Injeção de Tags via Regex Resiliente
+    const injectMeta = (htmlContent: string, property: string, contentValue: string, isName = false) => {
       const attr = isName ? 'name' : 'property';
       const regex = new RegExp(`<meta\\s+${attr}=["']${property}["']\\s+content=["'].*?["']\\s*\\/?>`, 'i');
-      const newTag = `<meta ${attr}="${property}" content="${content}" />`;
-      if (regex.test(html)) {
-        return html.replace(regex, newTag);
+      const newTag = `<meta ${attr}="${property}" content="${contentValue}" />`;
+      
+      if (regex.test(htmlContent)) {
+        return htmlContent.replace(regex, newTag);
       }
-      return html.replace('</head>', `${newTag}\n</head>`);
+      
+      // Se não encontrar, injeta logo após o <title> ou antes do </head>
+      if (htmlContent.includes('</head>')) {
+        return htmlContent.replace('</head>', `${newTag}\n</head>`);
+      }
+      return htmlContent + newTag;
     };
 
-    html = html.replace(/<title>.*?<\/title>/i, `<title>${title}</title>`);
-    html = injectMeta(html, 'description', description, true);
-    html = injectMeta(html, 'og:title', title);
-    html = injectMeta(html, 'og:description', description);
-    html = injectMeta(html, 'og:image', image);
-    html = injectMeta(html, 'twitter:title', title);
-    html = injectMeta(html, 'twitter:description', description);
-    html = injectMeta(html, 'twitter:image', image);
+    let transformedHtml = html;
+    transformedHtml = transformedHtml.replace(/<title>.*?<\/title>/i, `<title>${title}</title>`);
+    transformedHtml = injectMeta(transformedHtml, 'description', description, true);
+    transformedHtml = injectMeta(transformedHtml, 'og:title', title);
+    transformedHtml = injectMeta(transformedHtml, 'og:description', description);
+    transformedHtml = injectMeta(transformedHtml, 'og:image', image);
+    transformedHtml = injectMeta(transformedHtml, 'og:url', url.href);
+    transformedHtml = injectMeta(transformedHtml, 'twitter:card', 'summary_large_image');
+    transformedHtml = injectMeta(transformedHtml, 'twitter:title', title);
+    transformedHtml = injectMeta(transformedHtml, 'twitter:description', description);
+    transformedHtml = injectMeta(transformedHtml, 'twitter:image', image);
     
-    return new Response(html, {
+    return new Response(transformedHtml, {
       headers: { 
-        'Content-Type': 'text/html',
+        'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, max-age=3600'
       },
     });
   } catch (err) {
-    // Se falhar, retorna o HTML original (deve ter o og-image.png padrão que salvamos antes)
-    const siteUrl = `${url.protocol}//${url.host}`;
-    return fetch(`${siteUrl}/index.html`);
+    return new Response('Internal Engine Error', { status: 500 });
   }
 }
