@@ -231,7 +231,8 @@ export function OperatorKYCForm() {
           'x-bypass-token': userToken
         },
         body: JSON.stringify({
-          fullName, email, cpfCnpj, phone, cep, city, street, neighborhood, addressNumber: number, complement, state, birthDate
+          fullName, email, cpfCnpj, phone, cep, city, street, neighborhood, addressNumber: number, complement, state, birthDate,
+          userId: user?.id // Enviamos o ID real para vínculo via bypass
         })
       });
 

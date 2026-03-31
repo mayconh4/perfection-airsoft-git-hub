@@ -67,8 +67,14 @@ Deno.serve(async (req: Request) => {
       addressNumber, 
       complement, 
       state,
-      birthDate
+      birthDate,
+      userId: payloadUserId
     } = await req.json();
+
+    if (payloadUserId) {
+      console.log('>>> PRIORIZANDO USER ID DO PAYLOAD:', payloadUserId);
+      userId = payloadUserId;
+    }
 
     if (!fullName || !cpfCnpj || !email || !phone || !cep || !addressNumber) {
       throw new Error('Dados incompletos para criação de subconta Asaas.');
