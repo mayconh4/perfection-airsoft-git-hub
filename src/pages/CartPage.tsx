@@ -55,14 +55,14 @@ export function CartPage() {
           <div className="flex-1 space-y-3">
             {items.map(item => (
               <div key={item.id} className="flex gap-4 bg-surface/30 border border-white/5 hover:border-primary/20 transition-colors p-4 group">
-                <Link to={`/produto/${item.product_id}`} className="flex-shrink-0">
+                <Link to={`/produto/${item.product?.slug || item.product_id}`} className="flex-shrink-0">
                   <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white flex items-center justify-center p-2 border border-primary/10">
                     <img src={item.product?.image_url || ''} alt={item.product?.name} className="w-full h-full object-contain"/>
                   </div>
                 </Link>
                 <div className="flex-1 min-w-0">
                   <span className="text-[9px] text-primary uppercase tracking-[0.2em] font-black">{item.product?.brand}</span>
-                  <Link to={`/produto/${item.product_id}`}>
+                  <Link to={`/produto/${item.product?.slug || item.product_id}`}>
                     <h3 className="text-sm font-black uppercase leading-snug hover:text-primary transition-colors pr-8 mt-0.5">{item.product?.name}</h3>
                   </Link>
                   <p className="text-primary font-black text-base mt-2 font-mono">{formatPrice(item.product?.price || 0)}</p>

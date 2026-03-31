@@ -18,7 +18,7 @@ export default async function handler(req: Request) {
   // (O vercel.json cuidará de não entrar aqui para usuários normais se configurado com redirects específicos)
   
   const path = url.pathname;
-  let title = 'Perfection Airsoft | De Operador para Operador';
+  let title = 'Perfection Airsoft | Conectando quem domina o jogo';
   let description = 'O ponto de encontro da elite tática. Onde a irmandade do Airsoft se une.';
   let image = 'https://www.perfectionairsoft.com.br/og-image.png';
 

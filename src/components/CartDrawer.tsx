@@ -36,15 +36,17 @@ export function CartDrawer() {
           ) : (
             items.map(item => (
               <div key={item.id} className="flex gap-4 bg-surface/40 p-3 border border-white/5 relative group hover:border-primary/30 transition-colors">
-                <div className="size-20 bg-white flex items-center justify-center p-2 flex-shrink-0">
+                <Link to={`/produto/${item.product?.slug || item.product_id}`} onClick={() => setIsCartOpen(false)} className="size-20 bg-white flex items-center justify-center p-2 flex-shrink-0">
                   <img src={item.product?.image_url || ''} alt={item.product?.name} className="w-full h-full object-contain" />
-                </div>
+                </Link>
                 <div className="flex-1 flex flex-col justify-between py-1">
                   <div>
-                    <h4 className="text-[10px] font-black text-white leading-tight uppercase line-clamp-2 pr-6 mb-1">
-                      {item.product?.brand === 'DROP' ? <span className="text-primary mr-1">DROP:</span> : null}
-                      {item.product?.name}
-                    </h4>
+                    <Link to={`/produto/${item.product?.slug || item.product_id}`} onClick={() => setIsCartOpen(false)}>
+                      <h4 className="text-[10px] font-black text-white leading-tight uppercase line-clamp-2 pr-6 mb-1 hover:text-primary transition-colors">
+                        {item.product?.brand === 'DROP' ? <span className="text-primary mr-1">DROP:</span> : null}
+                        {item.product?.name}
+                      </h4>
+                    </Link>
                     <span className="text-[10px] text-primary font-black">
                       {formatPrice(item.product?.price || 0, item.product?.brand === 'DROP')}
                     </span>
