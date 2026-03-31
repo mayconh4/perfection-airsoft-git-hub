@@ -255,10 +255,10 @@ export function OperatorKYCForm() {
 
       // Sucesso total
       setIsError(false);
-      setMessage('SUBCONTA VERIFICADA E CRIADA COM SUCESSO! 🎖️');
+      setMessage('DADOS ENVIADOS PARA O QG! VERIFICAÇÃO INTERNA EM ANDAMENTO. 🎖️');
       
       // Atualiza status na tela
-      setKycStatus('approved');
+      setKycStatus('waiting_approval');
 
     } catch (err: any) {
       setIsError(true);
