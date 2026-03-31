@@ -58,7 +58,7 @@ function RaffleCard({ raffle }: { raffle: Raffle }) {
             <div className="h-full bg-primary" style={{ width: `${percentSold}%` }} />
         </div>
         <Link 
-          to={`/drop/${raffle.id}`}
+          to={`/drop/${raffle.slug || raffle.id}`}
           className="w-full bg-primary text-background-dark font-black py-4 text-[10px] uppercase tracking-[0.3em] hover:bg-white transition-all text-center block"
         >
           SELECIONAR TICKETS

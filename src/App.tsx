@@ -73,7 +73,7 @@ function App() {
               <Route path="/drop" element={<DropPage />} />
               <Route path="/drop/criar" element={<CreateRafflePage />} />
               <Route path="/drop/editar/:id" element={<CreateRafflePage />} />
-              <Route path="/drop/:id" element={<RaffleDetailPage />} />
+              <Route path="/drop/:idOrSlug" element={<RaffleDetailPage />} />
               <Route path="/seguranca-comunidade" element={<SecurityNoticePage />} />
               <Route path="/organizador" element={<OrganizerDashboard />} />
               <Route path="/dashboard-demo" element={<DashboardDemo />} />

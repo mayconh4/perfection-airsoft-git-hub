@@ -22,7 +22,7 @@ interface Raffle {
 }
 
 export default function RaffleDetailPage() {
-  const { id } = useParams();
+  const { idOrSlug } = useParams();
   const { addItem, setIsCartOpen } = useCart();
   const [raffle, setRaffle] = useState<Raffle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,58 +45,88 @@ export default function RaffleDetailPage() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    loadRaffle();
+    
+    const loadData = async () => {
+      const loadedRaffle = await loadRaffle();
+      if (loadedRaffle) {
+        // real-time subscription para novos tickets vendidos
+        const channel = supabase
+          .channel(`raffle-tickets-${loadedRaffle.id}`)
+          .on(
+            'postgres_changes',
+            { 
+              event: '*', 
+              schema: 'public', 
+              table: 'raffle_tickets',
+              filter: `raffle_id=eq.${loadedRaffle.id}`
+            },
+            (payload) => {
+              console.log('[REALTIME] Update nos tickets:', payload);
+              if (payload.new && (payload.new as any).payment_status === 'pago') {
+                 const ticketNum = (payload.new as any).ticket_number;
+                 setSoldTicketNumbers(prev => [...new Set([...prev, ticketNum])]);
+                 
+                 // Atualiza contador total na rifa
+                 setRaffle(prev => prev ? {
+                   ...prev,
+                   sold_tickets: (prev.sold_tickets || 0) + 1
+                 } : null);
+              }
+            }
+          )
+          .subscribe();
 
-    // real-time subscription para novos tickets vendidos
-    const channel = supabase
-      .channel(`raffle-tickets-${id}`)
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'raffle_tickets',
-          filter: `raffle_id=eq.${id}`
-        },
-        (payload) => {
-          console.log('[REALTIME] Update nos tickets:', payload);
-          if (payload.new && (payload.new as any).payment_status === 'pago') {
-             const ticketNum = (payload.new as any).ticket_number;
-             setSoldTicketNumbers(prev => [...new Set([...prev, ticketNum])]);
-             
-             // Atualiza contador total na rifa
-             setRaffle(prev => prev ? {
-               ...prev,
-               sold_tickets: (prev.sold_tickets || 0) + 1
-             } : null);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      }
     };
-  }, [id]);
+
+    loadData();
+  }, [idOrSlug]);
 
   const loadRaffle = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('raffles')
-        .select('*')
-        .eq('id', id)
-        .single();
+      // Tentar buscar por ID (UUID) ou por Slug
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug || "");
+      
+      let query = supabase.from('raffles').select('*');
+      
+      if (isUUID) {
+        query = query.eq('id', idOrSlug);
+      } else {
+        query = query.eq('slug', idOrSlug);
+      }
+
+      const { data, error } = await query.single();
 
       if (!error && data) {
         setRaffle(data);
 
         // Carregar tickets já vendidos/reservados
-        const { data: tickets, error: ticketsError } = await supabase
+        const { data: tickets } = await supabase
           .from('raffle_tickets')
           .select('ticket_number')
-          .eq('raffle_id', id)
+          .eq('raffle_id', data.id)
           .eq('payment_status', 'pago');
+
+        if (tickets) {
+          setSoldTicketNumbers(tickets.map(t => t.ticket_number));
+        }
+        
+        setLoading(false);
+        return data;
+      }
+      
+      setLoading(false);
+      return null;
+    } catch (err) {
+      console.error('Error loading raffle:', err);
+      setLoading(false);
+      return null;
+    }
+  };
 
         if (!ticketsError && tickets) {
           setSoldTicketNumbers(tickets.map(t => t.ticket_number));
