@@ -8,8 +8,8 @@ interface SEOProps {
 }
 
 export function SEO({ 
-  title = 'Perfection Airsoft | Arsenal Tático de Elite', 
-  description = 'A maior autoridade em equipamentos de airsoft e treinamento tático da América Latina.', 
+  title = 'Perfection Airsoft | De Operador para Operador', 
+  description = 'O ponto de encontro da elite tática. Onde a irmandade do Airsoft se une por equipamentos de alta performance e drops exclusivos.', 
   image = 'https://www.perfectionairsoft.com.br/og-image.png',
   url = window.location.href
 }: SEOProps) {
