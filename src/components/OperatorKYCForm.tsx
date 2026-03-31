@@ -186,13 +186,14 @@ export function OperatorKYCForm() {
       console.log('Enviando com Token de Bypass:', userToken);
 
       // Bypass do Bug do Supabase-js Invoke: Usar Fetch nativo
-      // Removido o cabeçalho 'Authorization' padrão para evitar que o Gateway do Supabase
-      // tente validar o JWT 'TEST_BYPASS' e bloqueie a requisição antes de chegar na função.
+      // Re-adicionado o 'Authorization' com a ANON_KEY para satisfazer a exigência de presença do Gateway,
+      // mas o bypass real de processamento continua via 'x-bypass-token'.
       const asaasRes = await fetch('https://seewdqetyolfmqsiyban.supabase.co/functions/v1/asaas-create-subaccount', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           'x-bypass-token': userToken
         },
         body: JSON.stringify({
