@@ -141,7 +141,7 @@ export default function CreateRafflePage() {
     }
 
     if (!hasPixKey) {
-      alert('PROTOCOLO BLOQUEADO: VOCÊ PRECISA CONCLUIR O PROTOCOLO DE VERIFICAÇÃO TÁTICA (KYC/ASAAS) NO PAINEL DO ORGANIZADOR PARA RECEBER PAGAMENTOS.');
+      alert('PROTOCOLO BLOQUEADO: VOCÊ PRECISA CONCLUIR O PROTOCOLO DE VERIFICAÇÃO TÁTICA NO PAINEL DO ORGANIZADOR PARA PROSSEGUIR.');
       navigate('/organizador');
       return;
     }
@@ -241,7 +241,7 @@ export default function CreateRafflePage() {
                     <div>
                         <h3 className="text-white font-black uppercase tracking-widest mb-2 font-display italic">PERFIL FINANCEIRO NÃO VERIFICADO</h3>
                         <p className="text-slate-400 text-[10px] uppercase font-mono max-w-md mx-auto leading-relaxed">
-                            PARA LANÇAR UM DROP NO MARKETPLACE, VOCÊ PRECISA CONCLUIR O PROTOCOLO DE VERIFICAÇÃO TÁTICA E CRIAR SUA SUBCONTA DE RECEBIMENTOS NO ASAAS.
+                            PARA LANÇAR UM DROP NO MARKETPLACE, VOCÊ PRECISA CONCLUIR O PROTOCOLO DE VERIFICAÇÃO TÁTICA.
                         </p>
                     </div>
                     <Link 
