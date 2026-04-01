@@ -63,19 +63,7 @@ export default function OrganizerDashboard() {
         .eq('creator_id', user?.id)
         .order('created_at', { ascending: false });
 
-      // Verificação de parâmetro de edição administrativa
-      const urlParams = new URLSearchParams(window.location.search);
-      const editId = urlParams.get('edit');
-
-      if (editId) {
-        const { data: editRaffle } = await supabase
-          .from('raffles')
-          .select('*, profiles(full_name, phone)')
-          .eq('id', editId)
-          .single();
-        
-        if (editRaffle) setActiveRaffle(editRaffle);
-      }
+      // Verificação de parâmetro de edição administrativa acontece depois no fluxo consolidado
 
       // Merge de operações para visualização e estatísticas
       const allOps = [
@@ -98,25 +86,50 @@ export default function OrganizerDashboard() {
         totalSold = allOps.reduce((sum, e) => sum + (e.sold_count || 0), 0);
       }
 
-      // 2.5 Buscar Dados de Confiança e Role do Perfil
+      // 2.5 Buscar Dados de Confiança e Role do Perfil (PRIORIDADE ADMIN)
       const { data: profile } = await supabase
         .from('profiles')
-        .select('trust_level, completed_drops, role')
+        .select('trust_level, completed_drops, role, full_name')
         .eq('id', user?.id)
         .single();
 
-      if (profile?.role === 'admin') {
-        setIsAdmin(true);
-      }
+      const profileIsAdmin = profile?.role === 'admin';
+      if (profileIsAdmin) setIsAdmin(true);
 
-      setStats({
+      // Verificação de parâmetro de edição administrativa
+      const urlParams = new URLSearchParams(window.location.search);
+      const editId = urlParams.get('edit');
+
+      let statsToSet = {
         ticketsSold: totalSold,
         revenue: balanceData?.total_earned ? Number(balanceData.total_earned) : 0,
         netRevenue: balanceData?.available_balance ? Number(balanceData.available_balance) : 0,
         pendingBalance: balanceData?.pending_balance ? Number(balanceData.pending_balance) : 0,
         trustLevel: profile?.trust_level || 0,
         completedDrops: profile?.completed_drops || 0
-      });
+      };
+
+      if (editId && profileIsAdmin) {
+        const { data: editRaffle } = await supabase
+          .from('raffles')
+          .select('*, profiles(full_name, phone)')
+          .eq('id', editId)
+          .single();
+        
+        if (editRaffle) {
+          setActiveRaffle(editRaffle);
+          // Sobrescreve estatísticas com os dados da rifa inspecionada
+          statsToSet = {
+            ...statsToSet,
+            ticketsSold: editRaffle.sold_tickets,
+            revenue: editRaffle.sold_tickets * editRaffle.ticket_price,
+            netRevenue: editRaffle.sold_tickets * editRaffle.ticket_price * 0.93, // 7% taxa
+            pendingBalance: editRaffle.total_tickets - editRaffle.sold_tickets, // Usando como contador de inativos temporário
+          };
+        }
+      }
+
+      setStats(statsToSet);
 
       // 3. Buscar Ganhadores (Logística)
       const { data: winnersData } = await supabase
@@ -317,7 +330,7 @@ export default function OrganizerDashboard() {
           </div>
           <div className={`border p-8 border-l-4 transition-all duration-500 ${stats.trustLevel >= 3 || isAdmin ? 'bg-primary/5 border-primary border-white/10' : 'bg-surface/30 border-white/5 border-l-white/10'}`}>
             <span className={`text-[10px] font-black uppercase tracking-widest block mb-1 font-mono italic ${stats.trustLevel >= 3 || isAdmin ? 'text-primary' : 'text-slate-500'}`}>
-              {activeRaffle ? 'Intel: Receita Estimada' : 'Saldo Disponível'}
+              {activeRaffle ? 'Telemetria: Receita Bruta' : 'Saldo Disponível'}
             </span>
             <div className="flex items-baseline gap-2">
                 <span className={`text-4xl font-black ${stats.trustLevel >= 3 || isAdmin ? 'text-primary' : 'text-white/40'}`}>
@@ -326,22 +339,28 @@ export default function OrganizerDashboard() {
                     : stats.netRevenue.toFixed(2)}
                 </span>
                 {(stats.trustLevel < 3 && !isAdmin && !activeRaffle) && <span className="text-[8px] text-red-500 font-black uppercase animate-pulse font-mono">BLOQUEADO</span>}
-                {activeRaffle && <span className="text-[8px] text-primary font-black uppercase font-mono">DROPLINE</span>}
+                {activeRaffle && <span className="text-[8px] text-primary font-black uppercase font-mono">INSULTEL ACTIVE</span>}
             </div>
           </div>
           <div className="bg-surface/30 border border-white/5 p-8">
             <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest block mb-1">
-              {activeRaffle ? 'Intel: Tickets Vendidos' : 'Saldo em Garantia (Escrow)'}
+              {activeRaffle ? 'Telemetria: Tickets Ativos' : 'Saldo em Garantia (Escrow)'}
             </span>
-            <span className="text-2xl font-black text-white/60">
+            <span className="text-4xl font-black text-white/60">
               {activeRaffle 
-                ? `${activeRaffle.sold_tickets} / ${activeRaffle.total_tickets}`
+                ? activeRaffle.sold_tickets
                 : `R$ ${stats.pendingBalance.toFixed(2)}`}
             </span>
           </div>
           <div className="bg-surface/30 border border-white/5 p-8">
-            <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Total Movimentado</span>
-            <span className="text-4xl font-black text-white">R$ {stats.revenue.toFixed(2)}</span>
+            <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">
+              {activeRaffle ? 'Telemetria: Tickets Restantes' : 'Total Movimentado'}
+            </span>
+            <span className="text-4xl font-black text-white">
+              {activeRaffle 
+                ? (activeRaffle.total_tickets - activeRaffle.sold_tickets)
+                : `R$ ${stats.revenue.toFixed(2)}`}
+            </span>
           </div>
         </div>
 
@@ -358,9 +377,19 @@ export default function OrganizerDashboard() {
                   <span className="bg-black text-primary text-[8px] font-black px-2 py-0.5 rounded-full">ACTIVE DATA FEED</span>
                 </div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em]">DROPLINE: {activeRaffle.title}</p>
-                <div className="flex gap-4 mt-2 text-[9px] font-black uppercase font-mono bg-black/10 px-2 py-1">
-                  <span>Operador: {activeRaffle.profiles?.full_name || 'DESCONHECIDO'}</span>
-                  <span>| Status: {activeRaffle.status}</span>
+                <div className="flex flex-col md:flex-row gap-6 mt-3 text-[9px] font-black uppercase font-mono bg-black/20 p-3 border border-black/10">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500">OPERADOR:</span>
+                    <span className="bg-primary text-black px-1.5 py-0.5 rounded">{activeRaffle.profiles?.full_name || 'DESCONHECIDO'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500">IDENTIFICAÇÃO:</span>
+                    <span className="text-black">{activeRaffle.creator_id}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500">CONTATO:</span>
+                    <span className="text-black underline cursor-copy">{activeRaffle.profiles?.phone || 'NÃO FORNECIDO'}</span>
+                  </div>
                 </div>
               </div>
             </div>
