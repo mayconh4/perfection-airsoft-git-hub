@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Pencil, MessageCircle, User as UserIcon, Calendar } from 'lucide-react';
+import { Pencil, MessageCircle, User as UserIcon, Calendar, Trash2 } from 'lucide-react';
 
 interface Raffle {
   id: string;
@@ -40,7 +40,7 @@ const MOCK_RAFFLES: Raffle[] = [
   }
 ];
 
-function RaffleCard({ raffle }: { raffle: Raffle }) {
+function RaffleCard({ raffle, onDelete }: { raffle: Raffle; onDelete?: (id: string) => void }) {
   const { isAdmin } = useAuth();
   const percentSold = (raffle.sold_tickets / raffle.total_tickets) * 100;
   const createdAt = new Date(raffle.created_at).toLocaleDateString('pt-BR', {
@@ -90,6 +90,13 @@ function RaffleCard({ raffle }: { raffle: Raffle }) {
               <MessageCircle size={12} />
               Contato
             </a>
+            <button 
+              onClick={() => onDelete?.(raffle.id)}
+              className="px-3 bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded flex items-center justify-center transition-all"
+              title="EXCLUIR DROP"
+            >
+              <Trash2 size={12} />
+            </button>
           </div>
         </div>
       )}
@@ -427,7 +434,27 @@ export default function DropPage() {
       .eq('status', 'ativo')
       .order('created_at', { ascending: false });
     
-    if (data && data.length > 0) setRaffles(data as any);
+    if (data) setRaffles(data as any);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('🚨 CONFIRMAÇÃO DE DESTRUIÇÃO 🚨\n\nEste drop será apagado permanentemente dos canais táticos. Confirmar operação?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('raffles')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      // Atualização otimista
+      setRaffles(prev => prev.filter(r => r.id !== id));
+      console.log(`[HQ-OVERRIDE] Drop ${id} excluído com sucesso.`);
+    } catch (err: any) {
+      console.error('Falha ao excluir drop:', err.message);
+      alert('Erro ao excluir drop: ' + err.message);
+    }
   };
 
   return (
@@ -475,7 +502,7 @@ export default function DropPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {raffles.map(r => (
-                  <RaffleCard key={r.id} raffle={r} />
+                  <RaffleCard key={r.id} raffle={r} onDelete={handleDelete} />
                 ))}
               </div>
             </>
