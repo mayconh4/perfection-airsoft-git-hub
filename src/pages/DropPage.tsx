@@ -530,8 +530,8 @@ export default function DropPage() {
             <p className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.3em] mt-2">Inventory Division // Active Operations</p>
           </div>
           
-          {isAdmin && (
-            <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4">
+            {isAdmin && (
               <button 
                 onClick={() => setShowDrafter(!showDrafter)}
                 className="bg-white/5 border border-white/10 text-white font-black py-4 px-8 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all flex items-center gap-2"
@@ -539,15 +539,15 @@ export default function DropPage() {
                 <span className="material-symbols-outlined text-sm">{showDrafter ? 'inventory_2' : 'casino'}</span>
                 {showDrafter ? 'Ver Drops Ativos' : 'Abrir Sorteador'}
               </button>
-              <Link 
-                to="/drop/criar"
-                className="bg-primary text-background-dark font-black py-4 px-8 text-[10px] uppercase tracking-widest hover:bg-white transition-all flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-sm">rocket_launch</span>
-                Criar Novo Drop
-              </Link>
-            </div>
-          )}
+            )}
+            <Link 
+              to="/drop/criar"
+              className="bg-primary text-background-dark font-black py-4 px-8 text-[10px] uppercase tracking-widest hover:bg-white transition-all flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-sm">rocket_launch</span>
+              Criar Novo Drop
+            </Link>
+          </div>
         </div>
 
         {/* Dynamic Content */}
