@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -6,7 +6,8 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
   const { user } = useAuth();
   
   // Controle de Etapa (Wizard)
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
+  const formRef = useRef<HTMLDivElement>(null);
   
   // Etapa 1: Dados Pessoais
   const [fullName, setFullName] = useState('');
@@ -198,9 +199,14 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
     
     setIsError(false);
     setMessage('');
-    setStep(prev => Math.min(prev + 1, 3));
-    // Rolar para o topo do formulário ao mudar de passo
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setStep(prev => {
+        const next = Math.min(prev + 1, 3);
+        // Tática de Mira: Scroll automático para o início do form ao avançar
+        setTimeout(() => {
+            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+        return next;
+    });
   };
 
   const handlePrev = () => {
@@ -326,7 +332,7 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
   };
 
   return (
-    <div className="bg-surface/20 border border-white/5 p-6 md:p-8 relative overflow-hidden">
+    <div ref={formRef} className="bg-surface/20 border border-white/5 p-6 md:p-8 relative overflow-hidden scroll-mt-24">
       {/* Overlay de Sucesso Tático */}
       {showSuccess && (
         <div className="absolute inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center animate-[fadeIn_0.3s_ease-out] text-center p-4">
@@ -352,61 +358,65 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
           </div>
         </div>
       )}
-      {/* Protocolo de Verificação Tática - Intro Section */}
-      <div className="mb-12 border-b border-white/5 pb-8">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="size-12 rounded-full border-2 border-primary flex items-center justify-center bg-primary/10">
-             <span className="material-symbols-outlined text-primary text-2xl font-black">verified_user</span>
-          </div>
-          <h1 className="text-xl font-black text-white italic uppercase tracking-widest">
-            PROTOCOLO DE VERIFICAÇÃO TÁTICA
-          </h1>
-        </div>
-        
-        <div className="space-y-6 border-l-2 border-primary/30 pl-6 py-1">
-          <p className="text-[10px] text-slate-400 font-mono leading-relaxed uppercase tracking-widest">
-            PARA GARANTIR A SEGURANÇA DA NOSSA COMUNIDADE DE OPERADORES E CUMPRIR AS NORMAS DE COMBATE A FRAUDES E GOLPES, SOLICITAMOS A VERIFICAÇÃO OBRIGATÓRIA DE SUA IDENTIDADE.
-          </p>
-          <p className="text-[10px] text-slate-400 font-mono leading-relaxed uppercase tracking-widest">
-            SEUS DADOS SÃO CRIPTOGRAFADOS E USADOS EXCLUSIVAMENTE PARA VALIDAR SUA CONTA DE RECEBIMENTOS, PERMITINDO SAQUES DAS SUAS MISSÕES.
-          </p>
-          <div className="bg-black/40 border border-white/10 p-4 mt-4">
-            <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em] leading-relaxed">
-               AO CONTINUAR E PREENCHER OS DADOS ABAIXO, VOCÊ CONCORDA QUE AS INFORMAÇÕES E DOCUMENTOS ENVIADOS SÃO VERDADEIROS E AUTÊNTICOS.
+      {step === 0 && (
+          <div className="animate-[fadeIn_0.5s_ease-out]">
+            {/* Protocolo de Verificação Tática - Intro Section */}
+            <div className="mb-12 border-b border-white/5 pb-8">
+                <div className="flex items-center gap-4 mb-8">
+                <div className="size-12 rounded-full border-2 border-primary flex items-center justify-center bg-primary/10">
+                    <span className="material-symbols-outlined text-primary text-2xl font-black">verified_user</span>
+                </div>
+                <h1 className="text-xl font-black text-white italic uppercase tracking-widest leading-none">
+                    PROTOCOLO DE<br />VERIFICAÇÃO TÁTICA
+                </h1>
+                </div>
+                
+                <div className="space-y-6 border-l-2 border-primary/30 pl-6 py-1">
+                <p className="text-[10px] text-slate-400 font-mono leading-relaxed uppercase tracking-[0.2em]">
+                    PARA GARANTIR A SEGURANÇA DA NOSSA COMUNIDADE DE OPERADORES E CUMPRIR AS NORMAS DE COMBATE A FRAUDES E GOLPES, SOLICITAMOS A VERIFICAÇÃO OBRIGATÓRIA DE SUA IDENTIDADE.
+                </p>
+                <p className="text-[10px] text-slate-400 font-mono leading-relaxed uppercase tracking-[0.2em]">
+                    SEUS DADOS SÃO CRIPTOGRAFADOS E USADOS EXCLUSIVAMENTE PARA VALIDAR SUA CONTA DE RECEBIMENTOS, PERMITINDO SAQUES DAS SUAS MISSÕES.
+                </p>
+                <div className="bg-black/40 border border-white/10 p-5 mt-4">
+                    <p className="text-[9px] text-primary font-black uppercase tracking-[0.3em] leading-relaxed italic">
+                    AO CONTINUAR E PREENCHER OS DADOS NO PRÓXIMO PASSO, VOCÊ CONCORDA QUE AS INFORMAÇÕES SÃO VERDADEIRAS E AUTÊNTICAS.
+                    </p>
+                </div>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-3 mb-6 mt-12">
+                <span className="material-symbols-outlined text-primary text-xl">admin_panel_settings</span>
+                <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em]">
+                Recrutamento de Operador
+                </h3>
+            </div>
+            
+            <p className="text-[10px] md:text-[11px] text-slate-400 font-mono mb-10 uppercase leading-relaxed tracking-widest">
+                LEIA AS DIRETRIZES ACIMA E CLIQUE NO BOTÃO ABAIXO PARA INICIAR SEU REGISTRO NO SISTEMA.
             </p>
+
+            <button 
+                type="button"
+                onClick={handleNext}
+                className="w-full bg-primary text-background-dark font-black py-5 px-8 text-[11px] uppercase tracking-[0.4em] hover:bg-white transition-all shadow-[0_0_20px_rgba(255,193,1,0.2)]"
+            >
+                INICIAR PROTOCOLO
+            </button>
           </div>
-        </div>
-      </div>
-
-      {/* Overlay para contas aprovadas */}
-      {kycStatus === 'approved' && (
-        <div className="absolute top-0 right-0 bg-green-500/20 text-green-400 text-[10px] font-black uppercase tracking-widest px-4 py-1 border-b border-l border-green-500/30">
-          IDENTIDADE VALIDADA
-        </div>
-      )}
-      {kycStatus === 'waiting_approval' && (
-        <div className="absolute top-0 right-0 bg-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest px-4 py-1 border-b border-l border-blue-500/30 animate-pulse">
-          AGUARDANDO VALIDAÇÃO
-        </div>
       )}
 
-      <div className="flex items-center gap-3 mb-6">
-        <span className="material-symbols-outlined text-primary text-xl">admin_panel_settings</span>
-        <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em]">
-          Verificação de Operador
-        </h3>
-      </div>
-      
-      <p className="text-[10px] md:text-[11px] text-slate-400 font-mono mb-6 uppercase leading-relaxed">
-        Complete seu cadastro para habilitar o recebimento direto na sua conta.
-      </p>
-
-      {/* Indicador de Progresso tático */}
-      <div className="flex gap-2 mb-8">
-        <div className={`h-1 flex-1 transition-all duration-300 ${step >= 1 ? 'bg-primary' : 'bg-white/10'}`} />
-        <div className={`h-1 flex-1 transition-all duration-300 ${step >= 2 ? 'bg-primary' : 'bg-white/10'}`} />
-        <div className={`h-1 flex-1 transition-all duration-300 ${step >= 3 ? 'bg-primary' : 'bg-white/10'}`} />
-      </div>
+      {step > 0 && (
+          <div className="animate-[fadeIn_0.5s_ease-out]">
+            {/* Indicador de Progresso tático */}
+            <div className="flex gap-2 mb-8">
+                <div className={`h-1 flex-1 transition-all duration-300 ${step >= 1 ? 'bg-primary' : 'bg-white/10'}`} />
+                <div className={`h-1 flex-1 transition-all duration-300 ${step >= 2 ? 'bg-primary' : 'bg-white/10'}`} />
+                <div className={`h-1 flex-1 transition-all duration-300 ${step >= 3 ? 'bg-primary' : 'bg-white/10'}`} />
+            </div>
+          </div>
+      )}
 
       <div className="space-y-4">
         {step === 1 && (
