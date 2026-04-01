@@ -469,18 +469,10 @@ export default function RaffleDetailPage() {
                   </button>
 
                   {/* Ajuste de Fluxo e Escala [SAMA Protocol - v8] */}
-                  <div className="mt-10 pt-8 border-t border-white/5 space-y-6">
-                    <div className="flex items-center justify-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
-                      <span className="material-symbols-outlined text-[14px] text-emerald-500">verified</span>
-                      SISTEMA DE PAGAMENTO CRIPTOGRAFADO
-                    </div>
-                    
-                    <div className="flex flex-nowrap items-baseline justify-center gap-4 font-black text-[11px] text-white/40 uppercase tracking-[0.2em] overflow-hidden">
-                      <span className="hover:text-white transition-colors cursor-crosshair whitespace-nowrap">MERCADO PAGO</span>
-                      <span className="text-white/10 flex-shrink-0">•</span>
-                      <span className="hover:text-white transition-colors cursor-crosshair whitespace-nowrap">VISA</span>
-                      <span className="text-white/10 flex-shrink-0">•</span>
-                      <span className="hover:text-white transition-colors cursor-crosshair whitespace-nowrap">MASTERCARD</span>
+                  <div className="mt-6 pt-6 border-t border-white/5">
+                    <div className="flex items-center justify-center gap-2 text-[10px] font-black text-emerald-500 uppercase tracking-[0.4em] italic">
+                      <span className="material-symbols-outlined text-[16px]">verified</span>
+                      COMPRA SEGURA
                     </div>
                   </div>
 
