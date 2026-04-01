@@ -23,7 +23,14 @@ export default async function handler(req: any, res: any) {
 
     let title = 'Perfection Airsoft | Conectando quem domina o jogo';
     let description = 'O ponto de encontro da elite tática. Onde a irmandade do Airsoft se une por equipamentos de alta performance e drops exclusivos.';
-    let image = 'https://www.perfectionairsoft.com.br/og-image.png';
+    let image = 'https://www.perfectionairsoft.com.br/images/banner-og-tactical.png';
+
+    // Regras Específicas Requisitadas para a Exclusividade da Home (Raiz)
+    if (!type && !slugOrId) {
+      title = 'Perfection Airsoft';
+      description = 'Conectando quem joga certo';
+      image = 'https://www.perfectionairsoft.com.br/og-home.png';
+    }
 
     const ensureAbsolute = (urlStr: string) => {
       if (!urlStr) return image;
