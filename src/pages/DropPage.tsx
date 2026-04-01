@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
+import { Pencil, MessageCircle, User as UserIcon, Calendar } from 'lucide-react';
 
 interface Raffle {
   id: string;
@@ -13,7 +15,13 @@ interface Raffle {
   sold_tickets: number;
   status: 'ativo' | 'finalizado' | 'cancelado';
   draw_date: string;
+  created_at: string;
+  creator_id: string;
   slug?: string;
+  profiles?: {
+    full_name: string | null;
+    phone: string | null;
+  };
 }
 
 const MOCK_RAFFLES: Raffle[] = [
@@ -27,14 +35,65 @@ const MOCK_RAFFLES: Raffle[] = [
     sold_tickets: 342,
     status: 'ativo',
     draw_date: '2026-04-15T20:00:00',
+    created_at: new Date().toISOString(),
+    creator_id: 'mock-admin'
   }
 ];
 
 function RaffleCard({ raffle }: { raffle: Raffle }) {
+  const { isAdmin } = useAuth();
   const percentSold = (raffle.sold_tickets / raffle.total_tickets) * 100;
+  const createdAt = new Date(raffle.created_at).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const whatsappLink = raffle.profiles?.phone 
+    ? `https://wa.me/${raffle.profiles.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${raffle.profiles.full_name}, sou da administração do Perfection Airsoft sobre seu drop "${raffle.title}".`)}`
+    : '#';
+
   return (
     <div className="group relative bg-surface/20 border border-white/5 overflow-hidden transition-all duration-300 hover:border-primary/40 flex flex-col">
       <div className="h-1 w-full bg-primary/20 group-hover:bg-primary" />
+      
+      {/* ADMIN PANEL OVERLAY */}
+      {isAdmin && (
+        <div className="bg-primary/10 border-b border-primary/20 p-3 space-y-2 animate-in fade-in slide-in-from-top-2 duration-500">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-[8px] font-black text-primary uppercase tracking-widest">
+              <UserIcon size={10} />
+              <span>OP: {raffle.profiles?.full_name || 'DESCONHECIDO'}</span>
+            </div>
+            <div className="flex items-center gap-2 text-[8px] font-bold text-white/40 uppercase font-mono">
+              <Calendar size={10} />
+              <span>{createdAt}</span>
+            </div>
+          </div>
+          
+          <div className="flex gap-2">
+            <Link 
+              to={`/organizador?edit=${raffle.id}`}
+              className="flex-1 bg-white/5 border border-white/10 text-white hover:bg-white hover:text-black py-2 rounded flex items-center justify-center gap-2 text-[9px] font-black uppercase transition-all"
+            >
+              <Pencil size={12} />
+              Editar
+            </Link>
+            <a 
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 bg-green-500/20 border border-green-500/30 text-green-500 hover:bg-green-500 hover:text-black py-2 rounded flex items-center justify-center gap-2 text-[9px] font-black uppercase transition-all"
+            >
+              <MessageCircle size={12} />
+              Contato
+            </a>
+          </div>
+        </div>
+      )}
+
       <div className="relative h-52 bg-gradient-to-br from-surface to-black flex items-center justify-center overflow-hidden">
         {raffle.image_url ? (
           <img src={raffle.image_url} alt={raffle.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
@@ -364,11 +423,11 @@ export default function DropPage() {
   const loadRaffles = async () => {
     const { data } = await supabase
       .from('raffles')
-      .select('*')
+      .select('*, profiles(full_name, phone)')
       .eq('status', 'ativo')
       .order('created_at', { ascending: false });
     
-    if (data && data.length > 0) setRaffles(data);
+    if (data && data.length > 0) setRaffles(data as any);
   };
 
   return (

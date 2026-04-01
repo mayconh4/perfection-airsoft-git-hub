@@ -44,9 +44,10 @@ export default function CreateRafflePage() {
         .single();
       
       if (error) throw error;
-      setHasPixKey(data?.kyc_status === 'approved' || !!data?.asaas_wallet_id);
+      // Para publicar, o usuário PRECISA ter o asaas_wallet_id gerado (indica subconta criada)
+      setHasPixKey(!!data?.asaas_wallet_id);
     } catch (err) {
-      console.error('Erro ao verificar Chave Pix:', err);
+      console.error('Erro ao verificar Status Asaas:', err);
       setHasPixKey(false);
     }
   };
@@ -140,7 +141,7 @@ export default function CreateRafflePage() {
     }
 
     if (!hasPixKey) {
-      alert('PROTOCOLO BLOQUEADO: VOCÊ PRECISA CONCLUIR A VERIFICAÇÃO DE IDENTIDADE (KYC) NO PAINEL PARA RECEBER PAGAMENTOS.');
+      alert('PROTOCOLO BLOQUEADO: VOCÊ PRECISA CONCLUIR O PROTOCOLO DE VERIFICAÇÃO TÁTICA (KYC/ASAAS) NO PAINEL DO ORGANIZADOR PARA RECEBER PAGAMENTOS.');
       navigate('/organizador');
       return;
     }
@@ -238,16 +239,16 @@ export default function CreateRafflePage() {
                 <div className="bg-red-500/10 border border-red-500/50 p-8 flex flex-col items-center text-center gap-4 mb-8">
                     <span className="material-symbols-outlined text-red-500 text-4xl">warning</span>
                     <div>
-                        <h3 className="text-white font-black uppercase tracking-widest mb-2">PAGAMENTO NÃO CONFIGURADO</h3>
+                        <h3 className="text-white font-black uppercase tracking-widest mb-2 font-display italic">PERFIL FINANCEIRO NÃO VERIFICADO</h3>
                         <p className="text-slate-400 text-[10px] uppercase font-mono max-w-md mx-auto leading-relaxed">
-                            PARA LANÇAR UM DROP E RECEBER O DINHEIRO IMEDIATAMENTE, VOCÊ PRECISA CADASTRAR SUA CHAVE PIX NO PAINEL DO ORGANIZADOR.
+                            PARA LANÇAR UM DROP NO MARKETPLACE, VOCÊ PRECISA CONCLUIR O PROTOCOLO DE VERIFICAÇÃO TÁTICA E CRIAR SUA SUBCONTA DE RECEBIMENTOS NO ASAAS.
                         </p>
                     </div>
                     <Link 
-                        to="/seguranca-comunidade" 
-                        className="bg-red-500 text-white font-black py-3 px-8 text-[10px] uppercase tracking-widest hover:bg-white hover:text-red-500 transition-all"
+                        to="/organizador" 
+                        className="bg-red-500 text-white font-black py-3 px-8 text-[10px] uppercase tracking-widest hover:bg-white hover:text-red-500 transition-all shadow-[0_0_20px_rgba(239,68,68,0.2)]"
                     >
-                        CONFIGURAR CHAVE PIX AGORA
+                        INICIAR VERIFICAÇÃO AGORA
                     </Link>
                 </div>
             )}

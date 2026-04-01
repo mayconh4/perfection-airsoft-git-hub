@@ -73,7 +73,8 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (profileErr || !profile?.asaas_wallet_id) {
-       throw new Error('Operador não possui carteira Asaas ativa (KYC incompleto).');
+       console.error(`[ASAAS-KYC-FAIL] O criador ${raffle.creator_id} do raffle ${firstItem.product_id} não possui asaas_wallet_id ativo.`);
+       throw new Error('ESTE DROP ESTÁ EM MANUTENÇÃO FINANCEIRA MOMENTÂNEA. POR FAVOR, TENTE NOVAMENTE EM ALGUNS MINUTOS OU PROCURE O SUPORTE.');
     }
 
     const walletId = profile.asaas_wallet_id;

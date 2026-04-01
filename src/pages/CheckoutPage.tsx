@@ -191,7 +191,14 @@ export function CheckoutPage() {
 
       if (!response.ok) {
         const errBody = await response.json().catch(() => ({}));
-        setError(`Erro Tático (${response.status}): ${errBody.error}${errBody.details ? ' - ' + errBody.details : ''}`);
+        const rawError = errBody.error || '';
+        
+        // Se for o erro de KYC do operador, já vem formatado amigavelmente da Edge Function
+        if (rawError.includes('MANUTENÇÃO FINANCEIRA')) {
+          setError(rawError);
+        } else {
+          setError(`DIFICULDADE TÁTICA NA CONEXÃO (${response.status}). POR FAVOR, TENTE NOVAMENTE EM ALGUNS INSTANTES.`);
+        }
         return;
       }
 

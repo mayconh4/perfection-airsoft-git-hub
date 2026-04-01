@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, withRetry } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import type { Order } from '../types/database';
@@ -12,12 +12,17 @@ export function useOrders() {
   useEffect(() => {
     const fetch = async () => {
       if (!user) { setOrders([]); setLoading(false); return; }
-      const { data } = await supabase
-        .from('orders')
-        .select('*, items:order_items(*)')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      setOrders((data as Order[]) || []);
+      setLoading(true);
+      
+      const { data } = await withRetry<Order[]>(async () => {
+        return await supabase
+          .from('orders')
+          .select('id, total, status, created_at, items:order_items(id, product_name, product_price, quantity)')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+      });
+      
+      setOrders(data || []);
       setLoading(false);
     };
     fetch();

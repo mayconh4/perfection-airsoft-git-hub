@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, withRetry } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import type { WishlistItem, Product } from '../types/database';
 
@@ -11,10 +11,14 @@ export function useWishlist() {
   const fetchWishlist = useCallback(async () => {
     if (!user) { setItems([]); return; }
     setLoading(true);
-    const { data } = await supabase
-      .from('wishlist')
-      .select('*, product:products(*)')
-      .eq('user_id', user.id);
+    
+    const { data } = await withRetry<(WishlistItem & { product: Product })[]>(async () => {
+      return await supabase
+        .from('wishlist')
+        .select('*, product:products(id, name, slug, image_url, price, brand)')
+        .eq('user_id', user.id);
+    });
+    
     setItems((data as any) || []);
     setLoading(false);
   }, [user]);
