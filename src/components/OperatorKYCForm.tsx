@@ -607,51 +607,53 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
           </div>
         )}
 
-        <div className="pt-6 flex items-center justify-between gap-4 border-t border-white/5 mt-8">
-            <div className="hidden md:block">
-                <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Nível de Acesso</label>
-                <span className="text-[10px] text-primary font-black uppercase tracking-[0.2em] italic">
-                  {role === 'admin' 
-                    ? 'Task Force' 
-                    : kycStatus === 'approved' 
-                      ? 'Spetsnaz' 
-                      : 'Ranger'}
-                </span>
-            </div>
-            
-            <div className="flex gap-2 w-full md:w-auto">
-              {step > 1 && (
-                <button 
-                  type="button"
-                  onClick={handlePrev}
-                  className="bg-white/5 hover:bg-white/10 text-white font-black py-4 px-6 text-[9px] uppercase tracking-[0.2em] transition-all flex-1 md:flex-none"
-                >
-                  VOLTAR
-                </button>
-              )}
+        {step > 0 && (
+          <div className="pt-6 flex items-center justify-between gap-4 border-t border-white/5 mt-8 animate-[fadeIn_0.3s_ease-out]">
+              <div className="hidden md:block">
+                  <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Nível de Acesso</label>
+                  <span className="text-[10px] text-primary font-black uppercase tracking-[0.2em] italic">
+                    {role === 'admin' 
+                      ? 'Task Force' 
+                      : kycStatus === 'approved' 
+                        ? 'Spetsnaz' 
+                        : 'Ranger'}
+                  </span>
+              </div>
               
-              {step < 3 ? (
-                <button 
-                  type="button"
-                  onClick={handleNext}
-                  className="bg-primary hover:bg-white text-background-dark font-black py-4 px-8 text-[9px] uppercase tracking-[0.2em] transition-all w-full md:w-auto"
-                >
-                  AVANÇAR
-                </button>
-              ) : (
-                kycStatus !== 'approved' && (
+              <div className="flex gap-2 w-full md:w-auto">
+                {step > 1 && (
                   <button 
                     type="button"
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="bg-primary hover:bg-white text-background-dark font-black py-4 px-8 text-[9px] uppercase tracking-[0.2em] transition-all disabled:opacity-50 w-full md:w-auto"
+                    onClick={handlePrev}
+                    className="bg-white/5 hover:bg-white/10 text-white font-black py-4 px-6 text-[9px] uppercase tracking-[0.2em] transition-all flex-1 md:flex-none"
                   >
-                    {saving ? 'PROCESSANDO...' : 'FINALIZAR VERIFICAÇÃO'}
+                    VOLTAR
                   </button>
-                )
-              )}
-            </div>
-        </div>
+                )}
+                
+                {step < 3 ? (
+                  <button 
+                    type="button"
+                    onClick={handleNext}
+                    className="bg-primary hover:bg-white text-background-dark font-black py-4 px-8 text-[9px] uppercase tracking-[0.2em] transition-all w-full md:w-auto"
+                  >
+                    AVANÇAR
+                  </button>
+                ) : (
+                  kycStatus !== 'approved' && (
+                    <button 
+                      type="button"
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="bg-primary hover:bg-white text-background-dark font-black py-4 px-8 text-[9px] uppercase tracking-[0.2em] transition-all disabled:opacity-50 w-full md:w-auto"
+                    >
+                      {saving ? 'PROCESSANDO...' : 'FINALIZAR VERIFICAÇÃO'}
+                    </button>
+                  )
+                )}
+              </div>
+          </div>
+        )}
 
         {message && (
           <p className={`text-[10px] text-center font-black uppercase tracking-widest animate-pulse mt-4 ${isError ? 'text-red-500' : 'text-primary'}`}>
