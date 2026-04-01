@@ -29,7 +29,7 @@ export default async function handler(req: any, res: any) {
     if (!type && !slugOrId) {
       title = 'Perfection Airsoft';
       description = 'Conectando quem joga certo';
-      image = 'https://www.perfectionairsoft.com.br/og-home.png';
+      image = 'https://www.perfectionairsoft.com.br/og-home.jpg';
     }
 
     const ensureAbsolute = (urlStr: string) => {
