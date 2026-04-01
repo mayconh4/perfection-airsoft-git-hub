@@ -35,29 +35,38 @@ export default async function handler(req: any, res: any) {
     if (SUPABASE_ANON_KEY && type && slugOrId) {
       const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+      // Helper unificado para buscar a imagem mais factível
+      const getPrimaryImage = (data: any) => {
+        if (data.image_url) return ensureAbsolute(data.image_url);
+        if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+          return ensureAbsolute(data.images[0]);
+        }
+        return image; // fallback pra imagem global se as duas falharem
+      };
+
       if (type === 'drop') {
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
-        const { data } = await supabase.from('raffles').select('title, description, image_url').or(isUUID ? `id.eq.${slugOrId}` : `slug.eq.${slugOrId}`).single();
+        const { data } = await supabase.from('raffles').select('title, description, image_url, images').or(isUUID ? `id.eq.${slugOrId}` : `slug.eq.${slugOrId}`).single();
         if (data) {
           title = data.title;
           description = data.description || description;
-          image = ensureAbsolute(data.image_url);
+          image = getPrimaryImage(data);
         }
       } else if (type === 'produto') {
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
-        const { data } = await supabase.from('products').select('name, description, image_url').or(isUUID ? `id.eq.${slugOrId}` : `slug.eq.${slugOrId}`).single();
+        const { data } = await supabase.from('products').select('name, description, image_url, images').or(isUUID ? `id.eq.${slugOrId}` : `slug.eq.${slugOrId}`).single();
         if (data) {
           title = data.name;
           description = data.description || description;
-          image = ensureAbsolute(data.image_url);
+          image = getPrimaryImage(data);
         }
       } else if (type === 'eventos') {
         if (slugOrId !== 'criar') {
-          const { data } = await supabase.from('events').select('title, description, image_url').eq('id', slugOrId).single();
+          const { data } = await supabase.from('events').select('title, description, image_url, images').eq('id', slugOrId).single();
           if (data) {
             title = data.title;
             description = data.description || description;
-            image = ensureAbsolute(data.image_url);
+            image = getPrimaryImage(data);
           }
         }
       }
