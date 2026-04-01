@@ -1,0 +1,28 @@
+{
+  "id": "017213a1-6228-48bd-bb71-1154e82ec3eb",
+  "name": "ARMY ARMAMENT MAGAZINE 28R FOR GBB HI-CAPA R615",
+  "brand": "ARMY ARMAMENT",
+  "price": 210.99,
+  "old_price": null,
+  "image_url": "https://www.arsenalsports.com/img/31642/produtos/600/dfdf23ecea7bc025137da2faed36e9d1.png",
+  "badge": null,
+  "category_id": "698a8ae0-e1cb-40e4-9646-0d516b16e680",
+  "system": "Eletrica (AEG)",
+  "condition": "novo",
+  "description": "Para linha Hi-Capa GBB Pistol - R615\nCapacidade: 28 Rounds\nCalibre: 6mm BB\nFeito em Metal\nCor: Preta",
+  "specs": {
+    "model": "MAGAZINE 28R FOR",
+    "weapon_type": "Pistolas a Gás"
+  },
+  "stock": 10,
+  "created_at": "2026-03-24T13:08:32.42574+00:00",
+  "slug": "army-armament-magazine-28r-for-gbb-hi-capa-r615",
+  "usd_price": 23,
+  "last_synced_at": "2026-03-24T13:08:32.42574+00:00",
+  "tax_importer": 25,
+  "tax_admin": 25,
+  "tax_nf": 3,
+  "source_url": "https://www.arsenalsports.com/produto/army-armament-magazine-28r-for-gbb-hicapa-r615-31642.html",
+  "is_available": true,
+  "images": []
+}
