@@ -366,8 +366,8 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
                 <div className="size-12 rounded-full border-2 border-primary flex items-center justify-center bg-primary/10">
                     <span className="material-symbols-outlined text-primary text-2xl font-black">verified_user</span>
                 </div>
-                <h1 className="text-xl font-black text-white italic uppercase tracking-widest leading-none">
-                    PROTOCOLO DE<br />VERIFICAÇÃO TÁTICA
+                <h1 className="text-[14px] md:text-[18px] font-black text-white italic uppercase tracking-[0.2em] leading-tight">
+                    PROTOCOLO DE VERIFICAÇÃO
                 </h1>
                 </div>
                 
