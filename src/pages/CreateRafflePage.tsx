@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { OperatorKYCForm } from '../components/OperatorKYCForm';
 
 export default function CreateRafflePage() {
   const { user } = useAuth();
@@ -26,6 +27,7 @@ export default function CreateRafflePage() {
   });
 
   const [hasPixKey, setHasPixKey] = useState<boolean | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
   
   useEffect(() => {
     checkPixKey();
@@ -237,19 +239,31 @@ export default function CreateRafflePage() {
 
             {hasPixKey === false && user && (
                 <div className="bg-red-500/10 border border-red-500/50 p-8 flex flex-col items-center text-center gap-4 mb-8">
-                    <span className="material-symbols-outlined text-red-500 text-4xl">warning</span>
-                    <div>
-                        <h3 className="text-white font-black uppercase tracking-widest mb-2 font-display italic">PERFIL FINANCEIRO NÃO VERIFICADO</h3>
-                        <p className="text-slate-400 text-[10px] uppercase font-mono max-w-md mx-auto leading-relaxed">
-                            PARA LANÇAR UM DROP NO MARKETPLACE, VOCÊ PRECISA CONCLUIR O PROTOCOLO DE VERIFICAÇÃO TÁTICA.
-                        </p>
-                    </div>
-                    <Link 
-                        to="/organizador" 
-                        className="bg-red-500 text-white font-black py-3 px-8 text-[10px] uppercase tracking-widest hover:bg-white hover:text-red-500 transition-all shadow-[0_0_20px_rgba(239,68,68,0.2)]"
-                    >
-                        INICIAR VERIFICAÇÃO AGORA
-                    </Link>
+                    {!isVerifying ? (
+                        <>
+                            <span className="material-symbols-outlined text-red-500 text-4xl">warning</span>
+                            <div>
+                                <h3 className="text-white font-black uppercase tracking-widest mb-2 font-display italic">PERFIL FINANCEIRO NÃO VERIFICADO</h3>
+                                <p className="text-slate-400 text-[10px] uppercase font-mono max-w-md mx-auto leading-relaxed">
+                                    PARA LANÇAR UM DROP NO MARKETPLACE, VOCÊ PRECISA CONCLUIR O PROTOCOLO DE VERIFICAÇÃO TÁTICA.
+                                </p>
+                            </div>
+                            <button 
+                                type="button"
+                                onClick={() => setIsVerifying(true)}
+                                className="bg-red-500 text-white font-black py-3 px-8 text-[10px] uppercase tracking-widest hover:bg-white hover:text-red-500 transition-all shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                            >
+                                INICIAR VERIFICAÇÃO AGORA
+                            </button>
+                        </>
+                    ) : (
+                        <div className="w-full text-left bg-black/40 p-1">
+                             <OperatorKYCForm onComplete={() => {
+                                 setIsVerifying(false);
+                                 checkPixKey();
+                             }} />
+                        </div>
+                    )}
                 </div>
             )}
             

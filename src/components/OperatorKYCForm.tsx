@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
-export function OperatorKYCForm() {
+export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
   const { user } = useAuth();
   
   // Controle de Etapa (Wizard)
@@ -341,7 +341,10 @@ export function OperatorKYCForm() {
           </p>
           <div className="mt-12 group">
             <button 
-              onClick={() => setShowSuccess(false)}
+              onClick={() => {
+                setShowSuccess(false);
+                if (onComplete) onComplete();
+              }}
               className="bg-green-500 text-black text-[10px] font-black uppercase tracking-[0.3em] px-10 py-4 hover:bg-white transition-all transform hover:scale-105"
             >
               RETORNAR AO CAMPO
