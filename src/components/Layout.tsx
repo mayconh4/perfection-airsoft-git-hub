@@ -493,7 +493,9 @@ export function Layout({ children }: LayoutProps) {
                 <li><Link to="/contato" className="text-[10px] text-white/50 hover:text-white uppercase tracking-widest transition-colors font-bold">SAC / Rádio</Link></li>
                 <li><Link to="/faq" className="text-[10px] text-white/50 hover:text-white uppercase tracking-widest transition-colors font-bold">Central de Ajuda</Link></li>
                 <li><Link to="/termos" className="text-[10px] text-white/50 hover:text-white uppercase tracking-widest transition-colors font-bold">Termos de Uso</Link></li>
-                <li><Link to="/organizador" className="text-[10px] text-primary/60 hover:text-primary uppercase tracking-widest transition-colors font-bold border-t border-white/5 pt-4 block">Painel do Organizador</Link></li>
+                {isAdmin && (
+                  <li><Link to="/organizador" className="text-[10px] text-primary/60 hover:text-primary uppercase tracking-widest transition-colors font-bold border-t border-white/5 pt-4 block">Painel do Organizador</Link></li>
+                )}
               </ul>
             </div>
 
