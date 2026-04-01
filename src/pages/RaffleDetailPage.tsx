@@ -264,7 +264,7 @@ export default function RaffleDetailPage() {
               <div className="border-b border-white/5 pb-4">
                 <h3 className="text-sm font-black text-white uppercase tracking-[0.4em] flex items-center gap-3 italic">
                   <span className="h-px w-8 bg-primary" />
-                  Briefing da Missão
+                  Descrição do equipamento
                 </h3>
               </div>
               <p className="text-sm text-slate-400 font-mono leading-relaxed uppercase whitespace-pre-line bg-white/5 p-6 border-l-2 border-primary/40">
@@ -454,7 +454,7 @@ export default function RaffleDetailPage() {
         {/* Mobile-Only Description & Rules (Moved down) */}
         <div className="lg:hidden mt-12 space-y-12">
            <div className="space-y-6">
-              <h3 className="text-xl font-black text-white uppercase tracking-tighter italic border-l-4 border-primary pl-4">Briefing da Missão</h3>
+              <h3 className="text-xl font-black text-white uppercase tracking-tighter italic border-l-4 border-primary pl-4">Descrição do equipamento</h3>
               <p className="text-sm text-slate-400 font-mono leading-relaxed uppercase bg-white/5 p-4 border border-white/5">
                 {raffle.description}
               </p>
