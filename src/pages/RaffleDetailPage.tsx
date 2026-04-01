@@ -352,21 +352,52 @@ export default function RaffleDetailPage() {
                 </header>
 
                 {/* Quick Select Buttons */}
-                <div className="grid grid-cols-4 gap-2 relative z-10">
-                   {[5, 10, 25, 50].map((num) => (
-                      <button 
-                        key={num}
-                        onClick={() => {
-                          const available = Array.from({ length: raffle.total_tickets }, (_, i) => i + 1)
-                            .filter(n => !soldTicketNumbers.includes(n) && !selectedTickets.includes(n))
-                            .slice(0, num);
-                          setSelectedTickets(prev => [...prev, ...available]);
-                        }}
-                        className="bg-white/5 border border-white/10 py-2 text-[9px] font-black text-white/60 hover:bg-primary hover:text-black hover:border-primary transition-all uppercase tracking-widest"
-                      >
-                         +{num}
-                      </button>
-                   ))}
+                <div className="space-y-2 relative z-10">
+                    <div className="grid grid-cols-4 gap-2">
+                        {[5, 10, 25, 50].map((num) => (
+                        <button 
+                            key={num}
+                            type="button"
+                            onClick={() => {
+                            const available = Array.from({ length: raffle.total_tickets }, (_, i) => i + 1)
+                                .filter(n => !soldTicketNumbers.includes(n) && !selectedTickets.includes(n))
+                                .slice(0, num);
+                            setSelectedTickets(prev => [...prev, ...available]);
+                            }}
+                            className="bg-white/5 border border-white/10 py-2 text-[9px] font-black text-white/60 hover:bg-primary hover:text-black hover:border-primary transition-all uppercase tracking-widest"
+                        >
+                            +{num}
+                        </button>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                        <button 
+                            type="button"
+                            onClick={() => setSelectedTickets([])}
+                            className="bg-red-500/10 border border-red-500/20 py-3 text-[9px] font-black text-red-500 hover:bg-red-500 hover:text-white transition-all uppercase tracking-widest flex items-center justify-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-sm">delete_sweep</span>
+                            LIMPAR ARSENAL
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={() => {
+                                const available = Array.from({ length: raffle.total_tickets }, (_, i) => i + 1)
+                                    .filter(n => !soldTicketNumbers.includes(n) && !selectedTickets.includes(n));
+                                
+                                if (available.length > 0) {
+                                    const randomIndex = Math.floor(Math.random() * available.length);
+                                    const luckyNumber = available[randomIndex];
+                                    setSelectedTickets(prev => [...prev, luckyNumber]);
+                                }
+                            }}
+                            className="bg-emerald-500/10 border border-emerald-500/20 py-3 text-[9px] font-black text-emerald-500 hover:bg-emerald-500 hover:text-black transition-all uppercase tracking-widest flex items-center justify-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-sm">casino</span>
+                            SORTEIO ALEATÓRIO
+                        </button>
+                    </div>
                 </div>
 
                 {/* Ticket Grid Overlay */}
