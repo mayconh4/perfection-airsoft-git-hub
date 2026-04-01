@@ -24,6 +24,7 @@ export default function OrganizerDashboard() {
   const [winners, setWinners] = useState<any[]>([]);
   const [updatingLogisticsId, setUpdatingLogisticsId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [activeRaffle, setActiveRaffle] = useState<any>(null); // Contexto de edição/intel
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -54,11 +55,47 @@ export default function OrganizerDashboard() {
         .order('event_date', { ascending: false });
 
       if (eventsError) throw eventsError;
-      setEvents(eventsData || []);
+
+      // 2.2 Buscar todas as rifas/drops do organizador
+      const { data: rafflesData } = await supabase
+        .from('raffles')
+        .select('*')
+        .eq('creator_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      // Verificação de parâmetro de edição administrativa
+      const urlParams = new URLSearchParams(window.location.search);
+      const editId = urlParams.get('edit');
+
+      if (editId) {
+        const { data: editRaffle } = await supabase
+          .from('raffles')
+          .select('*, profiles(full_name, phone)')
+          .eq('id', editId)
+          .single();
+        
+        if (editRaffle) setActiveRaffle(editRaffle);
+      }
+
+      // Merge de operações para visualização e estatísticas
+      const allOps = [
+        ...(eventsData || []).map(e => ({ ...e, type: 'mission' })),
+        ...(rafflesData || []).map(r => ({ 
+          ...r, 
+          type: 'drop', 
+          title: r.title, 
+          event_date: r.created_at, 
+          sold_count: r.sold_tickets, 
+          capacity: r.total_tickets,
+          image_url: r.image_url
+        }))
+      ];
+
+      setEvents(allOps);
 
       let totalSold = 0;
-      if (eventsData && eventsData.length > 0) {
-        totalSold = eventsData.reduce((sum, e) => sum + (e.sold_count || 0), 0);
+      if (allOps.length > 0) {
+        totalSold = allOps.reduce((sum, e) => sum + (e.sold_count || 0), 0);
       }
 
       // 2.5 Buscar Dados de Confiança e Role do Perfil
@@ -275,19 +312,32 @@ export default function OrganizerDashboard() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-12">
           <div className="bg-surface/30 border border-white/5 p-8 group hover:bg-white/5 transition-colors">
-            <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Missões Concluídas</span>
-            <span className="text-4xl font-black text-white">{stats.completedDrops}</span>
+            <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Operações Totais</span>
+            <span className="text-4xl font-black text-white">{events.length}</span>
           </div>
-          <div className={`border p-8 border-l-4 transition-all duration-500 ${stats.trustLevel >= 3 ? 'bg-primary/5 border-primary border-white/10' : 'bg-surface/30 border-white/5 border-l-white/10'}`}>
-            <span className={`text-[10px] font-black uppercase tracking-widest block mb-1 font-mono italic ${stats.trustLevel >= 3 ? 'text-primary' : 'text-slate-500'}`}>Saldo Disponível</span>
+          <div className={`border p-8 border-l-4 transition-all duration-500 ${stats.trustLevel >= 3 || isAdmin ? 'bg-primary/5 border-primary border-white/10' : 'bg-surface/30 border-white/5 border-l-white/10'}`}>
+            <span className={`text-[10px] font-black uppercase tracking-widest block mb-1 font-mono italic ${stats.trustLevel >= 3 || isAdmin ? 'text-primary' : 'text-slate-500'}`}>
+              {activeRaffle ? 'Intel: Receita Estimada' : 'Saldo Disponível'}
+            </span>
             <div className="flex items-baseline gap-2">
-                <span className={`text-4xl font-black ${stats.trustLevel >= 3 ? 'text-primary' : 'text-white/40'}`}>R$ {stats.netRevenue.toFixed(2)}</span>
-                {stats.trustLevel < 3 && <span className="text-[8px] text-red-500 font-black uppercase animate-pulse font-mono">BLOQUEADO</span>}
+                <span className={`text-4xl font-black ${stats.trustLevel >= 3 || isAdmin ? 'text-primary' : 'text-white/40'}`}>
+                  R$ {activeRaffle 
+                    ? (activeRaffle.sold_tickets * activeRaffle.ticket_price).toFixed(2) 
+                    : stats.netRevenue.toFixed(2)}
+                </span>
+                {(stats.trustLevel < 3 && !isAdmin && !activeRaffle) && <span className="text-[8px] text-red-500 font-black uppercase animate-pulse font-mono">BLOQUEADO</span>}
+                {activeRaffle && <span className="text-[8px] text-primary font-black uppercase font-mono">DROPLINE</span>}
             </div>
           </div>
           <div className="bg-surface/30 border border-white/5 p-8">
-            <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest block mb-1">Saldo em Garantia (Escrow)</span>
-            <span className="text-2xl font-black text-white/60">R$ {stats.pendingBalance.toFixed(2)}</span>
+            <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest block mb-1">
+              {activeRaffle ? 'Intel: Tickets Vendidos' : 'Saldo em Garantia (Escrow)'}
+            </span>
+            <span className="text-2xl font-black text-white/60">
+              {activeRaffle 
+                ? `${activeRaffle.sold_tickets} / ${activeRaffle.total_tickets}`
+                : `R$ ${stats.pendingBalance.toFixed(2)}`}
+            </span>
           </div>
           <div className="bg-surface/30 border border-white/5 p-8">
             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Total Movimentado</span>
@@ -295,13 +345,44 @@ export default function OrganizerDashboard() {
           </div>
         </div>
 
+        {/* OVERRIDE INTEL (Se estiver editando/visualizando drop administrativo) */}
+        {activeRaffle && (
+          <div className="mb-12 p-8 bg-primary border-2 border-black flex flex-col md:flex-row items-center justify-between gap-8 animate-in slide-in-from-right duration-700 shadow-[20px_20px_0_rgba(0,0,0,1)]">
+            <div className="flex items-center gap-6">
+              <div className="size-16 bg-black flex items-center justify-center">
+                <span className="material-symbols-outlined text-primary text-4xl">radar</span>
+              </div>
+              <div className="text-black">
+                <div className="flex items-center gap-3 mb-1">
+                  <h2 className="text-2xl font-black uppercase italic tracking-tighter leading-none">Command Intelligence</h2>
+                  <span className="bg-black text-primary text-[8px] font-black px-2 py-0.5 rounded-full">ACTIVE DATA FEED</span>
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em]">DROPLINE: {activeRaffle.title}</p>
+                <div className="flex gap-4 mt-2 text-[9px] font-black uppercase font-mono bg-black/10 px-2 py-1">
+                  <span>Operador: {activeRaffle.profiles?.full_name || 'DESCONHECIDO'}</span>
+                  <span>| Status: {activeRaffle.status}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setActiveRaffle(null)}
+                className="bg-black text-primary font-black px-6 py-3 text-[9px] uppercase tracking-widest hover:bg-white hover:text-black transition-all"
+              >
+                Encerrar Intel
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Tab Headers */}
         <div className="flex items-center gap-8 border-b border-white/5 mb-12">
           <button 
             onClick={() => setActiveTab('missions')}
             className={`pb-4 text-[10px] uppercase font-black tracking-[0.3em] transition-all relative ${activeTab === 'missions' ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
           >
-            Minhas Missões
+            Operações Ativas
             {activeTab === 'missions' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></span>}
           </button>
           <button 
@@ -339,9 +420,14 @@ export default function OrganizerDashboard() {
                         </div>
                       </div>
                       <div>
-                        <h4 className="text-sm font-black text-white uppercase tracking-widest mb-1">{event.title}</h4>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="text-sm font-black text-white uppercase tracking-widest">{event.title}</h4>
+                          <span className={`text-[7px] font-black px-1.5 py-0.5 rounded ${event.type === 'drop' ? 'bg-primary text-black' : 'bg-white/10 text-white/50'}`}>
+                            {event.type.toUpperCase()}
+                          </span>
+                        </div>
                         <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">
-                          {new Date(event.event_date).toLocaleDateString()} • {event.location}
+                          {new Date(event.event_date).toLocaleDateString()} • {event.location || 'ONLINE'}
                         </p>
                       </div>
                     </div>
@@ -351,8 +437,11 @@ export default function OrganizerDashboard() {
                         <span className="text-[10px] text-slate-600 font-black uppercase tracking-widest block mb-1">Vendas</span>
                         <span className="text-sm font-black text-white">{event.sold_count} / {event.capacity}</span>
                       </div>
-                      <Link to={`/organizador/eventos/${event.id}`} className="p-3 bg-white/5 border border-white/10 text-white/50 hover:text-primary hover:border-primary/40 transition-all">
-                        <span className="material-symbols-outlined text-sm">edit</span>
+                      <Link 
+                        to={event.type === 'drop' ? `/drop/${event.slug || event.id}` : `/eventos/${event.id}`} 
+                        className="p-3 bg-white/5 border border-white/10 text-white/50 hover:text-primary hover:border-primary/40 transition-all"
+                      >
+                        <span className="material-symbols-outlined text-sm">visibility</span>
                       </Link>
                     </div>
                   </div>

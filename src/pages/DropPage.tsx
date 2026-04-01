@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Pencil, MessageCircle, User as UserIcon, Calendar, Trash2 } from 'lucide-react';
+import { Pencil, MessageCircle, User as UserIcon, Calendar, Trash2, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
 
 interface Raffle {
   id: string;
@@ -42,6 +42,7 @@ const MOCK_RAFFLES: Raffle[] = [
 
 function RaffleCard({ raffle, onDelete }: { raffle: Raffle; onDelete?: (id: string) => void }) {
   const { isAdmin } = useAuth();
+  const [showIntel, setShowIntel] = useState(false);
   const percentSold = (raffle.sold_tickets / raffle.total_tickets) * 100;
   const createdAt = new Date(raffle.created_at).toLocaleDateString('pt-BR', {
     day: '2-digit',
@@ -81,11 +82,19 @@ function RaffleCard({ raffle, onDelete }: { raffle: Raffle; onDelete?: (id: stri
               <Pencil size={12} />
               Editar
             </Link>
+            <button 
+              onClick={() => setShowIntel(!showIntel)}
+              className={`flex-1 border py-2 rounded flex items-center justify-center gap-2 text-[9px] font-black uppercase transition-all ${showIntel ? 'bg-primary text-black border-primary' : 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/20'}`}
+            >
+              <BarChart3 size={12} />
+              {showIntel ? 'Ocultar Intel' : 'Intel'}
+              {showIntel ? <ChevronUp size={10} /> : <ChevronDown size={10} /> }
+            </button>
             <a 
               href={whatsappLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 bg-green-500/20 border border-green-500/30 text-green-500 hover:bg-green-500 hover:text-black py-2 rounded flex items-center justify-center gap-2 text-[9px] font-black uppercase transition-all"
+              className="bg-green-500/20 border border-green-500/30 text-green-500 hover:bg-green-500 hover:text-black py-2 px-3 rounded flex items-center justify-center gap-2 text-[9px] font-black uppercase transition-all"
             >
               <MessageCircle size={12} />
               Contato
@@ -98,6 +107,43 @@ function RaffleCard({ raffle, onDelete }: { raffle: Raffle; onDelete?: (id: stri
               <Trash2 size={12} />
             </button>
           </div>
+
+          {/* INTEL EXPANDABLE PANEL */}
+          {showIntel && (
+            <div className="mt-4 pt-4 border-t border-primary/20 bg-black/40 p-3 space-y-4 animate-in slide-in-from-top-4 duration-500">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                        <span className="text-[6px] font-black text-slate-500 uppercase tracking-widest block">Telemetria de Vendas</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-sm font-black text-white">{raffle.sold_tickets}</span>
+                            <span className="text-[8px] text-slate-500 uppercase">/ {raffle.total_tickets} TICKETS</span>
+                        </div>
+                    </div>
+                    <div className="space-y-1 text-right">
+                        <span className="text-[6px] font-black text-slate-500 uppercase tracking-widest block">Receita Bruta</span>
+                        <span className="text-sm font-black text-green-500">R$ {(raffle.sold_tickets * raffle.ticket_price).toFixed(2)}</span>
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <div className="flex justify-between text-[7px] font-bold uppercase tracking-widest">
+                        <span className="text-primary italic">Airdrop Progress</span>
+                        <span className="text-white">{percentSold.toFixed(1)}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                        <div className="h-full bg-primary shadow-[0_0_10px_rgba(251,191,36,0.3)] transition-all duration-1000" style={{ width: `${percentSold}%` }}></div>
+                    </div>
+                </div>
+
+                <div className="bg-black/40 border border-white/5 p-2 space-y-1">
+                    <span className="text-[6px] font-black text-slate-600 uppercase tracking-widest block font-mono">Operator Dossier</span>
+                    <div className="flex flex-col text-[8px] text-white/60">
+                        <span>E-MAIL: {raffle.profiles?.phone ? 'DISPONÍVEL VIA WHATSAPP' : 'N/A'}</span>
+                        <span className="mt-1">ID CRIPTOGRAFADO: {raffle.creator_id.substring(0, 8)}...</span>
+                    </div>
+                </div>
+            </div>
+          )}
         </div>
       )}
 
