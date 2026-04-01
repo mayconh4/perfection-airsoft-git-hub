@@ -359,48 +359,47 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
         </div>
       )}
       {step === 0 && (
-          <div className="animate-[fadeIn_0.5s_ease-out]">
+          <div className="animate-[fadeIn_0.5s_ease-out] flex flex-col items-center text-center">
             {/* Protocolo de Verificação Tática - Intro Section */}
-            <div className="mb-12 border-b border-white/5 pb-8">
-                <div className="flex items-center gap-4 mb-8">
-                <div className="size-12 rounded-full border-2 border-primary flex items-center justify-center bg-primary/10">
-                    <span className="material-symbols-outlined text-primary text-2xl font-black">verified_user</span>
+            <div className="mb-12 border-b border-white/5 pb-8 w-full flex flex-col items-center">
+                <div className="size-16 rounded-full border-2 border-primary flex items-center justify-center bg-primary/10 mb-6">
+                    <span className="material-symbols-outlined text-primary text-3xl font-black">verified_user</span>
                 </div>
-                <h1 className="text-[14px] md:text-[18px] font-black text-white italic uppercase tracking-[0.2em] leading-tight">
+                <h1 className="text-[14px] md:text-[18px] font-black text-white italic uppercase tracking-[0.3em] leading-tight mb-8">
                     PROTOCOLO DE VERIFICAÇÃO
                 </h1>
-                </div>
                 
-                <div className="space-y-6 border-l-2 border-primary/30 pl-6 py-1">
-                <p className="text-[10px] text-slate-400 font-mono leading-relaxed uppercase tracking-[0.2em]">
-                    PARA GARANTIR A SEGURANÇA DA NOSSA COMUNIDADE DE OPERADORES E CUMPRIR AS NORMAS DE COMBATE A FRAUDES E GOLPES, SOLICITAMOS A VERIFICAÇÃO OBRIGATÓRIA DE SUA IDENTIDADE.
-                </p>
-                <p className="text-[10px] text-slate-400 font-mono leading-relaxed uppercase tracking-[0.2em]">
-                    SEUS DADOS SÃO CRIPTOGRAFADOS E USADOS EXCLUSIVAMENTE PARA VALIDAR SUA CONTA DE RECEBIMENTOS, PERMITINDO SAQUES DAS SUAS MISSÕES.
-                </p>
-                <div className="bg-black/40 border border-white/10 p-5 mt-4">
-                    <p className="text-[9px] text-primary font-black uppercase tracking-[0.3em] leading-relaxed italic">
-                    AO CONTINUAR E PREENCHER OS DADOS NO PRÓXIMO PASSO, VOCÊ CONCORDA QUE AS INFORMAÇÕES SÃO VERDADEIRAS E AUTÊNTICAS.
+                <div className="space-y-6 max-w-md mx-auto">
+                    <p className="text-[10px] text-slate-400 font-mono leading-relaxed uppercase tracking-[0.2em]">
+                        PARA GARANTIR A SEGURANÇA DA NOSSA COMUNIDADE DE OPERADORES E CUMPRIR AS NORMAS DE COMBATE A FRAUDES E GOLPES, SOLICITAMOS A VERIFICAÇÃO OBRIGATÓRIA DE SUA IDENTIDADE.
                     </p>
-                </div>
+                    <p className="text-[10px] text-slate-400 font-mono leading-relaxed uppercase tracking-[0.2em]">
+                        SEUS DADOS SÃO CRIPTOGRAFADOS E USADOS EXCLUSIVAMENTE PARA VALIDAR SUA CONTA DE RECEBIMENTOS, PERMITINDO SAQUES DAS SUAS MISSÕES.
+                    </p>
+                    <div className="bg-primary/5 border border-primary/20 p-6 mt-6">
+                        <p className="text-[9px] text-primary font-black uppercase tracking-[0.3em] leading-relaxed italic">
+                        AO CONTINUAR E PREENCHER OS DADOS NO PRÓXIMO PASSO, VOCÊ CONCORDA QUE AS INFORMAÇÕES SÃO VERDADEIRAS E AUTÊNTICAS.
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <div className="flex items-center gap-3 mb-6 mt-12">
-                <span className="material-symbols-outlined text-primary text-xl">admin_panel_settings</span>
-                <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em]">
-                Recrutamento de Operador
-                </h3>
+            <div className="flex flex-col items-center gap-4 mb-10 w-full">
+                <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-primary text-xl">admin_panel_settings</span>
+                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em]">
+                        Recrutamento de Operador
+                    </h3>
+                </div>
+                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-widest leading-relaxed">
+                    LEIA AS DIRETRIZES ACIMA E INICIE SEU REGISTRO NO SISTEMA.
+                </p>
             </div>
-            
-            <p className="text-[10px] md:text-[11px] text-slate-400 font-mono mb-10 uppercase leading-relaxed tracking-widest">
-                LEIA AS DIRETRIZES ACIMA E CLIQUE NO BOTÃO ABAIXO PARA INICIAR SEU REGISTRO NO SISTEMA.
-            </p>
 
             <button 
                 type="button"
                 onClick={handleNext}
-                className="w-full bg-primary text-background-dark font-black py-5 px-8 text-[11px] uppercase tracking-[0.4em] hover:bg-white transition-all shadow-[0_0_20px_rgba(255,193,1,0.2)]"
+                className="w-full max-w-sm bg-primary text-background-dark font-black py-5 px-8 text-[11px] uppercase tracking-[0.4em] hover:bg-white transition-all shadow-[0_0_20px_rgba(255,193,1,0.2)]"
             >
                 INICIAR PROTOCOLO
             </button>

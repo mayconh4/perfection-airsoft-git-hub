@@ -238,7 +238,7 @@ export default function CreateRafflePage() {
             )}
 
             {hasPixKey === false && user && (
-                <div className="bg-red-500/10 border border-red-500/50 p-8 flex flex-col items-center text-center gap-4 mb-8">
+                <div className={!isVerifying ? "bg-red-500/10 border border-red-500/50 p-8 flex flex-col items-center text-center gap-4 mb-8" : "mb-8 w-full"}>
                     {!isVerifying ? (
                         <>
                             <span className="material-symbols-outlined text-red-500 text-4xl">warning</span>
@@ -257,7 +257,7 @@ export default function CreateRafflePage() {
                             </button>
                         </>
                     ) : (
-                        <div className="w-full text-left bg-black/40 p-1">
+                        <div className="w-full">
                              <OperatorKYCForm onComplete={() => {
                                  setIsVerifying(false);
                                  checkPixKey();
