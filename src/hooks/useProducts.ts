@@ -13,7 +13,7 @@ export function useProducts(categorySlug?: string) {
       setLoading(true);
       
       const executeQuery = async () => {
-        let query = supabase.from('products').select(`${PRODUCT_FIELDS}, category:categories(id, name, slug)`);
+        let query = supabase.from('products').select(`${PRODUCT_FIELDS}, category:categories(id, label, slug)`);
         
         if (categorySlug) {
           const { data: cat } = await supabase.from('categories').select('id').eq('slug', categorySlug).single();
@@ -69,7 +69,7 @@ export function useCategories() {
   useEffect(() => {
     const fetch = async () => {
       const { data } = await withRetry<Category[]>(async () => {
-        return await supabase.from('categories').select('id, name, slug, label, image_url').order('label');
+        return await supabase.from('categories').select('id, label, slug').order('label');
       });
       setCategories(data || []);
       setLoading(false);
