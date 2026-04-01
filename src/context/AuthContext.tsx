@@ -62,14 +62,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setIsAdmin(session?.user?.email === 'admin@perfectionairsoft.com.br');
+      setIsAdmin(
+        session?.user?.email === 'admin@perfectionairsoft.com.br' || 
+        session?.user?.email === 'maycontuliofs@gmail.com'
+      );
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setIsAdmin(session?.user?.email === 'admin@perfectionairsoft.com.br');
+      setIsAdmin(
+        session?.user?.email === 'admin@perfectionairsoft.com.br' || 
+        session?.user?.email === 'maycontuliofs@gmail.com'
+      );
     });
 
     return () => subscription.unsubscribe();
