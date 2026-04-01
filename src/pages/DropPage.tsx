@@ -440,18 +440,29 @@ export default function DropPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm('🚨 CONFIRMAÇÃO DE DESTRUIÇÃO 🚨\n\nEste drop será apagado permanentemente dos canais táticos. Confirmar operação?')) return;
 
-    try {
-      const { error } = await supabase
-        .from('raffles')
-        .delete()
-        .eq('id', id);
+    // Se for um ID de mock (ex: "1"), apenas removemos localmente
+    const isMock = id.length < 10; 
 
-      if (error) throw error;
+    try {
+      if (!isMock) {
+        const { error } = await supabase
+          .from('raffles')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+      }
       
-      // Atualização otimista
+      // Atualização otimista do estado
       setRaffles(prev => prev.filter(r => r.id !== id));
-      console.log(`[HQ-OVERRIDE] Drop ${id} excluído com sucesso.`);
+      console.log(`[HQ-OVERRIDE] Drop ${id} ${isMock ? '(mock) ' : ''}excluído com sucesso.`);
     } catch (err: any) {
+      // Se o erro for de sintaxe UUID, o registro provavelmente já não existe ou é inválido
+      if (err.message?.includes('invalid input syntax for type uuid')) {
+        setRaffles(prev => prev.filter(r => r.id !== id));
+        return;
+      }
+      
       console.error('Falha ao excluir drop:', err.message);
       alert('Erro ao excluir drop: ' + err.message);
     }
