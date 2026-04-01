@@ -467,8 +467,8 @@ export function Layout({ children }: LayoutProps) {
                 <span className="material-symbols-outlined text-primary text-3xl">target</span>
                 <h2 className="text-xl font-black tracking-tighter text-white uppercase italic">PERFECTION <span className="text-primary">AIRSOFT</span></h2>
               </div>
-              <p className="text-[11px] text-white/40 leading-relaxed uppercase tracking-widest max-w-xs">
-                A maior autoridade em equipamentos de airsoft e treinamento tático da América Latina. Performance sem compromissos.
+              <p className="text-[11px] text-white/40 leading-relaxed uppercase tracking-widest max-w-xs italic">
+                A maior autoridade em airsoft da América Latina. Desenvolvido para você.
               </p>
               <div className="flex gap-4">
                 <span className="material-symbols-outlined text-white/30 hover:text-primary cursor-pointer transition-colors">language</span>
