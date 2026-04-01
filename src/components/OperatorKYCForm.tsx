@@ -612,6 +612,7 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
             <div className="flex gap-2 w-full md:w-auto">
               {step > 1 && (
                 <button 
+                  type="button"
                   onClick={handlePrev}
                   className="bg-white/5 hover:bg-white/10 text-white font-black py-4 px-6 text-[9px] uppercase tracking-[0.2em] transition-all flex-1 md:flex-none"
                 >
@@ -621,6 +622,7 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
               
               {step < 3 ? (
                 <button 
+                  type="button"
                   onClick={handleNext}
                   className="bg-primary hover:bg-white text-background-dark font-black py-4 px-8 text-[9px] uppercase tracking-[0.2em] transition-all w-full md:w-auto"
                 >
@@ -629,6 +631,7 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
               ) : (
                 kycStatus !== 'approved' && (
                   <button 
+                    type="button"
                     onClick={handleSave}
                     disabled={saving}
                     className="bg-primary hover:bg-white text-background-dark font-black py-4 px-8 text-[9px] uppercase tracking-[0.2em] transition-all disabled:opacity-50 w-full md:w-auto"
