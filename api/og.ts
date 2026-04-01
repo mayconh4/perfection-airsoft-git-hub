@@ -18,7 +18,12 @@ export default async function handler(req: any, res: any) {
 
     // Constrói a URL original para o cache e injeção do og:url
     const host = req.headers.host || 'www.perfectionairsoft.com.br';
-    const originalPath = type && slugOrId ? `/${type}/${slugOrId}` : '/';
+    let originalPath = '/';
+    if (type === 'drop-list') {
+      originalPath = '/drop';
+    } else if (type && slugOrId) {
+      originalPath = `/${type}/${slugOrId}`;
+    }
     const fullUrl = `https://${host}${originalPath}`;
 
     let title = 'Perfection Airsoft | Conectando quem domina o jogo';
@@ -30,6 +35,10 @@ export default async function handler(req: any, res: any) {
       title = 'Perfection Airsoft';
       description = 'Perfection Airsoft | Conectando quem domina o jogo';
       image = 'https://www.perfectionairsoft.com.br/og-home.jpg';
+    } else if (type === 'drop-list') {
+      title = 'Drops Perfection Airsoft';
+      description = 'Conectando quem joga certo';
+      image = 'https://www.perfectionairsoft.com.br/og-drop.jpg';
     }
 
     const ensureAbsolute = (urlStr: string) => {

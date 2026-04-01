@@ -5,6 +5,10 @@
       "destination": "/api/og"
     },
     {
+      "source": "/drop",
+      "destination": "/api/og?type=drop-list"
+    },
+    {
       "source": "/drop/(.*)",
       "destination": "/api/og?type=drop&slug=$1"
     },
