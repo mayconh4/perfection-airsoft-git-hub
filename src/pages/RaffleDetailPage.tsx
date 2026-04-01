@@ -333,21 +333,35 @@ export default function RaffleDetailPage() {
                 </div>
               </div>
 
+              {/* Progress HUD (Desktop Column) */}
+              <div className="bg-black/20 border border-white/5 p-4 space-y-3 mb-2 animate-in fade-in duration-700">
+                <div className="flex justify-between text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                  <span className="flex items-center gap-2">
+                    <span className="size-1.5 rounded-full bg-primary animate-ping" />
+                    CAPACIDADE OPERACIONAL DO DROP
+                  </span>
+                  <span className="text-white font-mono">{((raffle.sold_tickets / raffle.total_tickets) * 100).toFixed(1)}%</span>
+                </div>
+                <div className="h-1 bg-white/5 w-full overflow-hidden rounded-full p-[1px]">
+                  <div className="h-full bg-primary shadow-[0_0_10px_rgba(251,191,36,0.5)] rounded-full transition-all duration-1000" style={{ width: `${(raffle.sold_tickets / raffle.total_tickets) * 100}%` }} />
+                </div>
+              </div>
+
               {/* Purchase HUD Selector */}
-              <div className="bg-surface border border-white/10 p-6 md:p-8 space-y-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden backdrop-blur-xl">
+              <div className="bg-surface border border-white/10 p-4 md:p-5 space-y-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden backdrop-blur-xl">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
                 
                 <header className="flex justify-between items-center relative z-10">
                   <div className="space-y-1">
-                    <h3 className="text-lg font-black text-white uppercase tracking-tighter italic">SELETOR DE ARSENAL</h3>
+                    <h3 className="text-[14px] md:text-lg font-black text-white uppercase tracking-tighter italic">SELETOR DE TICKET</h3>
                     <div className="flex items-center gap-2">
-                       <span className="size-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-                       <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">Selecione seus números da sorte</span>
+                       <span className="size-1 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                       <span className="text-[8px] font-mono text-slate-500 uppercase tracking-widest">Selecione seus números da sorte</span>
                     </div>
                   </div>
-                  <div className="bg-white/5 px-4 py-2 border-r-2 border-primary">
+                  <div className="bg-white/5 px-3 py-1.5 border-r-2 border-primary">
                     <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest block text-right">ORDENS</span>
-                    <span className="text-xl font-black text-primary font-mono">{selectedTickets.length}</span>
+                    <span className="text-lg font-black text-primary font-mono">{selectedTickets.length}</span>
                   </div>
                 </header>
 
@@ -481,22 +495,6 @@ export default function RaffleDetailPage() {
                 </div>
               </div>
 
-              {/* Progress HUD (Desktop Column) */}
-              <div className="bg-black/20 border border-white/5 p-6 space-y-4">
-                <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                  <span className="flex items-center gap-2">
-                    <span className="size-1.5 rounded-full bg-primary animate-ping" />
-                    CAPACIDADE OPERACIONAL DO DROP
-                  </span>
-                  <span className="text-white font-mono">{((raffle.sold_tickets / raffle.total_tickets) * 100).toFixed(1)}%</span>
-                </div>
-                <div className="h-1.5 bg-white/5 w-full overflow-hidden rounded-full p-[2px]">
-                  <div className="h-full bg-primary shadow-[0_0_15px_rgba(251,191,36,0.5)] rounded-full transition-all duration-1000" style={{ width: `${(raffle.sold_tickets / raffle.total_tickets) * 100}%` }} />
-                </div>
-                <p className="text-[8px] text-slate-600 font-mono text-center uppercase tracking-widest">
-                   {raffle.total_tickets - raffle.sold_tickets} unidades restantes para completar a missão
-                </p>
-              </div>
             </div>
           </div>
         </div>
