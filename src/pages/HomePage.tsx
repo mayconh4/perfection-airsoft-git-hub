@@ -60,7 +60,7 @@ export function HomePage() {
       subtitle: "COMUNIDADE TÁTICA",
       title: "CONECTANDO QUEM <br /><span className='text-blue-500'>DOMINA O JOGO</span>",
       description: "A elite tática se encontra aqui. Onde a irmandade do Airsoft se une por equipamentos de alta performance e drops exclusivos.",
-      buttonText: "Iniciar Protocolo",
+      buttonText: "Solicite seu drop",
       link: "/drop/criar",
       image: "/assets/drop-banner.png",
       accent: "text-blue-500",
