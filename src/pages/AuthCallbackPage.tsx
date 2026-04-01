@@ -15,22 +15,32 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const handleCallback = async () => {
-      // O Supabase JS SDK processa automaticamente os tokens da URL (hash ou query)
-      // ao chamar getSession() — ele troca o code por sessão se necessário.
-      const { data, error } = await supabase.auth.getSession();
+      // 1. Verificar se existe 'code' na URL (padrão PKCE do Supabase moderno)
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
 
-      if (error) {
-        console.error('Erro no callback de auth:', error.message);
+      try {
+        if (code) {
+          // Troca explícita do código pela sessão (Handshake Tático)
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) throw exchangeError;
+        }
+
+        // 2. Tentar obter a sessão consolidada
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+
+        if (data.session) {
+          // SUCESSO: Sessão estabelecida e e-mail confirmado.
+          // Pequeno delay para garantir propagação de estado no AuthContext
+          setTimeout(() => navigate('/'), 1000);
+        } else {
+          // Nenhuma sessão — pode ser um link expirado
+          navigate('/login?error=link_expired');
+        }
+      } catch (err: any) {
+        console.error('Erro no callback de auth:', err.message);
         navigate('/login?error=confirmation_failed');
-        return;
-      }
-
-      if (data.session) {
-        // Sessão estabelecida com sucesso — redireciona para o dashboard
-        navigate('/dashboard');
-      } else {
-        // Nenhuma sessão — pode ser um link expirado
-        navigate('/login?error=link_expired');
       }
     };
 
