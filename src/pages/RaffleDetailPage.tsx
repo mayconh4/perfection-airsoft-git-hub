@@ -226,6 +226,20 @@ export default function RaffleDetailPage() {
           
           {/* LEFT COLUMN: Visual Arsenal */}
           <div className="lg:col-span-7 space-y-6">
+            {/* Progress HUD (Now at the top of image) */}
+            <div className="bg-black/20 border border-white/5 p-4 space-y-3 animate-in fade-in duration-700">
+              <div className="flex justify-between text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                <span className="flex items-center gap-2">
+                  <span className="size-1.5 rounded-full bg-primary animate-ping" />
+                  CAPACIDADE OPERACIONAL DO DROP
+                </span>
+                <span className="text-white font-mono">{((raffle.sold_tickets / raffle.total_tickets) * 100).toFixed(1)}%</span>
+              </div>
+              <div className="h-1 bg-white/5 w-full overflow-hidden rounded-full p-[1px]">
+                <div className="h-full bg-primary shadow-[0_0_10px_rgba(251,191,36,0.5)] rounded-full transition-all duration-1000" style={{ width: `${(raffle.sold_tickets / raffle.total_tickets) * 100}%` }} />
+              </div>
+            </div>
+
             <div className="relative group">
               <div className="aspect-square md:aspect-video bg-black/60 overflow-hidden border border-white/5 relative shadow-2xl">
                 {allImages.length > 0 ? (
@@ -333,20 +347,6 @@ export default function RaffleDetailPage() {
                 </div>
               </div>
 
-              {/* Progress HUD (Desktop Column) */}
-              <div className="bg-black/20 border border-white/5 p-4 space-y-3 mb-2 animate-in fade-in duration-700">
-                <div className="flex justify-between text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                  <span className="flex items-center gap-2">
-                    <span className="size-1.5 rounded-full bg-primary animate-ping" />
-                    CAPACIDADE OPERACIONAL DO DROP
-                  </span>
-                  <span className="text-white font-mono">{((raffle.sold_tickets / raffle.total_tickets) * 100).toFixed(1)}%</span>
-                </div>
-                <div className="h-1 bg-white/5 w-full overflow-hidden rounded-full p-[1px]">
-                  <div className="h-full bg-primary shadow-[0_0_10px_rgba(251,191,36,0.5)] rounded-full transition-all duration-1000" style={{ width: `${(raffle.sold_tickets / raffle.total_tickets) * 100}%` }} />
-                </div>
-              </div>
-
               {/* Purchase HUD Selector */}
               <div className="bg-surface border border-white/10 p-4 md:p-5 space-y-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden backdrop-blur-xl">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
@@ -392,7 +392,7 @@ export default function RaffleDetailPage() {
                             className="bg-red-500/10 border border-red-500/20 py-3 text-[9px] font-black text-red-500 hover:bg-red-500 hover:text-white transition-all uppercase tracking-widest flex items-center justify-center gap-2"
                         >
                             <span className="material-symbols-outlined text-sm">delete_sweep</span>
-                            LIMPAR ARSENAL
+                            LIMPAR TICKET
                         </button>
                         <button 
                             type="button"
