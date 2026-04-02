@@ -57,6 +57,12 @@ function DrawWarningModal({ onConfirm }: { onConfirm: () => void }) {
     });
   }, []);
 
+  const handleConfirm = () => {
+    const audio = new Audio('/sounds/uav.mp3');
+    audio.play().catch(e => console.warn("UAV sound failed:", e));
+    onConfirm();
+  };
+
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl animate-in fade-in duration-300">
       <div className="max-w-md w-full bg-surface border-2 border-primary/50 shadow-[0_0_80px_rgba(var(--primary-rgb),0.3)] p-6 md:p-8 relative overflow-hidden">
@@ -90,7 +96,7 @@ function DrawWarningModal({ onConfirm }: { onConfirm: () => void }) {
           </div>
           
           <button 
-            onClick={onConfirm}
+            onClick={handleConfirm}
             className="w-full bg-primary text-background-dark font-black py-5 text-[11px] uppercase tracking-widest hover:bg-white transition-all shadow-lg active:scale-95"
           >
             CONFIRMAR E PROSSEGUIR
