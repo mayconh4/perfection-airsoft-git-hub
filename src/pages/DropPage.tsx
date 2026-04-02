@@ -465,6 +465,11 @@ function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: 
   const selectedRaffle = raffles.find(r => r.id === selectedRaffleId);
   const isOwner = selectedRaffle?.creator_id === user?.id || isAdmin;
 
+  // Filtragem tática de missões: Se houver um ID forçado, exibe apenas ele
+  const visibleRaffles = forcedRaffleId 
+    ? raffles.filter(r => r.id === forcedRaffleId) 
+    : raffles;
+
   return (
     <>
       {showWarning && selectedRaffleId && !isFinalized && <DrawWarningModal onConfirm={() => setShowWarning(false)} />}
@@ -482,10 +487,11 @@ function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: 
                   <select 
                       value={selectedRaffleId}
                       onChange={(e) => handleSelectChange(e.target.value)}
-                      className="bg-transparent text-primary text-[8px] font-black uppercase outline-none border-none cursor-pointer"
+                      disabled={!!forcedRaffleId}
+                      className="bg-transparent text-primary text-[8px] font-black uppercase outline-none border-none cursor-pointer disabled:cursor-default"
                   >
-                      <option value="" className="bg-background-dark">--- MODO MANUAL ---</option>
-                      {raffles.map(r => (
+                      {!forcedRaffleId && <option value="" className="bg-background-dark">--- MODO MANUAL ---</option>}
+                      {visibleRaffles.map(r => (
                           <option key={r.id} value={r.id} className="bg-background-dark">{r.title}</option>
                       ))}
                   </select>
