@@ -22,6 +22,7 @@ interface Raffle {
   profiles?: {
     full_name: string | null;
     phone: string | null;
+    email?: string | null;
   };
 }
 
@@ -139,7 +140,7 @@ function RaffleCard({ raffle, onDelete }: { raffle: Raffle; onDelete?: (id: stri
                 </div>
                 <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-3">
                     <div className="flex flex-col text-[8px] text-white/60">
-                        <span>E-MAIL: {raffle.profiles?.phone ? 'DISPONÍVEL VIA WHATSAPP' : 'N/A'}</span>
+                        <span>E-MAIL: {raffle.profiles?.email || 'NÃO INFORMADO'}</span>
                         <span className="mt-1">ID CRIPTOGRAFADO: {raffle.creator_id.substring(0, 8)}...</span>
                     </div>
                 </div>
@@ -448,7 +449,7 @@ export default function DropPage() {
   const loadRaffles = async () => {
     const { data } = await supabase
       .from('raffles')
-      .select('*')
+      .select('*, profiles(*)')
       .eq('status', 'ativo')
       .order('created_at', { ascending: false });
     if (data) setRaffles(data as any);
