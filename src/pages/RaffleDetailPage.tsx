@@ -308,7 +308,7 @@ export default function RaffleDetailPage() {
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
                     <span className="material-symbols-outlined text-sm">gavel</span>
-                    {raffle.rules_title || 'REGRAS E ENGAJAMENTO'}
+                    REGRAS
                   </h4>
                   <p className="text-[10px] text-slate-500 font-mono leading-relaxed uppercase italic">
                     {raffle.rules || 'Sorteio baseado na extração da Loteria Federal ou hash de rede blockchain verificado.'}
@@ -317,7 +317,7 @@ export default function RaffleDetailPage() {
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
                     <span className="material-symbols-outlined text-sm">local_shipping</span>
-                    {raffle.logistics_title || 'PROTOCOLO DE LOGÍSTICA'}
+                    LOGÍSTICA
                   </h4>
                   <p className="text-[10px] text-slate-500 font-mono leading-relaxed uppercase italic">
                     {raffle.logistics_description || 'Envio segurado para todo o Brasil via transportadora tática especializada.'}

@@ -20,8 +20,6 @@ export default function CreateRafflePage() {
     rules: '',
     image_url: '',
     images: [] as string[],
-    rules_title: 'REGRAS E ENGAJAMENTO',
-    logistics_title: 'LOGÍSTICA',
     logistics_description: 'Envio segurado para todo o Brasil via transportadora tática especializada.',
     slug: ''
   });
@@ -76,8 +74,6 @@ export default function CreateRafflePage() {
           rules: data.rules || '',
           image_url: data.image_url || '',
           images: data.images || [],
-          rules_title: data.rules_title || 'REGRAS E ENGAJAMENTO',
-          logistics_title: data.logistics_title || 'LOGÍSTICA',
           logistics_description: data.logistics_description || 'Envio segurado para todo o Brasil via transportadora tática especializada.',
           slug: data.slug || ''
         });
@@ -375,28 +371,7 @@ export default function CreateRafflePage() {
                     <h3 className="text-sm font-black text-white uppercase tracking-widest">LOGÍSTICA E REGRAS PERSONALIZADAS</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">TÍTULO DA SEÇÃO DE REGRAS</label>
-                        <input 
-                            type="text" 
-                            placeholder="EX: REGRAS E ENGAJAMENTO ou LIVRE"
-                            className="w-full bg-black/40 border border-white/10 p-4 text-white font-mono text-sm focus:border-primary outline-none transition-all placeholder:opacity-20"
-                            value={formData.rules_title}
-                            onChange={e => setFormData({ ...formData, rules_title: e.target.value })}
-                        />
-                    </div>
-                    <div>
-                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">TÍTULO DA SEÇÃO DE LOGÍSTICA</label>
-                        <input 
-                            type="text" 
-                            placeholder="EX: LOGÍSTICA ou ENVIO"
-                            className="w-full bg-black/40 border border-white/10 p-4 text-white font-mono text-sm focus:border-primary outline-none transition-all placeholder:opacity-20"
-                            value={formData.logistics_title}
-                            onChange={e => setFormData({ ...formData, logistics_title: e.target.value })}
-                        />
-                    </div>
-                </div>
+
 
                 <div>
                     <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">DETALHES DE ENVIO (LOGÍSTICA)</label>
