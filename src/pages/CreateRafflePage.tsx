@@ -37,6 +37,12 @@ export default function CreateRafflePage() {
   const checkPixKey = async () => {
     if (!user) return;
     try {
+      const isAdmin = user?.email === 'admin@perfectionairsoft.com.br';
+      if (isAdmin) {
+        setHasPixKey(true);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('kyc_status, asaas_wallet_id')
@@ -146,7 +152,9 @@ export default function CreateRafflePage() {
       return;
     }
 
-    if (!hasPixKey) {
+    const isAdmin = user?.email === 'admin@perfectionairsoft.com.br';
+
+    if (!hasPixKey && !isAdmin) {
       alert('PROTOCOLO BLOQUEADO: VOCÊ PRECISA CONCLUIR O PROTOCOLO DE VERIFICAÇÃO TÁTICA NO PAINEL DO ORGANIZADOR PARA PROSSEGUIR.');
       navigate('/organizador');
       return;
@@ -237,7 +245,7 @@ export default function CreateRafflePage() {
                 </div>
             )}
 
-            {hasPixKey === false && user && (
+            {hasPixKey === false && user && user.email !== 'admin@perfectionairsoft.com.br' && (
                 <div className={!isVerifying ? "bg-red-500/10 border border-red-500/50 p-8 flex flex-col items-center text-center gap-4 mb-8" : "mb-8 w-full"}>
                     {!isVerifying ? (
                         <>
