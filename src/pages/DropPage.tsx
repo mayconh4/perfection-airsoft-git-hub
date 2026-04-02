@@ -298,7 +298,7 @@ function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: 
   const [isSpinning, setIsSpinning] = useState(false);
   const [result, setResult] = useState<number | null>(null);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [winnerInfo, setWinnerInfo] = useState<{ name: string } | null>(null);
+  const [winnerInfo, setWinnerInfo] = useState<{ name: string, phone?: string } | null>(null);
   const [showWarning, setShowWarning] = useState(true);
   const [isFinalized, setIsFinalized] = useState(false);
 
@@ -384,12 +384,15 @@ function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: 
     if (ticketData?.user_id) {
       const { data: userData } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('full_name, phone')
         .eq('id', ticketData.user_id)
         .single();
-      if (userData) setWinnerInfo({ name: userData.full_name || "Operador Anônimo" });
+      if (userData) setWinnerInfo({ 
+          name: userData.full_name || "Operador Anônimo",
+          phone: userData.phone 
+      });
     } else {
-      setWinnerInfo({ name: "NÚMERO NÃO VENDIDO" });
+      setWinnerInfo({ name: "NÚMERO NÃO VENDIDO", phone: undefined });
     }
   };
 
@@ -470,6 +473,15 @@ function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: 
     ? raffles.filter(r => r.id === forcedRaffleId) 
     : raffles;
 
+  const handleContactWinner = () => {
+    if (winnerInfo?.phone) {
+        const cleanPhone = winnerInfo.phone.replace(/\D/g, '');
+        window.open(`https://wa.me/${cleanPhone}`, '_blank');
+    } else {
+        alert("Dados de contato não disponíveis para este vencedor.");
+    }
+  };
+
   return (
     <>
       {showWarning && selectedRaffleId && !isFinalized && <DrawWarningModal onConfirm={() => setShowWarning(false)} />}
@@ -515,9 +527,22 @@ function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: 
                   </span>
               </div>
               {winnerInfo && (
-                  <div className="flex flex-col items-end animate-in fade-in slide-in-from-right-4 duration-500 relative z-10">
+                  <div className="flex flex-col items-end animate-in fade-in slide-in-from-right-4 duration-500 relative z-10 text-right">
                       <span className="text-[7px] font-black text-green-500 uppercase tracking-widest leading-none">Alvo Identificado</span>
                       <span className="text-sm font-black text-white uppercase mt-1.5 border-b border-green-500/50 pb-0.5">{winnerInfo.name}</span>
+                      {winnerInfo.phone && (
+                          <span className="text-[8px] font-bold text-white/40 mt-1 italic">TEL: {winnerInfo.phone}</span>
+                      )}
+                      
+                      {isFinalized && winnerInfo.phone && (
+                          <button 
+                              onClick={handleContactWinner}
+                              className="mt-3 flex items-center gap-2 bg-green-500 text-black px-3 py-1.5 rounded-sm text-[8px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-[0_0_15px_rgba(34,197,94,0.4)]"
+                          >
+                              <span className="material-symbols-outlined text-[10px]">chat</span>
+                              CONTATAR VENCEDOR
+                          </button>
+                      )}
                   </div>
               )}
           </div>
@@ -534,8 +559,9 @@ function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: 
               </div>
               
               {isFinalized ? (
-                <div className="flex-1 flex items-center justify-center bg-white/10 border border-primary/30 text-primary font-black text-[9px] uppercase tracking-widest">
-                    SORTEIO FINALIZADO
+                <div className="flex-1 flex items-center justify-center bg-slate-800 border border-white/10 text-slate-500 font-black text-[9px] uppercase tracking-widest cursor-not-allowed">
+                    <span className="material-symbols-outlined text-[12px] mr-2 opacity-50">lock</span>
+                    EXTRAÇÃO ENCERRADA
                 </div>
               ) : (
                 <button 
