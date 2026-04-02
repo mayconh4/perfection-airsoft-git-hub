@@ -198,7 +198,7 @@ export function Layout({ children }: LayoutProps) {
 
           <div className={`flex items-center justify-between gap-4 sm:gap-8 transition-all duration-500 ${isScrolled ? 'h-14 sm:h-16' : 'h-16 sm:h-24'}`}>
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 sm:gap-3 group cursor-pointer flex-shrink-0">
+            <a href="/" className="flex items-center gap-2 sm:gap-3 group cursor-pointer flex-shrink-0">
               <div className={`flex items-center justify-center bg-primary text-black rounded-full shadow-[0_0_15px_rgba(255,193,7,0.4)] transition-all duration-500 ${isScrolled ? 'size-8 sm:size-10' : 'size-9 sm:size-12'}`}>
                 <span className={`material-symbols-outlined font-black transition-all ${isScrolled ? 'text-lg sm:text-2xl' : 'text-xl sm:text-3xl'}`}>target</span>
               </div>
@@ -208,7 +208,7 @@ export function Layout({ children }: LayoutProps) {
                 </h1>
                 {!isScrolled && <span className="text-[8px] sm:text-[10px] tracking-[0.3em] font-bold opacity-40 uppercase hidden sm:block italic">Performance Hub</span>}
               </div>
-            </Link>
+            </a>
 
             {/* Search - Hidden on mobile, shown on md+ */}
             <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xl relative">
@@ -237,10 +237,10 @@ export function Layout({ children }: LayoutProps) {
                     <span className="text-[7px] font-black text-white/20 uppercase tracking-widest group-hover:text-primary transition-colors hidden lg:block">Operador</span>
                   </button>
                 ) : (
-                  <Link to="/login" className="flex flex-col items-center gap-1 group">
+                  <a href="/login" className="flex flex-col items-center gap-1 group">
                     <span className="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors text-xl sm:text-2xl">person</span>
                     <span className="text-[7px] font-black text-white/20 uppercase tracking-widest group-hover:text-primary transition-colors hidden lg:block">Login</span>
-                  </Link>
+                  </a>
                 )}
 
                 {/* Tactical Dropdown */}
@@ -251,14 +251,14 @@ export function Layout({ children }: LayoutProps) {
                             <p className="text-[10px] text-white font-black uppercase truncate">{user.email?.split('@')[0]}</p>
                         </div>
                         <nav className="p-2">
-                            <Link 
-                                to="/dashboard" 
+                            <a 
+                                href="/dashboard" 
                                 onClick={() => setIsProfileOpen(false)}
                                 className="flex items-center gap-3 px-4 py-3 text-[9px] font-black text-white/60 uppercase tracking-widest hover:bg-primary hover:text-background-dark transition-all rounded-sm"
                             >
                                 <span className="material-symbols-outlined text-sm">account_circle</span>
                                 Minha Conta
-                            </Link>
+                            </a>
                             <button 
                                 onClick={() => {
                                     signOut();
@@ -278,21 +278,21 @@ export function Layout({ children }: LayoutProps) {
 
               {/* Admin Panel Link (Beside Operator) */}
               {isAdmin && (
-                <Link to="/admin" className="flex flex-col items-center gap-1 group">
+                <a href="/admin" className="flex flex-col items-center gap-1 group">
                    <span className="material-symbols-outlined text-primary/60 group-hover:text-primary transition-colors text-xl sm:text-2xl">admin_panel_settings</span>
                    <span className="text-[7px] font-black text-primary/40 uppercase tracking-widest group-hover:text-primary transition-colors hidden lg:block">HQ Control</span>
-                </Link>
+                </a>
               )}
 
               {/* Favorites (Hidden on small screens) */}
-              <Link to="/favoritos" className="hidden xs:flex flex-col items-center gap-1 group">
+              <a href="/favoritos" className="hidden xs:flex flex-col items-center gap-1 group">
                 <span className="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors text-xl sm:text-2xl">military_tech</span>
                 <span className="text-[7px] font-black text-white/20 uppercase tracking-widest group-hover:text-primary transition-colors hidden lg:block">Farovitos</span>
-              </Link>
+              </a>
 
               {/* Cart Button */}
               <div className="relative">
-                <Link to="/carrinho" className={`bg-primary text-black rounded-sm font-black tracking-widest uppercase flex items-center gap-2 sm:gap-3 hover:bg-white transition-all shadow-[0_0_20px_rgba(255,193,7,0.2)] ${isScrolled ? 'px-3 sm:px-4 py-1.5 sm:py-2 text-[8px] sm:text-[10px]' : 'px-4 sm:px-6 py-2 sm:py-3 text-[9px] sm:text-xs'}`}>
+                <a href="/carrinho" className={`bg-primary text-black rounded-sm font-black tracking-widest uppercase flex items-center gap-2 sm:gap-3 hover:bg-white transition-all shadow-[0_0_20px_rgba(255,193,7,0.2)] ${isScrolled ? 'px-3 sm:px-4 py-1.5 sm:py-2 text-[8px] sm:text-[10px]' : 'px-4 sm:px-6 py-2 sm:py-3 text-[9px] sm:text-xs'}`}>
                   <span className="relative">
                     <span className={`material-symbols-outlined transition-all ${isScrolled ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl'}`}>shopping_cart</span>
                     {itemCount > 0 && (
@@ -302,7 +302,7 @@ export function Layout({ children }: LayoutProps) {
                     )}
                   </span>
                   <span className="hidden sm:inline">Carrinho</span>
-                </Link>
+                </a>
 
                 {/* Visual Feedback Toast */}
                 <div className={`absolute top-full right-0 mt-2 bg-primary text-black px-4 py-1.5 shadow-[0_10px_30px_rgba(255,193,7,0.5)] rounded-full transition-all duration-300 z-50 flex items-center gap-2 whitespace-nowrap border border-black/10 sm:mt-3 ${showToast ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-2 scale-95 pointer-events-none'}`}>
@@ -332,7 +332,7 @@ export function Layout({ children }: LayoutProps) {
                 <ul className="py-2 flex flex-col">
                   {fullCategoryMenu.map(cat => (
                     <li key={cat.label} className="border-b border-white/5 last:border-0 relative group/item">
-                      <Link to={cat.href} className="flex items-center justify-between px-6 py-4 text-[10px] text-white/70 font-bold uppercase tracking-widest hover:text-black hover:bg-primary transition-colors">
+                      <a href={cat.href} className="flex items-center justify-between px-6 py-4 text-[10px] text-white/70 font-bold uppercase tracking-widest hover:text-black hover:bg-primary transition-colors">
                         <div className="flex items-center gap-3">
                           {renderIcon(cat.icon, true)}
                           {cat.label}
@@ -341,15 +341,15 @@ export function Layout({ children }: LayoutProps) {
                           )}
                         </div>
                         {cat.subcategories.length > 0 && <span className="material-symbols-outlined text-sm opacity-50 group-hover/item:opacity-100 transition-opacity">chevron_right</span>}
-                      </Link>
+                      </a>
                       {cat.subcategories.length > 0 && (
                         <div className="absolute top-0 left-full w-[200px] sm:w-[240px] bg-[#1a1a15] border border-white/5 opacity-0 invisible group-hover/item:opacity-100 group-hover/item:visible transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50">
                           <ul className="py-2 flex flex-col">
                             {cat.subcategories.map(sub => (
                               <li key={sub.label} className="border-b border-white/5 last:border-0">
-                                <Link to={sub.href} className="flex items-center px-6 py-4 text-[10px] text-white/70 font-bold uppercase tracking-widest hover:text-black hover:bg-primary transition-colors">
+                                <a href={sub.href} className="flex items-center px-6 py-4 text-[10px] text-white/70 font-bold uppercase tracking-widest hover:text-black hover:bg-primary transition-colors">
                                   {sub.label}
-                                </Link>
+                                </a>
                               </li>
                             ))}
                           </ul>
@@ -358,10 +358,10 @@ export function Layout({ children }: LayoutProps) {
                     </li>
                   ))}
                   <li className="relative group/item mt-2 border-t border-white/5 bg-white/5">
-                    <Link to="/promocoes" className="flex items-center justify-between px-6 py-4 text-[10px] text-primary font-black uppercase tracking-widest hover:text-black hover:bg-primary transition-colors">
+                    <a href="/promocoes" className="flex items-center justify-between px-6 py-4 text-[10px] text-primary font-black uppercase tracking-widest hover:text-black hover:bg-primary transition-colors">
                       Ver Promoções
                       <span className="material-symbols-outlined text-sm opacity-0 group-hover/item:opacity-100 transition-opacity">chevron_right</span>
-                    </Link>
+                    </a>
                   </li>
                 </ul>
               </div>
@@ -371,19 +371,19 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex-1 flex items-center justify-start sm:justify-center overflow-hidden">
               <ul className={`flex items-center gap-6 sm:gap-10 px-4 sm:px-8 font-bold tracking-[0.2em] uppercase whitespace-nowrap h-full overflow-x-auto no-scrollbar ${isScrolled ? 'text-[8px] sm:text-[9px]' : 'text-[9px] sm:text-[10px]'}`}>
                 <li>
-                  <Link to="/" className={`text-primary hover:text-white transition-colors border-b-2 border-primary ${isScrolled ? 'py-2' : 'py-4'}`}>
+                  <a href="/" className={`text-primary hover:text-white transition-colors border-b-2 border-primary ${isScrolled ? 'py-2' : 'py-4'}`}>
                     Home
-                  </Link>
+                  </a>
                 </li>
 
                 {navigationMenu.map(cat => (
                   <li key={cat.label} className="relative group/nav flex-shrink-0">
-                    <Link to={cat.href} className={`text-white/50 hover:text-primary transition-colors flex items-center gap-1.5 border-b-2 border-transparent hover:border-primary ${isScrolled ? 'py-2' : 'py-4'}`}>
+                    <a href={cat.href} className={`text-white/50 hover:text-primary transition-colors flex items-center gap-1.5 border-b-2 border-transparent hover:border-primary ${isScrolled ? 'py-2' : 'py-4'}`}>
                       {cat.label}
                       {cat.badge === 'new' && (
                         <span className="size-1.5 rounded-full bg-primary animate-pulse ml-1.5 shadow-[0_0_8px_rgba(255,193,7,0.5)]"></span>
                       )}
-                    </Link>
+                    </a>
                   </li>
                 ))}
               </ul>
