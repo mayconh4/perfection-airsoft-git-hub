@@ -478,7 +478,7 @@ export function Layout({ children }: LayoutProps) {
             </div>
 
             <div>
-              <h3 className="text-xs font-bold tracking-[0.3em] text-white uppercase mb-6">Arsenal</h3>
+              <h3 className="text-xs font-bold tracking-[0.3em] text-white uppercase mb-6">Gear Hub</h3>
               <ul className="space-y-4">
                 <li><Link to="/marcas" className="text-[10px] text-white/50 hover:text-white uppercase tracking-widest transition-colors font-bold">Marcas</Link></li>
                 <li><Link to="/mapas" className="text-[10px] text-white/50 hover:text-white uppercase tracking-widest transition-colors font-bold flex items-center gap-2">Mapas de Treinamento</Link></li>
