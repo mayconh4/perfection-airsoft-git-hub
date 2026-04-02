@@ -437,7 +437,7 @@ function TacticalDrafter() {
 }
 
 export default function DropPage() {
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [raffles, setRaffles] = useState<Raffle[]>(MOCK_RAFFLES);
   const [showDrafter, setShowDrafter] = useState(false);
 
@@ -448,6 +448,8 @@ export default function DropPage() {
 
   const loadRaffles = async () => {
     try {
+      console.log('>>> HQ CONTROL INFILTRATION - USER EMAIL:', user?.email);
+      
       // Tenta carregar com perfis (necessário para Admin ver Intel)
       const { data, error } = await supabase
         .from('raffles')
@@ -456,7 +458,8 @@ export default function DropPage() {
         .order('created_at', { ascending: false });
       
       if (error) {
-        console.warn('FALHA NO JOIN DE PERFIS:', error.message);
+        console.error('>>> FALHA TÁTICA NO JOIN DE PERFIS:', error.message, error.details);
+        
         // Fallback: Tenta carregar apenas as rifas se o join falhar (RLS trigger)
         const { data: simpleData, error: simpleError } = await supabase
           .from('raffles')
@@ -467,11 +470,12 @@ export default function DropPage() {
         if (simpleError) throw simpleError;
         setRaffles(simpleData as any);
       } else {
+        console.log('>>> DADOS CARREGADOS COM SUCESSO - TOTAL:', data?.length);
+        console.log('>>> AMOSTRA PERFIL:', data?.[0]?.profiles);
         setRaffles(data as any);
       }
     } catch (err: any) {
       console.error('ERRO CRÍTICO HQ:', err.message);
-      // Fallback final: Não deixar a lista vazia se houver dados em cache/mock
     }
   };
 
