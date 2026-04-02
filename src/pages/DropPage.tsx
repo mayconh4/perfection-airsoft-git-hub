@@ -80,7 +80,7 @@ function RaffleCard({ raffle, onDelete }: { raffle: Raffle; onDelete?: (id: stri
       {/* ADMIN PANEL OVERLAY */}
       {isAdmin && (
         <div className="bg-primary/10 border-b border-primary/20 p-3 space-y-2 animate-in fade-in slide-in-from-top-2 duration-500">
-          <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-[8px] font-black text-primary uppercase tracking-widest">
               <UserIcon size={10} />
               <span>OP: {raffle.profiles?.full_name || 'DESCONHECIDO'}</span>
