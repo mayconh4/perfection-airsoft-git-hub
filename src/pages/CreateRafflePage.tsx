@@ -63,6 +63,14 @@ export default function CreateRafflePage() {
 
       if (error) throw error;
       if (data) {
+        // SEGURANÇA TÁTICA: APENAS O CRIADOR OU ADMIN PODE CARREGAR PARA EDIÇÃO
+        const isAdmin = user?.email === 'admin@perfectionairsoft.com.br';
+        if (data.creator_id !== user?.id && !isAdmin) {
+          alert('PROTOCOLO VIOLADO: VOCÊ NÃO TEM AUTORIZAÇÃO PARA MODIFICAR ESTE ARSENAL.');
+          navigate('/drop');
+          return;
+        }
+
         // Formatar data para input datetime-local
         const drawDate = new Date(data.draw_date).toISOString().slice(0, 16);
         setFormData({
@@ -159,8 +167,6 @@ export default function CreateRafflePage() {
             rules: formData.rules,
             image_url: formData.image_url,
             images: formData.images,
-            rules_title: formData.rules_title,
-            logistics_title: formData.logistics_title,
             logistics_description: formData.logistics_description,
             slug: formData.slug || undefined,
           })
@@ -180,8 +186,6 @@ export default function CreateRafflePage() {
             rules: formData.rules,
             image_url: formData.image_url,
             images: formData.images,
-            rules_title: formData.rules_title,
-            logistics_title: formData.logistics_title,
             logistics_description: formData.logistics_description,
             slug: formData.slug || undefined,
             status: 'ativo'
