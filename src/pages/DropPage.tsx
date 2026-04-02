@@ -19,6 +19,9 @@ interface Raffle {
   created_at: string;
   creator_id: string;
   slug?: string;
+  winner_number?: number | null;
+  drawn_at?: string | null;
+  draw_confirmed?: boolean;
   profiles?: {
     full_name: string | null;
     phone: string | null;
@@ -42,6 +45,61 @@ const MOCK_RAFFLES: Raffle[] = [
     creator_id: 'mock-admin'
   }
 ];
+
+function DrawWarningModal({ onConfirm }: { onConfirm: () => void }) {
+  useEffect(() => {
+    // Tenta reproduzir o som Tactical Nuke
+    const audio = new Audio('/sounds/tactical-nuke.mp3');
+    audio.play().catch(e => {
+        console.warn("Nuke sound not found, trying alternative...", e);
+        const fallback = new Audio('/sounds/level1.wav');
+        fallback.play().catch(() => {});
+    });
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl animate-in fade-in duration-300">
+      <div className="max-w-md w-full bg-surface border-2 border-primary/50 shadow-[0_0_80px_rgba(var(--primary-rgb),0.3)] p-6 md:p-8 relative overflow-hidden">
+        {/* Decorative corner accents */}
+        <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-primary"></div>
+        <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-primary"></div>
+        <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-primary"></div>
+        <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-primary"></div>
+        
+        <div className="text-center space-y-6">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border-2 border-primary animate-pulse mb-2">
+            <span className="material-symbols-outlined text-primary text-4xl">warning</span>
+          </div>
+          
+          <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter italic leading-tight">
+            ALERTA DE EXTRAÇÃO <br /><span className="text-primary italic">DEFINITIVA</span>
+          </h2>
+          
+          <div className="space-y-4">
+            <p className="text-xs md:text-sm text-slate-300 font-medium leading-relaxed">
+              Este prêmio permite apenas **um sorteio**. Apenas a conta criadora do drop pode realizar a extração, e essa ação será **definitiva** e válida para o resultado.
+            </p>
+            
+            <div className="text-xs md:text-sm text-slate-300 font-medium leading-relaxed">
+              Ao prosseguir, você concorda com esses termos.
+              <br />
+              <div className="text-primary font-black uppercase mt-3 block border-2 border-primary/20 p-3 bg-primary/5 text-[10px] md:text-xs">
+                RECOMENDAMOS GRAVAR A TELA PARA GARANTIR TRANSPARÊNCIA.
+              </div>
+            </div>
+          </div>
+          
+          <button 
+            onClick={onConfirm}
+            className="w-full bg-primary text-background-dark font-black py-5 text-[11px] uppercase tracking-widest hover:bg-white transition-all shadow-lg active:scale-95"
+          >
+            CONFIRMAR E PROSSEGUIR
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function RaffleCard({ raffle, onDelete, onDraw }: { raffle: Raffle; onDelete?: (id: string) => void; onDraw?: (id: string) => void }) {
   const { user, isAdmin } = useAuth();
@@ -227,6 +285,7 @@ function RaffleCard({ raffle, onDelete, onDraw }: { raffle: Raffle; onDelete?: (
 }
 
 function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: string; onRaffleSelect?: (id: string) => void }) {
+  const { user, isAdmin } = useAuth();
   const [raffles, setRaffles] = useState<Raffle[]>([]);
   const [selectedRaffleId, setSelectedRaffleId] = useState<string>(forcedRaffleId || "");
   const [maxNumber, setMaxNumber] = useState<number>(100);
@@ -234,13 +293,18 @@ function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: 
   const [result, setResult] = useState<number | null>(null);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [winnerInfo, setWinnerInfo] = useState<{ name: string } | null>(null);
+  const [showWarning, setShowWarning] = useState(true);
+  const [isFinalized, setIsFinalized] = useState(false);
 
   // Audio Context for synthesized sounds
   const audioCtx = useRef<AudioContext | null>(null);
   const winAudio = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    if (forcedRaffleId) setSelectedRaffleId(forcedRaffleId);
+    if (forcedRaffleId) {
+        setSelectedRaffleId(forcedRaffleId);
+        setShowWarning(true);
+    }
   }, [forcedRaffleId]);
 
   useEffect(() => {
@@ -248,7 +312,6 @@ function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: 
       const { data } = await supabase
         .from('raffles')
         .select('*')
-        .eq('status', 'ativo')
         .order('created_at', { ascending: false });
       if (data) setRaffles(data as any);
     };
@@ -262,11 +325,21 @@ function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: 
     const selected = raffles.find(r => r.id === selectedRaffleId);
     if (selected) {
       setMaxNumber(selected.total_tickets);
+      if (selected.winner_number) {
+          setResult(selected.winner_number);
+          setIsFinalized(true);
+          identifyWinner(selected.winner_number);
+      } else {
+          setResult(null);
+          setIsFinalized(false);
+          setWinnerInfo(null);
+      }
     }
   }, [selectedRaffleId, raffles]);
 
   const handleSelectChange = (id: string) => {
     setSelectedRaffleId(id);
+    setShowWarning(true);
     if (onRaffleSelect) onRaffleSelect(id);
   };
 
@@ -314,8 +387,37 @@ function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: 
     }
   };
 
+  const saveWinnerToDB = async (num: number) => {
+    try {
+        const { error } = await supabase
+            .from('raffles')
+            .update({
+                winner_number: num,
+                drawn_at: new Date().toISOString(),
+                status: 'finalizado'
+            })
+            .eq('id', selectedRaffleId);
+        if (error) throw error;
+        setIsFinalized(true);
+    } catch (err) {
+        console.error("Erro ao persistir resultado:", err);
+    }
+  };
+
   const startDraw = () => {
     if (maxNumber < 1) return;
+    
+    const currentRaffle = raffles.find(r => r.id === selectedRaffleId);
+    if (!currentRaffle || (currentRaffle.creator_id !== user?.id && !isAdmin)) {
+        alert("Acesso Negado: Apenas o criador do drop pode realizar a extração.");
+        return;
+    }
+
+    if (isFinalized || currentRaffle.winner_number) {
+        alert("Sorteio Bloqueado: Este drop já possui uma extração oficial registrada.");
+        return;
+    }
+
     if (audioCtx.current && audioCtx.current.state === 'suspended') audioCtx.current.resume();
     setIsSpinning(true);
     setResult(null);
@@ -324,7 +426,7 @@ function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: 
 
     const winner = Math.floor(Math.random() * maxNumber) + 1;
     let currentTicks = 0;
-    const totalTicks = 40 + Math.floor(Math.random() * 15); 
+    const totalTicks = 80 + Math.floor(Math.random() * 30); 
     let currentPos = 1;
 
     const performTick = () => {
@@ -341,22 +443,12 @@ function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: 
         setResult(winner);
         setIsSpinning(false);
         identifyWinner(winner);
+        saveWinnerToDB(winner);
+
         if (winAudio.current) {
           winAudio.current.currentTime = 0;
           winAudio.current.play().catch(e => {
             console.error("Winner sound blocked:", e);
-            const ctx = audioCtx.current;
-            if (ctx) {
-              const osc = ctx.createOscillator();
-              const gain = ctx.createGain();
-              osc.connect(gain);
-              gain.connect(ctx.destination);
-              osc.frequency.setValueAtTime(880, ctx.currentTime);
-              gain.gain.setValueAtTime(0.1, ctx.currentTime);
-              gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
-              osc.start();
-              osc.stop(ctx.currentTime + 0.5);
-            }
           });
         }
       }
@@ -364,95 +456,111 @@ function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: 
     performTick();
   };
 
+  const selectedRaffle = raffles.find(r => r.id === selectedRaffleId);
+  const isOwner = selectedRaffle?.creator_id === user?.id || isAdmin;
+
   return (
-    <div className="bg-surface/5 border border-white/5 p-4 sm:p-6 text-center max-w-4xl mx-auto relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-      <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
-          <div className="flex flex-col items-start">
-            <h2 className="text-[7px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-3">
-                <span className="h-px w-4 bg-primary/20"></span>
-                SORTEADOR TÁTICO V3.5 // IDENTITY CORE
-            </h2>
-            <div className="flex items-center gap-2 mt-2 bg-black/40 border border-white/5 p-1 px-2">
-                <span className="text-[6px] text-white/30 font-black uppercase">Missão:</span>
-                <select 
-                    value={selectedRaffleId}
-                    onChange={(e) => handleSelectChange(e.target.value)}
-                    className="bg-transparent text-primary text-[8px] font-black uppercase outline-none border-none cursor-pointer"
-                >
-                    <option value="" className="bg-background-dark">--- MODO MANUAL ---</option>
-                    {raffles.map(r => (
-                        <option key={r.id} value={r.id} className="bg-background-dark">{r.title}</option>
-                    ))}
-                </select>
+    <>
+      {showWarning && selectedRaffleId && !isFinalized && <DrawWarningModal onConfirm={() => setShowWarning(false)} />}
+      
+      <div className="bg-surface/5 border border-white/5 p-4 sm:p-6 text-center max-w-4xl mx-auto relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
+            <div className="flex flex-col items-start">
+              <h2 className="text-[7px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-3">
+                  <span className="h-px w-4 bg-primary/20"></span>
+                  SORTEADOR TÁTICO V3.5 // IDENTITY CORE
+              </h2>
+              <div className="flex items-center gap-2 mt-2 bg-black/40 border border-white/5 p-1 px-2">
+                  <span className="text-[6px] text-white/30 font-black uppercase">Missão:</span>
+                  <select 
+                      value={selectedRaffleId}
+                      onChange={(e) => handleSelectChange(e.target.value)}
+                      className="bg-transparent text-primary text-[8px] font-black uppercase outline-none border-none cursor-pointer"
+                  >
+                      <option value="" className="bg-background-dark">--- MODO MANUAL ---</option>
+                      {raffles.map(r => (
+                          <option key={r.id} value={r.id} className="bg-background-dark">{r.title}</option>
+                      ))}
+                  </select>
+              </div>
             </div>
+            <div className="flex items-center gap-6 text-[6px] font-bold text-white/10 tracking-[0.5em] uppercase sm:visible">
+                  <span>V: OK</span>
+                  <span>S: 100%</span>
+                  <span>B: STABLE</span>
+            </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="md:col-span-2 h-20 bg-black/80 border border-white/10 relative overflow-hidden group shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] flex items-center justify-between px-6">
+              <div className="absolute inset-0 opacity-10 pointer-events-none">
+                  <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:10px_10px]"></div>
+              </div>
+              <div className="flex flex-col items-start relative z-10">
+                  <div className="text-[5px] font-black text-white/20 uppercase tracking-[0.4em] mb-1">Output Stream</div>
+                  <span className={`text-4xl sm:text-5xl font-black font-mono tracking-tighter transition-all duration-75 ${isSpinning ? 'text-primary scale-105 blur-[1px]' : result ? 'text-green-500 drop-shadow-[0_0_15px_rgba(34,197,94,0.3)]' : 'text-white/5'}`}>
+                      {(activeIndex || result || 0).toString().padStart(3, '0')}
+                  </span>
+              </div>
+              {winnerInfo && (
+                  <div className="flex flex-col items-end animate-in fade-in slide-in-from-right-4 duration-500 relative z-10">
+                      <span className="text-[7px] font-black text-green-500 uppercase tracking-widest leading-none">Alvo Identificado</span>
+                      <span className="text-sm font-black text-white uppercase mt-1.5 border-b border-green-500/50 pb-0.5">{winnerInfo.name}</span>
+                  </div>
+              )}
           </div>
-          <div className="flex items-center gap-6 text-[6px] font-bold text-white/10 tracking-[0.5em] uppercase sm:visible">
-                <span>V: OK</span>
-                <span>S: 100%</span>
-                <span>B: STABLE</span>
-          </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="md:col-span-2 h-20 bg-black/80 border border-white/10 relative overflow-hidden group shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] flex items-center justify-between px-6">
-            <div className="absolute inset-0 opacity-10 pointer-events-none">
-                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:10px_10px]"></div>
-            </div>
-            <div className="flex flex-col items-start relative z-10">
-                <div className="text-[5px] font-black text-white/20 uppercase tracking-[0.4em] mb-1">Output Stream</div>
-                <span className={`text-4xl sm:text-5xl font-black font-mono tracking-tighter transition-all duration-75 ${isSpinning ? 'text-primary scale-105 blur-[1px]' : result ? 'text-green-500 drop-shadow-[0_0_15px_rgba(34,197,94,0.3)]' : 'text-white/5'}`}>
-                    {(activeIndex || result || 0).toString().padStart(3, '0')}
-                </span>
-            </div>
-            {winnerInfo && (
-                <div className="flex flex-col items-end animate-in fade-in slide-in-from-right-4 duration-500 relative z-10">
-                    <span className="text-[7px] font-black text-green-500 uppercase tracking-widest leading-none">Alvo Identificado</span>
-                    <span className="text-sm font-black text-white uppercase mt-1.5 border-b border-green-500/50 pb-0.5">{winnerInfo.name}</span>
+          <div className="flex flex-col gap-2 h-20">
+              <div className="flex-1 bg-black/40 border border-white/5 p-2 flex flex-col justify-center text-left relative overflow-hidden">
+                  <span className="text-[5px] font-black text-white/30 uppercase tracking-widest mb-0.5">Alcance</span>
+                  <input 
+                      type="number" 
+                      value={maxNumber}
+                      onChange={(e) => setMaxNumber(Math.min(1000, Math.max(1, Number(e.target.value))))}
+                      disabled={isSpinning || !!selectedRaffleId}
+                      className="bg-transparent text-primary font-black text-xl outline-none"
+                  />
+              </div>
+              
+              {isFinalized ? (
+                <div className="flex-1 flex items-center justify-center bg-white/10 border border-primary/30 text-primary font-black text-[9px] uppercase tracking-widest">
+                    SORTEIO FINALIZADO
                 </div>
-            )}
-        </div>
-        <div className="flex flex-col gap-2 h-20">
-            <div className="flex-1 bg-black/40 border border-white/5 p-2 flex flex-col justify-center text-left relative overflow-hidden">
-                <span className="text-[5px] font-black text-white/30 uppercase tracking-widest mb-0.5">Alcance</span>
-                <input 
-                    type="number" 
-                    value={maxNumber}
-                    onChange={(e) => setMaxNumber(Math.min(1000, Math.max(1, Number(e.target.value))))}
-                    disabled={isSpinning || !!selectedRaffleId}
-                    className="bg-transparent text-primary font-black text-xl outline-none"
-                />
-            </div>
-            <button 
-                onClick={startDraw}
-                disabled={isSpinning}
-                className={`flex-1 font-black text-[9px] uppercase tracking-[0.4em] transition-all relative overflow-hidden group/draw ${isSpinning ? 'bg-white/5 text-white/20' : 'bg-primary text-black hover:bg-green-500'}`}
-            >
-                <span className="relative z-10">{isSpinning ? 'BUSCANDO...' : 'EXTRAIR'}</span>
-            </button>
-        </div>
-      </div>
-      <div className="bg-black/20 border border-white/5 p-2 relative">
-          <div className="grid grid-cols-10 sm:grid-cols-20 md:grid-cols-25 lg:grid-cols-34 gap-[2px] justify-items-center">
-              {Array.from({ length: maxNumber }).map((_, i) => {
-                  const num = i + 1;
-                  const isActive = activeIndex === num;
-                  const isWinner = !isSpinning && result === num;
-                  return (
-                      <div 
-                          key={num}
-                          className={`size-3 sm:size-4 flex items-center justify-center text-[5px] sm:text-[6px] font-mono transition-all duration-75
-                              ${isActive ? 'bg-primary text-black scale-125 z-10' : 
-                                isWinner ? 'bg-green-500 text-black scale-125 z-10 shadow-[0_0_15px_rgba(34,197,94,0.6)]' :
-                                'text-white/10 hover:text-white/30'}
-                          `}
-                      >
-                          {num}
-                      </div>
-                  );
-              })}
+              ) : (
+                <button 
+                    onClick={startDraw}
+                    disabled={isSpinning || !isOwner}
+                    className={`flex-1 font-black text-[9px] uppercase tracking-[0.4em] transition-all relative overflow-hidden group/draw ${isSpinning || !isOwner ? 'bg-white/5 text-white/20' : 'bg-primary text-black hover:bg-green-500'}`}
+                >
+                    <span className="relative z-10">
+                        {isSpinning ? 'BUSCANDO...' : !isOwner ? 'RESTRITO AO OP' : 'EXTRAIR'}
+                    </span>
+                </button>
+              )}
           </div>
+        </div>
+        <div className="bg-black/20 border border-white/5 p-2 relative">
+            <div className="grid grid-cols-10 sm:grid-cols-20 md:grid-cols-25 lg:grid-cols-34 gap-[2px] justify-items-center">
+                {Array.from({ length: maxNumber }).map((_, i) => {
+                    const num = i + 1;
+                    const isActive = activeIndex === num;
+                    const isWinner = !isSpinning && result === num;
+                    return (
+                        <div 
+                            key={num}
+                            className={`size-3 sm:size-4 flex items-center justify-center text-[5px] sm:text-[6px] font-mono transition-all duration-75
+                                ${isActive ? 'bg-primary text-black scale-125 z-10' : 
+                                  isWinner ? 'bg-green-500 text-black scale-125 z-10 shadow-[0_0_15px_rgba(34,197,94,0.6)]' :
+                                  'text-white/10 hover:text-white/30'}
+                            `}
+                        >
+                            {num}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -470,29 +578,20 @@ export default function DropPage() {
   const loadRaffles = async () => {
     try {
       console.log('>>> HQ CONTROL INFILTRATION - USER EMAIL:', user?.email);
-      
-      // Tenta carregar com perfis (necessário para Admin ver Intel)
       const { data, error } = await supabase
         .from('raffles')
         .select('*, profiles(*)')
-        .eq('status', 'ativo')
         .order('created_at', { ascending: false });
       
       if (error) {
-        console.error('>>> FALHA TÁTICA NO JOIN DE PERFIS:', error.message, error.details);
-        
-        // Fallback: Tenta carregar apenas as rifas se o join falhar (RLS trigger)
+        console.error('>>> FALHA TÁTICA NO JOIN DE PERFIS:', error.message);
         const { data: simpleData, error: simpleError } = await supabase
           .from('raffles')
           .select('*')
-          .eq('status', 'ativo')
           .order('created_at', { ascending: false });
-        
         if (simpleError) throw simpleError;
         setRaffles(simpleData as any);
       } else {
-        console.log('>>> DADOS CARREGADOS COM SUCESSO - TOTAL:', data?.length);
-        console.log('>>> AMOSTRA PERFIL:', data?.[0]?.profiles);
         setRaffles(data as any);
       }
     } catch (err: any) {
@@ -533,7 +632,10 @@ export default function DropPage() {
           <div className="flex flex-wrap gap-4">
             {(isAdmin || raffles.some(r => r.creator_id === user?.id)) && (
               <button 
-                onClick={() => setShowDrafter(!showDrafter)}
+                onClick={() => {
+                   setShowDrafter(!showDrafter);
+                   if (!showDrafter) setSelectedRaffleId("");
+                }}
                 className="bg-white/5 border border-white/10 text-white font-black py-4 px-8 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-sm">{showDrafter ? 'inventory_2' : 'casino'}</span>
