@@ -43,7 +43,7 @@ const MOCK_RAFFLES: Raffle[] = [
   }
 ];
 
-function RaffleCard({ raffle, onDelete }: { raffle: Raffle; onDelete?: (id: string) => void }) {
+function RaffleCard({ raffle, onDelete, onDraw }: { raffle: Raffle; onDelete?: (id: string) => void; onDraw?: (id: string) => void }) {
   const { user, isAdmin } = useAuth();
   const [showIntel, setShowIntel] = useState(false);
   const percentSold = (raffle.sold_tickets / raffle.total_tickets) * 100;
@@ -73,6 +73,8 @@ function RaffleCard({ raffle, onDelete }: { raffle: Raffle; onDelete?: (id: stri
     ? `https://wa.me/${raffle.profiles.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${raffle.profiles.full_name}, sou da administração do Perfection Airsoft sobre seu drop "${raffle.title}".`)}`
     : '#';
 
+  const canEdit = user?.id === raffle.creator_id || isAdmin;
+
   return (
     <div className="group relative bg-surface/20 border border-white/5 overflow-hidden transition-all duration-300 hover:border-primary/40 flex flex-col">
       <div className="h-1 w-full bg-primary/20 group-hover:bg-primary" />
@@ -80,7 +82,7 @@ function RaffleCard({ raffle, onDelete }: { raffle: Raffle; onDelete?: (id: stri
       {/* ADMIN PANEL OVERLAY */}
       {isAdmin && (
         <div className="bg-primary/10 border-b border-primary/20 p-3 space-y-2 animate-in fade-in slide-in-from-top-2 duration-500">
-            <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-[8px] font-black text-primary uppercase tracking-widest">
               <UserIcon size={10} />
               <span>OP: {raffle.profiles?.full_name || 'DESCONHECIDO'}</span>
@@ -201,13 +203,22 @@ function RaffleCard({ raffle, onDelete }: { raffle: Raffle; onDelete?: (id: stri
             SELECIONAR TICKETS
           </Link>
           
-          {user?.id === raffle.creator_id && (
-            <Link 
-              to={`/drop/editar/${raffle.id}`}
-              className="w-full bg-white/5 border border-white/10 text-white font-black py-4 text-[10px] uppercase tracking-[0.3em] hover:bg-white hover:text-black transition-all text-center block"
-            >
-              EDITAR DROP
-            </Link>
+          {canEdit && (
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <Link 
+                to={`/drop/editar/${raffle.id}`}
+                className="w-full bg-white/5 border border-white/10 text-white font-black py-4 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all text-center block"
+              >
+                EDITAR
+              </Link>
+              <button 
+                onClick={() => onDraw?.(raffle.id)}
+                className="w-full bg-primary/10 border border-primary/20 text-primary font-black py-4 text-[10px] uppercase tracking-widest hover:bg-primary hover:text-black transition-all flex items-center justify-center gap-2"
+              >
+                <span className="material-symbols-outlined text-sm">casino</span>
+                SORTEADOR
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -215,9 +226,9 @@ function RaffleCard({ raffle, onDelete }: { raffle: Raffle; onDelete?: (id: stri
   );
 }
 
-function TacticalDrafter() {
+function TacticalDrafter({ forcedRaffleId, onRaffleSelect }: { forcedRaffleId?: string; onRaffleSelect?: (id: string) => void }) {
   const [raffles, setRaffles] = useState<Raffle[]>([]);
-  const [selectedRaffleId, setSelectedRaffleId] = useState<string>("");
+  const [selectedRaffleId, setSelectedRaffleId] = useState<string>(forcedRaffleId || "");
   const [maxNumber, setMaxNumber] = useState<number>(100);
   const [isSpinning, setIsSpinning] = useState(false);
   const [result, setResult] = useState<number | null>(null);
@@ -227,6 +238,10 @@ function TacticalDrafter() {
   // Audio Context for synthesized sounds
   const audioCtx = useRef<AudioContext | null>(null);
   const winAudio = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (forcedRaffleId) setSelectedRaffleId(forcedRaffleId);
+  }, [forcedRaffleId]);
 
   useEffect(() => {
     const fetchRaffles = async () => {
@@ -249,6 +264,11 @@ function TacticalDrafter() {
       setMaxNumber(selected.total_tickets);
     }
   }, [selectedRaffleId, raffles]);
+
+  const handleSelectChange = (id: string) => {
+    setSelectedRaffleId(id);
+    if (onRaffleSelect) onRaffleSelect(id);
+  };
 
   const playSynthesizedTick = () => {
     try {
@@ -357,7 +377,7 @@ function TacticalDrafter() {
                 <span className="text-[6px] text-white/30 font-black uppercase">Missão:</span>
                 <select 
                     value={selectedRaffleId}
-                    onChange={(e) => setSelectedRaffleId(e.target.value)}
+                    onChange={(e) => handleSelectChange(e.target.value)}
                     className="bg-transparent text-primary text-[8px] font-black uppercase outline-none border-none cursor-pointer"
                 >
                     <option value="" className="bg-background-dark">--- MODO MANUAL ---</option>
@@ -440,6 +460,7 @@ export default function DropPage() {
   const { user, isAdmin } = useAuth();
   const [raffles, setRaffles] = useState<Raffle[]>(MOCK_RAFFLES);
   const [showDrafter, setShowDrafter] = useState(false);
+  const [selectedRaffleId, setSelectedRaffleId] = useState<string>("");
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -479,6 +500,12 @@ export default function DropPage() {
     }
   };
 
+  const handleDrawAccess = (id: string) => {
+    setSelectedRaffleId(id);
+    setShowDrafter(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleDelete = async (id: string) => {
     if (!window.confirm('🚨 CONFIRMAÇÃO DE DESTRUIÇÃO 🚨\n\nEste drop será apagado permanentemente dos canais táticos. Confirmar operação?')) return;
     try {
@@ -504,7 +531,7 @@ export default function DropPage() {
             <p className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.3em] mt-2">Inventory Division // Active Operations</p>
           </div>
           <div className="flex flex-wrap gap-4">
-            {isAdmin && (
+            {(isAdmin || raffles.some(r => r.creator_id === user?.id)) && (
               <button 
                 onClick={() => setShowDrafter(!showDrafter)}
                 className="bg-white/5 border border-white/10 text-white font-black py-4 px-8 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all flex items-center gap-2"
@@ -524,7 +551,10 @@ export default function DropPage() {
         </div>
         <div className="animate-in fade-in duration-700">
           {showDrafter ? (
-            <TacticalDrafter />
+            <TacticalDrafter 
+              forcedRaffleId={selectedRaffleId} 
+              onRaffleSelect={(id) => setSelectedRaffleId(id)} 
+            />
           ) : (
             <>
               <div className="flex items-center gap-4 mb-8">
@@ -533,7 +563,12 @@ export default function DropPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {raffles.map(r => (
-                  <RaffleCard key={r.id} raffle={r} onDelete={handleDelete} />
+                  <RaffleCard 
+                    key={r.id} 
+                    raffle={r} 
+                    onDelete={handleDelete} 
+                    onDraw={handleDrawAccess}
+                  />
                 ))}
               </div>
             </>
