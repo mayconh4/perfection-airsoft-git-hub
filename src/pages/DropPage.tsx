@@ -76,7 +76,7 @@ function RaffleCard({ raffle, onDelete }: { raffle: Raffle; onDelete?: (id: stri
           
           <div className="flex gap-2">
             <Link 
-              to={`/organizador?edit=${raffle.id}`}
+              to={`/drop/editar/${raffle.id}`}
               className="flex-1 bg-white/5 border border-white/10 text-white hover:bg-white hover:text-black py-2 rounded flex items-center justify-center gap-2 text-[9px] font-black uppercase transition-all"
             >
               <Pencil size={12} />
@@ -180,7 +180,7 @@ function RaffleCard({ raffle, onDelete }: { raffle: Raffle; onDelete?: (id: stri
           
           {user?.id === raffle.creator_id && (
             <Link 
-              to={`/create-drop?id=${raffle.id}`}
+              to={`/drop/editar/${raffle.id}`}
               className="w-full bg-white/5 border border-white/10 text-white font-black py-4 text-[10px] uppercase tracking-[0.3em] hover:bg-white hover:text-black transition-all text-center block"
             >
               EDITAR DROP
