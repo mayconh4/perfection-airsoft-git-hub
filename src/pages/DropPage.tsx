@@ -447,12 +447,32 @@ export default function DropPage() {
   }, []);
 
   const loadRaffles = async () => {
-    const { data } = await supabase
-      .from('raffles')
-      .select('*, profiles(*)')
-      .eq('status', 'ativo')
-      .order('created_at', { ascending: false });
-    if (data) setRaffles(data as any);
+    try {
+      // Tenta carregar com perfis (necessário para Admin ver Intel)
+      const { data, error } = await supabase
+        .from('raffles')
+        .select('*, profiles(*)')
+        .eq('status', 'ativo')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.warn('FALHA NO JOIN DE PERFIS:', error.message);
+        // Fallback: Tenta carregar apenas as rifas se o join falhar (RLS trigger)
+        const { data: simpleData, error: simpleError } = await supabase
+          .from('raffles')
+          .select('*')
+          .eq('status', 'ativo')
+          .order('created_at', { ascending: false });
+        
+        if (simpleError) throw simpleError;
+        setRaffles(simpleData as any);
+      } else {
+        setRaffles(data as any);
+      }
+    } catch (err: any) {
+      console.error('ERRO CRÍTICO HQ:', err.message);
+      // Fallback final: Não deixar a lista vazia se houver dados em cache/mock
+    }
   };
 
   const handleDelete = async (id: string) => {
