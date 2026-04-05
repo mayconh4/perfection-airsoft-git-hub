@@ -120,9 +120,11 @@ export default function EventCheckInPage() {
   }, [isScanning, loading]);
 
   const onScanSuccess = (decodedText: string) => {
-    const uuid = decodedText.split('/').pop();
-    if (uuid === 'TAC-TEST-VALID-001' || (uuid && uuid.length === 36)) {
-      handleCheckIn(uuid);
+    // Busca flexível pelo UUID ou código de teste
+    const uuid = decodedText.split('/').pop()?.trim();
+    
+    if (decodedText.includes('TAC-TEST-VALID-001') || (uuid && uuid.length === 36)) {
+      handleCheckIn(uuid?.includes('TAC-TEST-VALID-001') ? 'TAC-TEST-VALID-001' : uuid || '');
       setIsScanning(false);
       setTimeout(() => setIsScanning(true), 3000); 
     }
