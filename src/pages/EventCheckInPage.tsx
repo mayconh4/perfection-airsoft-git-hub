@@ -31,6 +31,7 @@ export default function EventCheckInPage() {
   const [isSharedOperator, setIsSharedOperator] = useState(false);
   const [scannerError, setScannerError] = useState<string | null>(null);
   const [debugLog, setDebugLog] = useState<string | null>(null);
+  const [scanAttempts, setScanAttempts] = useState(0);
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
@@ -86,12 +87,14 @@ export default function EventCheckInPage() {
           html5QrCode = new Html5Qrcode("reader");
           setDebugLog("INITIALIZING HARDWARE...");
           const config = { 
-            fps: 15, 
-            qrbox: (viewWidth: number, _viewHeight: number) => {
-              return { width: viewWidth * 0.8, height: viewWidth * 0.8 };
-            },
+            fps: 10, 
             aspectRatio: 1.0,
-            rememberLastUsedCamera: true
+            rememberLastUsedCamera: true,
+            videoConstraints: {
+              facingMode: "environment",
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
           };
           await html5QrCode.start(
             { facingMode: "environment" },
@@ -99,7 +102,7 @@ export default function EventCheckInPage() {
             onScanSuccess,
             onScanFailure
           );
-          setDebugLog("TERMINAL ONLINE - SCANNING...");
+          setDebugLog("SISTEMA ONLINE - AGUARDANDO QR...");
         } catch (err: any) {
           console.error("Camera Error:", err);
           setScannerError("NÃO FOI POSSÍVEL ATIVAR A CÂMERA. VERIFIQUE AS PERMISSÕES.");
@@ -145,7 +148,9 @@ export default function EventCheckInPage() {
     }
   };
 
-  const onScanFailure = () => {};
+  const onScanFailure = () => {
+    setScanAttempts(prev => prev + 1);
+  };
 
   const handleCheckIn = async (uuid: string) => {
     try {
@@ -221,7 +226,7 @@ export default function EventCheckInPage() {
           <div className="flex items-center justify-between gap-2 text-red-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-sm animate-pulse">warning</span>
-              TERMINAL DE VALIDAÇÃO v1.5 - ULTIMATUM
+              TERMINAL DE VALIDAÇÃO v1.6 - DIAGNÓSTICO
             </div>
             {isSharedOperator && (
               <div className="bg-primary text-black px-2 py-0.5 rounded-sm animate-pulse font-black">
@@ -328,8 +333,12 @@ export default function EventCheckInPage() {
                {debugLog && (
                  <div className="mt-2 pt-4 border-t border-white/5 w-full text-center">
                    <span className="text-[7px] text-primary/40 font-mono uppercase tracking-tighter">PROTOCOLO DE TELEMETRIA:</span>
-                   <div className="text-[9px] text-white/60 font-mono mt-1 break-all bg-black/40 p-2 border border-white/5">
-                     {debugLog}
+                   <div className="text-[9px] text-white/60 font-mono mt-1 break-all bg-black/40 p-2 border border-white/5 flex flex-col gap-1">
+                     <div className="flex justify-between border-b border-white/5 pb-1 mb-1">
+                       <span className="text-primary/60">TENTATIVAS:</span>
+                       <span className={scanAttempts > 0 ? 'text-green-500' : 'text-red-500'}>{scanAttempts} (FPS: 10)</span>
+                     </div>
+                     <div>{debugLog}</div>
                    </div>
                  </div>
                )}
