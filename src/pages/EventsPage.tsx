@@ -128,9 +128,9 @@ function EventCard({ event }: { event: Event }) {
             <div className="flex-1 flex gap-2">
               {user?.id === event.organizer_id && (
                 <Link 
-                  to={`/organizador/eventos/${event.id}`}
+                  to={`/organizador?event=${event.id}`}
                   className="bg-white/5 border border-white/10 text-white/50 hover:text-primary hover:border-primary/40 p-3 flex items-center justify-center transition-all group/edit"
-                  title="Editar Missão"
+                  title="Gerenciar Missão"
                 >
                   <span className="material-symbols-outlined text-sm group-hover/edit:rotate-45 transition-transform">settings</span>
                 </Link>

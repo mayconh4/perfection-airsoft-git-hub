@@ -37,6 +37,20 @@ export default function OrganizerDashboard() {
 
     if (user) {
       fetchDashboardData();
+      
+      // Suporte a foco em evento específico via URL (?event=ID)
+      const urlParams = new URLSearchParams(window.location.search);
+      const focusEventId = urlParams.get('event');
+      if (focusEventId) {
+        setActiveTab('missions');
+        setTimeout(() => {
+          const el = document.getElementById(`event-${focusEventId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth' });
+            el.classList.add('ring-2', 'ring-primary', 'ring-offset-4', 'ring-offset-background-dark');
+          }
+        }, 800);
+      }
     }
   }, [user, authLoading]);
 
@@ -394,7 +408,11 @@ export default function OrganizerDashboard() {
               <div className="space-y-4 max-w-4xl">
                 {events.filter(e => e.type === 'mission').length > 0 ? (
                   events.filter(e => e.type === 'mission').map(event => (
-                    <div key={event.id} className="bg-surface/20 border border-white/10 p-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-primary/30 transition-all">
+                    <div 
+                      key={event.id} 
+                      id={`event-${event.id}`}
+                      className="bg-surface/20 border border-white/10 p-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-primary/30 transition-all"
+                    >
                       <div className="flex gap-6 items-center flex-1">
                         <div className="size-16 bg-white/5 flex items-center justify-center relative overflow-hidden">
                           {event.image_url ? (
@@ -454,6 +472,13 @@ export default function OrganizerDashboard() {
                             >
                               <span className="material-symbols-outlined text-sm">share</span>
                             </button>
+                            <Link
+                              title="Editar Detalhes da Missão"
+                              to={`/organizador/eventos/${event.id}`}
+                              className="p-3 bg-white/5 border border-white/10 text-white/40 hover:text-primary transition-all"
+                            >
+                              <span className="material-symbols-outlined text-sm">edit_note</span>
+                            </Link>
                           </div>
                         </div>
                       </div>
