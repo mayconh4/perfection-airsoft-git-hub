@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 interface Event {
   id: string;
@@ -34,6 +35,7 @@ function getTimeUntil(dateStr: string) {
 }
 
 function EventCard({ event }: { event: Event }) {
+  const { user, isAdmin } = useAuth();
   const availableSlots = event.capacity - event.sold_count;
   const occupancyPercent = (event.sold_count / event.capacity) * 100;
   const isSoldOut = event.status === 'closed' || availableSlots === 0;
@@ -124,12 +126,23 @@ function EventCard({ event }: { event: Event }) {
               ESGOTADO
             </button>
           ) : (
-            <Link 
-              to={`/eventos/${event.id}`}
-              className="flex-1 bg-primary text-background-dark font-black py-3 text-[9px] uppercase tracking-widest hover:bg-white transition-all text-center"
-            >
-              COMPRAR TICKET
-            </Link>
+            <div className="flex-1 flex gap-2">
+              {(user?.id === event.organizer_id || isAdmin) && (
+                <Link 
+                  to={`/organizador/eventos/${event.id}`}
+                  className="bg-white/5 border border-white/10 text-white/50 hover:text-primary hover:border-primary/40 p-3 flex items-center justify-center transition-all group/edit"
+                  title="Editar Missão"
+                >
+                  <span className="material-symbols-outlined text-sm group-hover/edit:rotate-45 transition-transform">settings</span>
+                </Link>
+              )}
+              <Link 
+                to={`/eventos/${event.id}`}
+                className="flex-1 bg-primary text-background-dark font-black py-3 text-[9px] uppercase tracking-widest hover:bg-white transition-all text-center"
+              >
+                COMPRAR TICKET
+              </Link>
+            </div>
           )}
         </div>
       </div>

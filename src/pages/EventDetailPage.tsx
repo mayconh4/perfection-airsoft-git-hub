@@ -313,6 +313,14 @@ export default function EventDetailPage() {
                     {copying ? 'TOKEN COPIADO!' : 'COMPARTILHAR COM OPERADOR'}
                   </button>
 
+                  <Link
+                    to={`/organizador/eventos/${event.id}`}
+                    className="w-full border border-primary/50 text-primary font-black py-4 text-[10px] uppercase tracking-[.3em] flex items-center justify-center gap-3 hover:bg-primary hover:text-black transition-all"
+                  >
+                    <span className="material-symbols-outlined">edit_note</span>
+                    EDITAR BRIEFING DA MISSÃO
+                  </Link>
+
                   <p className="text-[8px] text-slate-500 font-mono uppercase leading-tight mt-2 text-center">
                     Link gera acesso direto ao terminal de validação <br/> para operadores de campo autorizados.
                   </p>
