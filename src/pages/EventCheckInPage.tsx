@@ -108,6 +108,17 @@ export default function EventCheckInPage() {
     };
   }, [isScanning, loading]);
 
+  useEffect(() => {
+    if (isScanning && !loading) {
+      setTimeout(() => {
+        const reader = document.getElementById('reader');
+        if (reader) {
+          reader.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
+  }, [isScanning, loading]);
+
   const onScanSuccess = (decodedText: string) => {
     const uuid = decodedText.split('/').pop();
     if (uuid && uuid.length === 36) {
