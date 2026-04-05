@@ -25,11 +25,6 @@ interface Ticket {
   };
 }
 
-// Gera URL de QR Code via serviço público (sem dependência de lib)
-function getQrCodeUrl(uuid: string): string {
-  const data = encodeURIComponent(`https://perfectionairsoft.com.br/ticket/${uuid}`);
-  return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${data}&format=png&qzone=2`;
-}
 
 export default function MyTicketsPage() {
   const { user } = useAuth();
@@ -188,8 +183,8 @@ export default function MyTicketsPage() {
                           onClick={() => setSelectedTicket(ticket)}
                           className="flex items-center gap-2 bg-primary text-black font-black px-6 py-2.5 text-[9px] uppercase tracking-widest hover:bg-white transition-all"
                         >
-                          <span className="material-symbols-outlined text-sm">qr_code_2</span>
-                          Ver QR Code
+                          <span className="material-symbols-outlined text-sm">badge</span>
+                          Ver Tag de Operador
                         </button>
                       )}
                       {ticket.status === 'used' && (
@@ -216,81 +211,88 @@ export default function MyTicketsPage() {
         </div>
       </div>
 
-      {/* ── Modal QR Code ── */}
+      {/* ── Modal Tag de Operador ── */}
       {selectedTicket && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm"
           onClick={() => setSelectedTicket(null)}
         >
           <div
-            className="bg-background-dark border border-primary/30 shadow-[0_0_60px_rgba(255,193,7,0.1)] max-w-sm w-full p-8 relative"
+            className="bg-background-dark border border-primary/30 shadow-[0_0_60px_rgba(255,193,7,0.1)] max-w-sm w-full p-8 relative overflow-hidden"
             onClick={(e) => e.stopPropagation()}
+            id="operator-tag"
           >
+            {/* Elementos Decorativos Táticos */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-primary shadow-[0_0_10px_rgba(251,191,36,0.5)]"></div>
+            <div className="absolute top-0 right-0 p-1 bg-primary text-black text-[7px] font-black uppercase rotate-45 translate-x-3 -translate-y-1 w-20 text-center shadow-lg">
+               AUTORIZADO
+            </div>
+
             {/* Fechar */}
             <button
               onClick={() => setSelectedTicket(null)}
-              className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
+              className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors print:hidden"
             >
               <span className="material-symbols-outlined">close</span>
             </button>
 
             {/* Header */}
-            <div className="text-center mb-6">
-              <p className="text-primary font-black text-[9px] uppercase tracking-[0.4em] mb-1">
-                Ingresso Digital
+            <div className="text-center mb-8 pt-4">
+              <p className="text-primary font-black text-[9px] uppercase tracking-[0.4em] mb-2 flex items-center justify-center gap-2">
+                <span className="h-px w-4 bg-primary/30"></span>
+                TAG DE OPERADOR
+                <span className="h-px w-4 bg-primary/30"></span>
               </p>
-              <h3 className="text-white font-black uppercase tracking-tight text-lg">
+              <h3 className="text-white font-black uppercase tracking-tighter text-2xl italic leading-none">
                 {selectedTicket.event?.title}
               </h3>
-              <p className="text-slate-500 font-mono text-[10px] mt-1">
-                {new Date(selectedTicket.event?.event_date).toLocaleDateString('pt-BR', {
-                  day: '2-digit', month: 'long', year: 'numeric',
-                })}
-              </p>
+              <div className="h-px w-20 bg-primary/20 mx-auto mt-4"></div>
             </div>
 
-            {/* QR Code */}
-            <div className="flex justify-center mb-6">
-              <div className="bg-white p-4 shadow-2xl shadow-primary/20">
-                <img
-                  src={getQrCodeUrl(selectedTicket.qr_uuid)}
-                  alt="QR Code do Ingresso"
-                  width={220}
-                  height={220}
-                  className="block"
-                  onError={(e) => {
-                    // Fallback se API falhar
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
+            {/* Grid Principal (Estilo Crachá) */}
+            <div className="space-y-6">
+              <div className="bg-white/5 border border-white/5 p-4 rounded-sm text-center">
+                 <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest mb-1">IDENTIFICACÃO DO OPERADOR</p>
+                 <p className="text-xl text-white font-black uppercase italic tracking-tight">{selectedTicket.buyer_name}</p>
+                 <p className="text-[10px] text-primary/60 font-mono mt-1 lowercase">{selectedTicket.buyer_email}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/5 border border-white/5 p-4 text-center">
+                   <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest mb-1">ID DA MISSÃO</p>
+                   <p className="text-xs text-white font-mono font-bold">#{selectedTicket.qr_uuid.slice(0, 8).toUpperCase()}</p>
+                </div>
+                <div className="bg-white/5 border border-white/5 p-4 text-center">
+                   <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest mb-1">LOCAL OPERAÇÃO</p>
+                   <p className="text-[10px] text-white font-black uppercase truncate">{selectedTicket.event?.location || 'LZ'}</p>
+                </div>
+              </div>
+
+              <div className="bg-primary/10 border border-primary/20 p-4 flex items-center justify-between">
+                <div>
+                   <p className="text-[8px] text-primary/60 font-black uppercase tracking-widest">STATUS TÁTICO</p>
+                   <p className="text-sm text-primary font-black uppercase italic tracking-tighter">CONFIRMADO</p>
+                </div>
+                <span className="material-symbols-outlined text-primary text-3xl font-black">verified</span>
               </div>
             </div>
 
-            {/* UUID Display */}
-            <div className="bg-black/40 border border-white/5 p-3 mb-6">
-              <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest text-center mb-1">
-                Código do Ingresso
-              </p>
-              <p className="text-center text-white font-mono text-[10px] tracking-[0.2em] break-all">
-                {selectedTicket.qr_uuid}
-              </p>
+            {/* Disclaimer */}
+            <div className="mt-8 text-center">
+               <p className="text-[9px] text-slate-600 font-mono uppercase leading-relaxed">
+                  ESTA TAG É SUA IDENTIFICAÇÃO OFICIAL NO CAMPO.<br/>
+                  APRESENTE JUNTO COM UM DOCUMENTO COM FOTO.
+               </p>
             </div>
 
-            {/* Info grid */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="bg-surface/40 p-3 text-center">
-                <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest mb-1">Operador</p>
-                <p className="text-[10px] text-white font-mono truncate">{selectedTicket.buyer_name}</p>
-              </div>
-              <div className="bg-surface/40 p-3 text-center">
-                <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest mb-1">Local</p>
-                <p className="text-[10px] text-white font-mono truncate">{selectedTicket.event?.location || '—'}</p>
-              </div>
-            </div>
-
-            <p className="text-center text-slate-600 font-mono text-[9px] uppercase">
-              Apresente este QR Code na entrada do evento
-            </p>
+            {/* Botão de Impressão */}
+            <button 
+              onClick={() => window.print()}
+              className="w-full mt-8 bg-white/5 border border-white/10 text-white/50 hover:text-white font-black py-4 text-[10px] uppercase tracking-widest transition-all hover:bg-white/10 flex items-center justify-center gap-2 print:hidden"
+            >
+              <span className="material-symbols-outlined text-sm">print</span>
+              IMPRIMIR TAG PARA O CAMPO
+            </button>
           </div>
         </div>
       )}

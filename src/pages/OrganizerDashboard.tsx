@@ -4,7 +4,6 @@ import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { OperatorKYCForm } from '../components/OperatorKYCForm';
-import { UATScannerTester } from '../components/UATScannerTester';
 
 interface EventStats {
   ticketsSold: number;
@@ -182,7 +181,7 @@ export default function OrganizerDashboard() {
     try {
       const { data, error } = await supabase
         .from('tickets')
-        .select('*')
+        .select('*, events(title)')
         .eq('event_id', eventId)
         .eq('status', 'confirmed');
 
@@ -471,38 +470,14 @@ export default function OrganizerDashboard() {
                           >
                             <span className="material-symbols-outlined text-sm">visibility</span>
                           </Link>
-                          <div className="flex gap-2">
-                            <Link
-                              title="Scanner de Check-in"
-                              to={`/eventos/${event.id}/checkin`}
-                              className="p-3 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-black transition-all"
-                            >
-                              <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
-                            </Link>
-                            <button
-                              title="Copiar Link de Operador"
-                              onClick={() => {
-                                const url = `${window.location.origin}/eventos/${event.id}/checkin?token=${event.checkin_token}`;
-                                navigator.clipboard.writeText(url);
-                                alert('Link de Operador copiado para a área de transferência!');
-                              }}
-                              className="p-3 bg-white/5 border border-white/10 text-white/40 hover:text-primary transition-all"
-                            >
-                              <span className="material-symbols-outlined text-sm">share</span>
-                            </button>
-                            <Link
-                              title="Editar Detalhes da Missão"
-                              to={`/organizador/eventos/${event.id}`}
-                              className="p-3 bg-white/5 border border-white/10 text-white/40 hover:text-primary transition-all"
-                            >
-                              <span className="material-symbols-outlined text-sm">edit_note</span>
-                            </Link>
-                          </div>
+                          <Link
+                            title="Editar Detalhes da Missão"
+                            to={`/organizador/eventos/${event.id}`}
+                            className="p-3 bg-white/5 border border-white/10 text-white/40 hover:text-primary transition-all"
+                          >
+                            <span className="material-symbols-outlined text-sm">edit_note</span>
+                          </Link>
                         </div>
-                      </div>
-
-                      <div className="w-full mt-6 border-t border-white/5 pt-4">
-                        <UATScannerTester eventId={event.id} eventTitle={event.title} />
                       </div>
                     </div>
                   ))
@@ -687,9 +662,18 @@ export default function OrganizerDashboard() {
             >
               <span className="material-symbols-outlined">close</span>
             </button>
-            <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-8">
-              LISTA DE <span className="text-primary">OPERADORES</span> INSCRITOS
-            </h3>
+            <div className="flex items-center justify-between gap-4 mb-8">
+              <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">
+                LISTA DE <span className="text-primary">OPERADORES</span> INSCRITOS
+              </h3>
+              <button 
+                onClick={() => window.print()}
+                className="bg-white/10 hover:bg-white text-white hover:text-black font-black px-6 py-2 text-[9px] uppercase tracking-widest transition-all flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-sm">print</span>
+                IMPRIMIR LISTA
+              </button>
+            </div>
 
             {loadingParticipants ? (
               <div className="py-20 flex justify-center">
@@ -699,11 +683,12 @@ export default function OrganizerDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
-                    <tr className="border-b border-white/5 text-[10px] font-black uppercase text-slate-500 tracking-widest text-left">
-                      <th className="pb-4 px-4 font-mono">ID</th>
-                      <th className="pb-4 px-4">Operador</th>
-                      <th className="pb-4 px-4">Status</th>
-                      <th className="pb-4 px-4">Check-in</th>
+                    <tr>
+                      <th className="pb-4 px-4 font-mono text-left">ID</th>
+                      <th className="pb-4 px-4 text-left">Operador</th>
+                      <th className="pb-4 px-4 text-left">Status</th>
+                      <th className="pb-4 px-4 text-left">Check-in</th>
+                      <th className="pb-4 px-4 print:hidden text-left">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -721,6 +706,23 @@ export default function OrganizerDashboard() {
                         </td>
                         <td className="py-4 px-4 text-slate-500 font-mono italic">
                           {p.checked_in_at ? new Date(p.checked_in_at).toLocaleTimeString() : 'PENDENTE'}
+                        </td>
+                        <td className="py-4 px-4 print:hidden">
+                           <div className="flex items-center gap-2">
+                             {p.buyer_phone && (
+                                <button
+                                  onClick={() => {
+                                    const eventTitle = selectedEventParticipants[0]?.events?.title || 'Airsoft';
+                                    const msg = encodeURIComponent(`Olá ${p.buyer_name}, confirmamos sua inscrição na missão ${eventTitle}. O seu ID de Operador é #${p.qr_uuid.slice(0, 8).toUpperCase()}. Nos vemos no LZ!`);
+                                    window.open(`https://wa.me/${p.buyer_phone.replace(/\D/g, '')}?text=${msg}`, '_blank');
+                                  }}
+                                  className="size-8 bg-green-500/10 border border-green-500/20 text-green-500 hover:bg-green-500 hover:text-black transition-all flex items-center justify-center rounded-sm"
+                                  title="Enviar Briefing via WhatsApp"
+                                >
+                                  <span className="material-symbols-outlined text-sm font-black">chat</span>
+                                </button>
+                             )}
+                           </div>
                         </td>
                       </tr>
                     ))}

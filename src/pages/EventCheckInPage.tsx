@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { Html5Qrcode } from 'html5-qrcode';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { SEO } from '../components/SEO';
@@ -22,42 +21,40 @@ export default function EventCheckInPage() {
   const navigate = useNavigate();
   
   const [event, setEvent] = useState<any>(null);
+  const [participants, setParticipants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [lastResult, setLastResult] = useState<ScanResult | null>(null);
   const [history, setHistory] = useState<ScanResult[]>([]);
-  const [isScanning, setIsScanning] = useState(false);
-  const [manualCode, setManualCode] = useState('');
   const [processing, setProcessing] = useState(false);
   const [isSharedOperator, setIsSharedOperator] = useState(false);
-  const [scannerError, setScannerError] = useState<string | null>(null);
-  const [debugLog, setDebugLog] = useState<string | null>(null);
-  const [scanAttempts, setScanAttempts] = useState(0);
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
-    loadEvent();
+    loadData();
   }, [user, eventId]);
 
-  const loadEvent = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // 1. Carregar Evento
+      const { data: eventData, error: eventError } = await supabase
         .from('events')
         .select('*')
         .eq('id', eventId)
         .single();
 
-      if (error || !data) {
+      if (eventError || !eventData) {
         alert('Evento não encontrado!');
         navigate('/dashboard');
         return;
       }
 
+      // 2. Verificar Permissão
       const { data: profile } = await supabase.from('profiles').select('role').eq('id', user?.id).single();
-      
-      const isOwner = data.organizer_id === user?.id;
+      const isOwner = eventData.organizer_id === user?.id;
       const isAdmin = profile?.role === 'admin';
-      const hasValidToken = token === data.checkin_token;
+      const hasValidToken = token === eventData.checkin_token;
 
       if (!isOwner && !isAdmin && !hasValidToken) {
         alert('ACESSO NEGADO: Autenticação insuficiente.');
@@ -69,87 +66,23 @@ export default function EventCheckInPage() {
         setIsSharedOperator(true);
       }
 
-      setEvent(data);
-    } catch (err) {
-      console.error(err);
+      setEvent(eventData);
+
+      // 3. Carregar Participantes
+      const { data: participantsData, error: pError } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('buyer_name', { ascending: true });
+
+      if (pError) throw pError;
+      setParticipants(participantsData || []);
+
+    } catch (err: any) {
+      console.error('Error loading data:', err.message);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    let html5QrCode: Html5Qrcode | null = null;
-
-    const startScanner = async () => {
-      if (isScanning && !loading) {
-        setScannerError(null);
-        try {
-          html5QrCode = new Html5Qrcode("reader");
-          setDebugLog("INITIALIZING HARDWARE...");
-          const config = { 
-            fps: 10, 
-            aspectRatio: 1.0,
-            rememberLastUsedCamera: true,
-            videoConstraints: {
-              facingMode: "environment",
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            }
-          };
-          await html5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            onScanSuccess,
-            onScanFailure
-          );
-          setDebugLog("SISTEMA ONLINE - AGUARDANDO QR...");
-        } catch (err: any) {
-          console.error("Camera Error:", err);
-          setScannerError("NÃO FOI POSSÍVEL ATIVAR A CÂMERA. VERIFIQUE AS PERMISSÕES.");
-          setIsScanning(false);
-        }
-      }
-    };
-
-    startScanner();
-
-    return () => {
-      if (html5QrCode) {
-        if (html5QrCode.isScanning) {
-          html5QrCode.stop().catch(err => console.error("Failed to stop scanner", err));
-        }
-      }
-    };
-  }, [isScanning, loading]);
-
-  useEffect(() => {
-    if (isScanning && !loading) {
-      setTimeout(() => {
-        const reader = document.getElementById('reader');
-        if (reader) {
-          reader.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 100);
-    }
-  }, [isScanning, loading]);
-
-  const onScanSuccess = (decodedText: string) => {
-    // Busca robusta pelo UUID ou código de teste (ignora trailing slashes)
-    const cleanedText = decodedText.trim();
-    setDebugLog(`SCAN RAW: ${cleanedText}`);
-    
-    const parts = cleanedText.split('/').filter(Boolean);
-    const uuid = parts[parts.length - 1]?.trim();
-    
-    if (cleanedText.toUpperCase().includes('TAC-TEST-VALID-001') || (uuid && uuid.length === 36)) {
-      handleCheckIn(cleanedText.toUpperCase().includes('TAC-TEST-VALID-001') ? 'TAC-TEST-VALID-001' : uuid || '');
-      setIsScanning(false);
-      setTimeout(() => setIsScanning(true), 3000); 
-    }
-  };
-
-  const onScanFailure = () => {
-    setScanAttempts(prev => prev + 1);
   };
 
   const handleCheckIn = async (uuid: string) => {
@@ -158,25 +91,6 @@ export default function EventCheckInPage() {
       setProcessing(true);
       setLastResult(null);
       const cleanUuid = uuid?.trim();
-      setDebugLog(`VALIDATING: ${cleanUuid}`);
-
-      // MODO DE TREINAMENTO / BYPASS DE TESTE
-      if (cleanUuid?.toUpperCase().includes('TAC-TEST-VALID-001')) {
-        setTimeout(() => {
-          const result = { 
-            success: true, 
-            buyer_name: 'OPERADOR DE TESTE (MODO QG)', 
-            event_title: event?.title || 'OPERACAO DE TESTE',
-            ticket_id: 'TRAINING-001'
-          };
-          setLastResult(result);
-          setHistory(prev => [result as ScanResult, ...prev].slice(0, 10));
-          if ('vibrate' in navigator) navigator.vibrate(200);
-          setProcessing(false);
-          setManualCode('');
-        }, 800);
-        return;
-      }
 
       const { data, error } = await supabase.rpc('checkin_ticket', {
         p_ticket_id: cleanUuid,
@@ -191,221 +105,180 @@ export default function EventCheckInPage() {
       
       if (result.success) {
         setHistory(prev => [result, ...prev].slice(0, 10));
+        // Atualizar lista local instantaneamente
+        setParticipants(prev => prev.map(p => 
+          p.qr_uuid === cleanUuid ? { ...p, status: 'used', checked_in_at: new Date().toISOString() } : p
+        ));
         if ('vibrate' in navigator) navigator.vibrate(200);
       } else {
         if ('vibrate' in navigator) navigator.vibrate([100, 50, 100]);
       }
     } catch (err: any) {
       console.error('Check-in Error:', err.message);
-      setDebugLog(`ERROR: ${err.message}`);
-      setLastResult({ success: false, reason: 'TICKET_NOT_FOUND' });
     } finally {
       setProcessing(false);
-      setManualCode('');
     }
+  };
+
+  const filteredParticipants = participants.filter(p => 
+    p.buyer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.buyer_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.buyer_cpf?.includes(searchTerm)
+  );
+
+  const stats = {
+    total: participants.length,
+    present: participants.filter(p => p.status === 'used').length
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background-dark">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin size-12 border-4 border-primary border-t-transparent rounded-full shadow-[0_0_20px_rgba(251,191,36,0.3)]"></div>
+          <p className="text-primary text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Sincronizando Lista Tática...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background-dark pb-20 pt-12 font-mono relative overflow-hidden crt-overlay">
-      <div className="scanline"></div>
+    <div className="min-h-screen bg-background-dark py-12 relative overflow-hidden">
       <SEO title={`Check-in: ${event.title}`} />
       
       <div className="max-w-2xl mx-auto px-6 relative z-10">
-        <div className="mb-8 border-b border-red-500/20 bg-red-950/20 -mx-6 px-6 py-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-1 bg-red-600 text-white text-[7px] font-black uppercase rotate-45 translate-x-3 -translate-y-1 w-20 text-center shadow-lg">
-             ULTIMATUM
-          </div>
-          <div className="flex items-center justify-between gap-2 text-red-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">
+        <div className="mb-8 border-b border-white/10 bg-surface/30 -mx-6 px-6 py-8 relative overflow-hidden">
+          <div className="flex items-center justify-between gap-2 text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-4">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm animate-pulse">warning</span>
-              TERMINAL DE VALIDAÇÃO v1.6 - DIAGNÓSTICO
+              <span className="material-symbols-outlined text-sm">group</span>
+              LISTA DE OPERADORES v2.0
             </div>
             {isSharedOperator && (
               <div className="bg-primary text-black px-2 py-0.5 rounded-sm animate-pulse font-black">
-                MODO OPERADOR
+                OPERADOR AUXILIAR
               </div>
             )}
           </div>
-          <h1 className="text-2xl font-black text-white uppercase tracking-tighter italic leading-none">
-            {isSharedOperator ? 'OPERADOR DE CAMPO' : 'COMMAND CENTER'}: <span className="text-primary">{event.title}</span>
-          </h1>
-          <div className="flex items-center gap-4 mt-4">
-            <p className="text-slate-500 text-[9px] uppercase font-mono bg-white/5 px-2 py-1">
-              EVT_{event.id.slice(0,8)}
-            </p>
-            <p className="text-slate-500 text-[9px] uppercase font-mono bg-white/5 px-2 py-1">
-              OP_{user?.id.slice(0,8)}
-            </p>
+
+          <h2 className="text-white text-3xl font-black uppercase tracking-tighter italic leading-none mb-2">
+            COMMAND CENTER: <span className="text-primary">{event.title}</span>
+          </h2>
+          
+          <div className="flex items-center gap-4 mt-6">
+            <div className="flex-1 bg-black/40 border border-white/5 p-4 rounded-sm">
+                <div className="text-[8px] text-slate-500 font-black uppercase tracking-widest mb-1">MOVIMENTAÇÃO EM CAMPO</div>
+                <div className="flex items-end gap-2">
+                    <span className="text-white text-2xl font-mono leading-none">{stats.present}</span>
+                    <span className="text-slate-600 text-[10px] pb-0.5">/ {stats.total} PRESENTES</span>
+                </div>
+                <div className="w-full h-1 bg-white/5 mt-3 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary transition-all duration-1000 shadow-[0_0_10px_rgba(251,191,36,0.5)]" 
+                      style={{ width: `${(stats.present / (stats.total || 1)) * 100}%` }}
+                    ></div>
+                </div>
+            </div>
           </div>
         </div>
 
-        <div className="space-y-6">
-          {scannerError && (
-            <div className="bg-red-500/20 border border-red-500 p-4 text-red-500 text-[10px] font-black uppercase text-center animate-pulse">
-              <span className="material-symbols-outlined block mb-2">error</span>
-              {scannerError}
-            </div>
-          )}
-
-          {!isScanning ? (
-            <button
-              onClick={() => setIsScanning(true)}
-              className="w-full aspect-square bg-surface/30 border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-4 hover:border-primary/50 transition-all group relative overflow-hidden shadow-2xl"
-            >
-              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="size-24 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform relative z-10 shadow-[0_0_30px_rgba(251,191,36,0.15)]">
-                <span className="material-symbols-outlined text-5xl text-primary animate-pulse">qr_code_scanner</span>
-              </div>
-              <div className="text-center relative z-10">
-                <span className="text-white font-black uppercase text-xs tracking-[0.2em] block mb-1">
-                  INICIAR PROTOCOLO
-                </span>
-                <span className="text-slate-500 font-mono text-[8px] uppercase tracking-widest">
-                  Awaiting Optical Input...
-                </span>
-              </div>
-            </button>
-          ) : (
-            <div className="relative overflow-hidden border-2 border-primary/50 bg-black aspect-square max-w-sm mx-auto shadow-[0_0_80px_rgba(251,191,36,0.3)]">
-              {/* READER LIMPO (Sem HUD para evitar interferência óptica) */}
-              <div id="reader" className="w-full h-full [&_video]:object-cover [&_video]:w-full [&_video]:h-full"></div>
-              
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-                <button 
-                  onClick={() => { setIsScanning(false); setTimeout(() => setIsScanning(true), 200); }}
-                  className="bg-primary/80 hover:bg-primary text-black px-3 py-1.5 text-[7px] font-black uppercase tracking-[0.2em] shadow-lg flex items-center gap-1"
-                >
-                  <span className="material-symbols-outlined text-[10px]">refresh</span>
-                  Hard Reset
-                </button>
-                <button 
-                  onClick={() => setIsScanning(false)}
-                  className="bg-red-500/80 hover:bg-red-500 text-white px-3 py-1.5 text-[7px] font-black uppercase tracking-[0.2em] shadow-lg flex items-center gap-1"
-                >
-                  <span className="material-symbols-outlined text-[10px]">close</span>
-                  Sair
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-2 flex-col sm:flex-row">
+        <div className="space-y-8">
+          <div className="relative group">
             <input 
               type="text"
-              placeholder="CÓDIGO DE AUTENTICAÇÃO MANUAL"
-              value={manualCode}
-              onChange={(e) => setManualCode(e.target.value)}
-              className="flex-1 bg-surface/50 border border-white/10 p-5 text-[11px] text-white outline-none focus:border-primary transition-colors font-mono placeholder:text-slate-700"
+              placeholder="BUSCAR NOME, EMAIL OU CPF..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-surface border border-white/10 p-6 pl-14 text-[12px] text-white outline-none focus:border-primary transition-all font-bold placeholder:text-slate-700 shadow-2xl"
             />
-            <button
-              onClick={() => handleCheckIn(manualCode)}
-              disabled={processing || !manualCode}
-              className="bg-primary text-black font-black px-10 py-5 text-[10px] uppercase tracking-[0.2em] disabled:opacity-50 hover:bg-white transition-all shadow-lg active:scale-95"
-            >
-              {processing ? '...' : 'VALIDAR'}
-            </button>
+            <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors">
+              search
+            </span>
+            {searchTerm && (
+               <button 
+                onClick={() => setSearchTerm('')}
+                className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+               >
+                 <span className="material-symbols-outlined text-sm">close</span>
+               </button>
+            )}
           </div>
 
-          {!lastResult && !isScanning && (
-            <div className="bg-white/5 border border-white/5 p-4 flex flex-col items-center justify-center gap-4">
-               <div className="flex items-center gap-2">
-                 <span className="material-symbols-outlined text-slate-500 text-sm">info</span>
-                 <span className="text-[8px] text-slate-600 uppercase font-mono tracking-widest">
-                   DICA: Use o código <span className="text-primary font-black">TAC-TEST-VALID-001</span> para validar.
-                 </span>
-               </div>
-               
-               <button 
-                 onClick={() => handleCheckIn('TAC-TEST-VALID-001')}
-                 className="text-[8px] border border-primary/30 text-primary px-4 py-1 hover:bg-primary hover:text-black transition-all font-black uppercase tracking-widest"
-               >
-                 [ TESTE DE SINAL / FORÇAR SUCESSO ]
-               </button>
-
-               {debugLog && (
-                 <div className="mt-2 pt-4 border-t border-white/5 w-full text-center">
-                   <span className="text-[7px] text-primary/40 font-mono uppercase tracking-tighter">PROTOCOLO DE TELEMETRIA:</span>
-                   <div className="text-[9px] text-white/60 font-mono mt-1 break-all bg-black/40 p-2 border border-white/5 flex flex-col gap-1">
-                     <div className="flex justify-between border-b border-white/5 pb-1 mb-1">
-                       <span className="text-primary/60">TENTATIVAS:</span>
-                       <span className={scanAttempts > 0 ? 'text-green-500' : 'text-red-500'}>{scanAttempts} (FPS: 10)</span>
-                     </div>
-                     <div>{debugLog}</div>
-                   </div>
-                 </div>
-               )}
-            </div>
-          )}
-
           {lastResult && (
-            <div className={`p-8 border-2 animate-in slide-in-from-top duration-500 relative overflow-hidden ${
+            <div className={`p-6 border animate-in zoom-in duration-300 relative overflow-hidden mb-8 ${
               lastResult.success ? 'bg-green-500/10 border-green-500/50' : 'bg-red-500/10 border-red-500/50'
             }`}>
-              <div className="flex items-center gap-6">
-                <div className={`size-16 rounded-sm flex items-center justify-center border-2 shadow-inner ${
+              <div className="flex items-center gap-4">
+                <div className={`size-10 rounded-sm flex items-center justify-center border ${
                   lastResult.success ? 'bg-green-500/20 border-green-500 text-green-500' : 'bg-red-500/20 border-red-500 text-red-500'
                 }`}>
-                  <span className="material-symbols-outlined text-4xl font-black">
-                    {lastResult.success ? 'verified' : 'gpp_maybe'}
+                  <span className="material-symbols-outlined text-2xl font-black">
+                    {lastResult.success ? 'check_circle' : 'warning'}
                   </span>
                 </div>
                 <div className="flex-1">
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className={`font-black uppercase text-xl tracking-tighter italic ${lastResult.success ? 'text-green-500' : 'text-red-500'}`}>
-                      {lastResult.success ? 'ACESSO AUTORIZADO' : 'ACESSO NEGADO'}
-                    </h3>
-                  </div>
-                  <div className="h-px w-full bg-white/10 mb-3"></div>
-                  <p className="text-white text-sm font-black uppercase tracking-widest break-all">
-                    {lastResult.success ? lastResult.buyer_name : 
-                      lastResult.reason === 'ALREADY_USED' ? 'DETECTOR: TICKET JÁ UTILIZADO' :
-                      lastResult.reason === 'NOT_PAID' ? 'DETECTOR: PGTO PENDENTE' :
-                      lastResult.reason === 'UNAUTHORIZED_CHECKIN' ? 'ALERTA: SEM PERMISSÃO' : 'DETECTOR: CÓDIGO INVÁLIDO'
-                    }
+                  <h3 className={`font-black uppercase text-sm tracking-tighter ${lastResult.success ? 'text-green-500' : 'text-red-500'}`}>
+                    {lastResult.success ? 'VALIDAÇÃO CONCLUÍDA' : 'ERRO NA VALIDAÇÃO'}
+                  </h3>
+                  <p className="text-white text-[11px] font-black uppercase mt-0.5">
+                    {lastResult.success ? lastResult.buyer_name : 'FALHA NO RECONHECIMENTO REGISTRADA'}
                   </p>
-                  {lastResult.checked_in_at && (
-                    <p className="text-red-400 text-[9px] mt-3 font-mono uppercase bg-red-500/10 px-2 py-1.5 border border-red-500/20 inline-block">
-                      SCAN ANTERIOR: {new Date(lastResult.checked_in_at).toLocaleString()}
-                    </p>
-                  )}
                 </div>
+                <button 
+                  onClick={() => setLastResult(null)}
+                  className="bg-white/5 hover:bg-white/10 p-2 rounded-sm"
+                >
+                  <span className="material-symbols-outlined text-slate-400">close</span>
+                </button>
               </div>
             </div>
           )}
 
-          {history.length > 0 && (
-            <div className="mt-12">
-              <div className="flex items-center justify-between mb-4 px-1">
-                <h4 className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] flex items-center gap-2">
-                  <span className="size-1.5 bg-primary rounded-full"></span>
-                  LOG DE OPERAÇÕES
-                </h4>
-                <span className="text-[8px] text-slate-600 font-mono">COUNT: {history.length}</span>
-              </div>
-              <div className="space-y-2">
-                {history.map((h, i) => (
-                  <div key={i} className="flex items-center justify-between bg-white/5 p-4 border border-white/5 group hover:bg-white/10 transition-all">
-                    <div>
-                      <span className="text-white text-[11px] font-black uppercase block tracking-tight">{h.buyer_name}</span>
-                      <span className="text-slate-600 text-[8px] font-mono">TKT_{h.ticket_id?.slice(0, 8)}</span>
+          <div className="space-y-2">
+            {filteredParticipants.length > 0 ? (
+              filteredParticipants.map((p, i) => (
+                <div key={i} className={`flex items-center justify-between p-4 border transition-all ${
+                  p.status === 'used' 
+                    ? 'bg-green-500/5 border-green-500/20 opacity-60' 
+                    : 'bg-white/5 border-white/5 hover:border-primary/30 hover:bg-white/10'
+                }`}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-white text-[12px] font-black uppercase truncate tracking-tight">{p.buyer_name}</span>
+                      {p.status === 'used' && (
+                        <span className="bg-green-500 text-black text-[7px] font-black px-1 rounded-sm uppercase">CONCLUÍDO</span>
+                      )}
                     </div>
-                    <div className="text-right">
-                      <span className="text-green-500 text-[9px] font-black uppercase block tracking-widest">OK</span>
-                      <span className="text-slate-700 text-[8px] font-mono">{new Date().toLocaleTimeString()}</span>
+                    <div className="flex items-center gap-3 text-slate-600 text-[8px] font-mono tracking-tighter">
+                      <span className="truncate">{p.buyer_email}</span>
+                      <span className="hidden sm:inline border-l border-white/10 pl-3">CPF: {p.buyer_cpf || '---'}</span>
                     </div>
                   </div>
-                ))}
+                  
+                  <div className="ml-4">
+                    {p.status !== 'used' ? (
+                      <button
+                        onClick={() => handleCheckIn(p.qr_uuid)}
+                        disabled={processing}
+                        className="bg-primary text-black font-black px-4 py-2 text-[9px] uppercase tracking-widest hover:bg-white transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                      >
+                        {processing ? '...' : 'VALIDAR'}
+                      </button>
+                    ) : (
+                      <div className="text-green-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-1 p-2">
+                         <span className="material-symbols-outlined text-[14px]">done_all</span>
+                         OK
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-24 bg-white/5 border border-dashed border-white/10 rounded-sm">
+                 <span className="material-symbols-outlined text-slate-800 text-5xl mb-4">search_off</span>
+                 <p className="text-slate-700 text-[10px] font-black uppercase tracking-widest">Nenhum operador localizado na frequência atual</p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <Link 
             to={isSharedOperator ? "/eventos" : "/dashboard"}
