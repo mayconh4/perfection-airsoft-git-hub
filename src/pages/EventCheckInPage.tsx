@@ -30,6 +30,7 @@ export default function EventCheckInPage() {
   const [processing, setProcessing] = useState(false);
   const [isSharedOperator, setIsSharedOperator] = useState(false);
   const [scannerError, setScannerError] = useState<string | null>(null);
+  const [debugLog, setDebugLog] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
@@ -120,11 +121,13 @@ export default function EventCheckInPage() {
   }, [isScanning, loading]);
 
   const onScanSuccess = (decodedText: string) => {
-    // Busca flexível pelo UUID ou código de teste
-    const uuid = decodedText.split('/').pop()?.trim();
+    // Busca robusta pelo UUID ou código de teste (ignora trailing slashes)
+    setDebugLog(`SCANNED: ${decodedText}`);
+    const parts = decodedText.split('/').filter(Boolean);
+    const uuid = parts[parts.length - 1]?.trim();
     
-    if (decodedText.includes('TAC-TEST-VALID-001') || (uuid && uuid.length === 36)) {
-      handleCheckIn(uuid?.includes('TAC-TEST-VALID-001') ? 'TAC-TEST-VALID-001' : uuid || '');
+    if (decodedText.toUpperCase().includes('TAC-TEST-VALID-001') || (uuid && uuid.length === 36)) {
+      handleCheckIn(decodedText.toUpperCase().includes('TAC-TEST-VALID-001') ? 'TAC-TEST-VALID-001' : uuid || '');
       setIsScanning(false);
       setTimeout(() => setIsScanning(true), 3000); 
     }
@@ -136,9 +139,10 @@ export default function EventCheckInPage() {
     if (processing) return;
     setProcessing(true);
     setLastResult(null);
+    setDebugLog(`VALIDATING: ${uuid}`);
 
     // MODO DE TREINAMENTO / BYPASS DE TESTE
-    if (uuid === 'TAC-TEST-VALID-001') {
+    if (uuid?.toUpperCase().includes('TAC-TEST-VALID-001')) {
       setTimeout(() => {
         const result = { 
           success: true, 
@@ -286,11 +290,18 @@ export default function EventCheckInPage() {
           </div>
 
           {!lastResult && !isScanning && (
-            <div className="bg-white/5 border border-white/5 p-4 flex items-center justify-center gap-3">
-               <span className="material-symbols-outlined text-slate-500 text-sm">info</span>
-               <span className="text-[8px] text-slate-600 uppercase font-mono tracking-widest">
-                 DICA: Use o código <span className="text-primary font-black">TAC-TEST-VALID-001</span> para validar o scanner.
-               </span>
+            <div className="bg-white/5 border border-white/5 p-4 flex flex-col items-center justify-center gap-3">
+               <div className="flex items-center gap-2">
+                 <span className="material-symbols-outlined text-slate-500 text-sm">info</span>
+                 <span className="text-[8px] text-slate-600 uppercase font-mono tracking-widest">
+                   DICA: Use o código <span className="text-primary font-black">TAC-TEST-VALID-001</span> para validar.
+                 </span>
+               </div>
+               {debugLog && (
+                 <div className="mt-2 pt-2 border-t border-white/5 w-full text-center">
+                   <span className="text-[7px] text-primary/40 font-mono uppercase tracking-tighter">TELEMETRIA: {debugLog}</span>
+                 </div>
+               )}
             </div>
           )}
 
