@@ -131,8 +131,8 @@ export default function EventDetailPage() {
   });
 
   // QR Code URL (via api — sem dependência de biblioteca)
-  const qrUrl = (uuid: string) =>
-    `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${uuid}&format=png`;
+  // const qrUrl = (uuid: string) =>
+  //   `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${uuid}&format=png`;
 
   return (
     <div className="min-h-screen bg-background-dark pb-20">

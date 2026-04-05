@@ -90,7 +90,7 @@ export default function EventCheckInPage() {
     }
   };
 
-  const onScanFailure = (error: any) => {
+  const onScanFailure = () => {
     // console.warn(`Code scan error = ${error}`);
   };
 
