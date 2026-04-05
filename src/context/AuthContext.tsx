@@ -12,6 +12,8 @@ interface AuthContextType {
   resendConfirmation: (email: string) => Promise<{ error: Error | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   isAdmin: boolean;
+  isVerified: boolean;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
 
   // Session expiry timer
   useEffect(() => {
@@ -62,24 +65,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setIsAdmin(
-        session?.user?.email === 'admin@perfectionairsoft.com.br' || 
-        session?.user?.email === 'maycontuliofs@gmail.com'
-      );
+      updateStatus(session?.user);
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setIsAdmin(
-        session?.user?.email === 'admin@perfectionairsoft.com.br' || 
-        session?.user?.email === 'maycontuliofs@gmail.com'
-      );
+      updateStatus(session?.user);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const updateStatus = async (user: any) => {
+    if (!user) {
+      setIsAdmin(false);
+      setIsVerified(false);
+      return;
+    }
+    
+    setIsAdmin(
+      user.email === 'admin@perfectionairsoft.com.br' || 
+      user.email === 'maycontuliofs@gmail.com'
+    );
+
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('asaas_wallet_id')
+        .eq('id', user.id)
+        .single();
+      
+      setIsVerified(!!data?.asaas_wallet_id);
+    } catch (err) {
+      console.error('Erro ao buscar status de verificação:', err);
+      setIsVerified(false);
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (user) await updateStatus(user);
+  };
 
   const signIn = async (email: string, password: string, rememberMe: boolean = true) => {
     // Store persistence preference
@@ -129,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{ 
       user, session, loading, signIn, signUp, signOut, resendConfirmation, resetPassword,
-      isAdmin
+      isAdmin, isVerified, refreshProfile
     }}>
       {children}
     </AuthContext.Provider>

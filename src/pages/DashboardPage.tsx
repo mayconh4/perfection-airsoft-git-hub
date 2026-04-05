@@ -10,7 +10,7 @@ type DashboardTab = 'pedidos' | 'perfil' | 'enderecos';
 
 export function DashboardPage() {
   const { orders, loading } = useOrders();
-  const { user } = useAuth();
+  const { user, isVerified } = useAuth();
   const [activeTab, setActiveTab] = useState<DashboardTab>('pedidos');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
@@ -33,6 +33,16 @@ export function DashboardPage() {
         {/* Sidebar Navigation */}
         <aside className="lg:w-64 shrink-0">
           <div className="bg-surface border border-border-tactical p-2 flex flex-row lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible no-scrollbar">
+            {isVerified && (
+              <Link
+                to="/painel-de-elite"
+                className="flex items-center gap-3 px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap text-primary border border-primary/20 hover:bg-primary hover:text-black mb-1 shadow-[0_0_15px_rgba(255,193,7,0.1)]"
+              >
+                <span className="material-symbols-outlined text-lg">military_tech</span>
+                Painel de Elite
+              </Link>
+            )}
+
             {[
               { id: 'pedidos', label: 'Meus Pedidos', icon: 'receipt_long' },
               { id: 'perfil', label: 'Dados do Operador', icon: 'person' },

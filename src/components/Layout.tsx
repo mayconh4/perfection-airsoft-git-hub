@@ -29,7 +29,7 @@ export function Layout({ children }: LayoutProps) {
   };
 
   const { itemCount, showToast } = useCart();
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, isVerified } = useAuth();
   const { getEffectiveRate } = usePricing();
   const navigate = useNavigate();
 
@@ -261,6 +261,18 @@ export function Layout({ children }: LayoutProps) {
                                 <span className="material-symbols-outlined text-sm">account_circle</span>
                                 Minha Conta
                             </a>
+
+                            {isVerified && (
+                              <Link 
+                                  to="/painel-de-elite" 
+                                  onClick={() => setIsProfileOpen(false)}
+                                  className="flex items-center gap-3 px-4 py-3 text-[9px] font-black text-primary uppercase tracking-widest hover:bg-primary hover:text-background-dark transition-all rounded-sm"
+                              >
+                                  <span className="material-symbols-outlined text-sm">military_tech</span>
+                                  Painel de Elite
+                              </Link>
+                            )}
+
                             <button 
                                 onClick={() => {
                                     signOut();

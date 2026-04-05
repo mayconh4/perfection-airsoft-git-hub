@@ -82,6 +82,7 @@ function App() {
                   <Route path="/drop/:idOrSlug" element={<RaffleDetailPage />} />
                   <Route path="/seguranca-comunidade" element={<SecurityNoticePage />} />
                   <Route path="/organizador" element={<OrganizerDashboard />} />
+                  <Route path="/painel-de-elite" element={<OrganizerDashboard />} />
                   <Route path="/dashboard-demo" element={<DashboardDemo />} />
                   <Route path="/organizador/eventos/:id" element={<CreateEventPage />} />
                   <Route path="/auth/callback" element={<AuthCallbackPage />} />
