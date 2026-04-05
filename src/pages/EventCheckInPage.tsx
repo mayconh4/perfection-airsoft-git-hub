@@ -129,9 +129,18 @@ export default function EventCheckInPage() {
             )}
           </div>
 
-          <h2 className="text-white text-3xl font-black uppercase tracking-tighter italic leading-none mb-2">
-            COMMAND CENTER: <span className="text-primary">{event.title}</span>
-          </h2>
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-2">
+            <h2 className="text-white text-3xl font-black uppercase tracking-tighter italic leading-none">
+              COMMAND CENTER: <span className="text-primary">{event.title}</span>
+            </h2>
+            <button 
+              onClick={() => window.print()}
+              className="bg-white/5 hover:bg-white text-white hover:text-black border border-white/10 font-black px-4 py-2 text-[9px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 print:hidden"
+            >
+              <span className="material-symbols-outlined text-sm">print</span>
+              IMPRIMIR QG
+            </button>
+          </div>
           
           <div className="flex items-center gap-4 mt-6">
             <div className="flex-1 bg-black/40 border border-white/5 p-4 rounded-sm">
