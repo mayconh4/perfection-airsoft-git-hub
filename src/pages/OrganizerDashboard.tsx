@@ -22,11 +22,8 @@ export default function OrganizerDashboard() {
   const [events, setEvents] = useState<any[]>([]);
   const [stats, setStats] = useState<EventStats>({ ticketsSold: 0, revenue: 0, netRevenue: 0, pendingBalance: 0, trustLevel: 0, completedDrops: 0 });
   const [activeTab, setActiveTab] = useState<'missions' | 'logistics' | 'reports'>('missions');
-  const [isProcessingPayout, setIsProcessingPayout] = useState(false);
   const [winners, setWinners] = useState<any[]>([]);
   const [updatingLogisticsId, setUpdatingLogisticsId] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isOrganizer, setIsOrganizer] = useState(false);
   const [activeRaffle, setActiveRaffle] = useState<any>(null); // Contexto de edição/intel
   const [selectedEventParticipants, setSelectedEventParticipants] = useState<any[]>([]);
   const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
@@ -97,12 +94,6 @@ export default function OrganizerDashboard() {
         .eq('id', user?.id)
         .single();
 
-      const profileIsAdmin = profile?.role === 'admin';
-      const profileIsOrganizer = profile?.role === 'organizer';
-      
-      if (profileIsAdmin) setIsAdmin(true);
-      if (profileIsOrganizer || profileIsAdmin) setIsOrganizer(true);
-
       // Verificação de parâmetro de edição administrativa
       const urlParams = new URLSearchParams(window.location.search);
       const editId = urlParams.get('edit');
@@ -116,7 +107,7 @@ export default function OrganizerDashboard() {
         completedDrops: profile?.completed_drops || 0
       };
 
-      if (editId && profileIsAdmin) {
+      if (editId) {
         const { data: editRaffle } = await supabase
           .from('raffles')
           .select('*, profiles(full_name, phone)')
@@ -200,7 +191,6 @@ export default function OrganizerDashboard() {
       return;
     }
 
-    setIsProcessingPayout(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -226,7 +216,7 @@ export default function OrganizerDashboard() {
       console.error('Erro no Saque:', err.message);
       alert(`ERRO NA OPERAÇÃO: ${err.message}`);
     } finally {
-      setIsProcessingPayout(false);
+      // Payout process completed
     }
   };
 
@@ -274,14 +264,6 @@ export default function OrganizerDashboard() {
               <div className="flex items-center gap-3 mb-4">
                 <span className="h-px w-8 bg-primary"></span>
                 <span className="text-primary font-black uppercase tracking-[0.3em] text-[10px]">Command Center</span>
-                {isAdmin && (
-                  <Link
-                    to="/admin/moderacao"
-                    className="ml-4 bg-primary/20 text-primary border border-primary/30 px-3 py-1 text-[9px] font-black uppercase italic hover:bg-primary hover:text-black transition-all"
-                  >
-                    MODERAÇÃO ADMIN
-                  </Link>
-                )}
               </div>
               <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter leading-none italic">
                 PAINEL DE <span className="text-primary">ELITE</span>
@@ -345,17 +327,16 @@ export default function OrganizerDashboard() {
               <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Operações Totais</span>
               <span className="text-4xl font-black text-white">{events.length}</span>
             </div>
-            <div className={`border p-8 border-l-4 transition-all duration-500 ${stats.trustLevel >= 3 || isAdmin ? 'bg-primary/5 border-primary border-white/10' : 'bg-surface/30 border-white/5 border-l-white/10'}`}>
-              <span className={`text-[10px] font-black uppercase tracking-widest block mb-1 font-mono italic ${stats.trustLevel >= 3 || isAdmin ? 'text-primary' : 'text-slate-500'}`}>
+            <div className={`border p-8 border-l-4 transition-all duration-500 bg-primary/5 border-primary border-white/10`}>
+              <span className={`text-[10px] font-black uppercase tracking-widest block mb-1 font-mono italic text-primary`}>
                 {activeRaffle ? 'Telemetria: Receita Bruta' : 'Saldo Disponível'}
               </span>
               <div className="flex items-baseline gap-2">
-                <span className={`text-4xl font-black ${stats.trustLevel >= 3 || isAdmin ? 'text-primary' : 'text-white/40'}`}>
-                  R$ {activeRaffle
-                    ? (activeRaffle.sold_tickets * activeRaffle.ticket_price).toFixed(2)
+                <span className={`text-4xl font-black text-primary`}>
+                  R$ {activeRaffle 
+                    ? (activeRaffle.sold_tickets * activeRaffle.ticket_price).toFixed(2) 
                     : stats.netRevenue.toFixed(2)}
                 </span>
-                {(stats.trustLevel < 3 && !isAdmin && !activeRaffle) && <span className="text-[8px] text-red-500 font-black uppercase animate-pulse font-mono">BLOQUEADO</span>}
               </div>
               <p className="text-[7px] text-slate-600 uppercase mt-2 font-mono">Taxa: 7% + R$ 0,99 PIX</p>
             </div>
@@ -470,8 +451,7 @@ export default function OrganizerDashboard() {
                         </div>
                       </div>
 
-                      {/* UAT Scanner Test Tool (Admin Only) */}
-                      {isAdmin && event.type === 'mission' && (
+                      {event.type === 'mission' && (
                         <div className="w-full mt-6 border-t border-white/5 pt-4">
                           <UATScannerTester eventId={event.id} eventTitle={event.title} />
                         </div>
@@ -551,13 +531,12 @@ export default function OrganizerDashboard() {
                         O saldo disponível pode ser sacado via PIX instantâneo para a conta vinculada ao seu CPF/CNPJ.
                       </p>
                     </div>
-                    <button
-                      onClick={handleRequestPayout}
-                      disabled={isProcessingPayout}
-                      className="w-full bg-primary hover:bg-white text-background-dark font-black py-4 text-[9px] uppercase tracking-[.3em] transition-all disabled:opacity-50"
-                    >
-                      {isProcessingPayout ? 'PROCESSANDO TRANSFERÊNCIA...' : 'SOLICITAR RESGATE PIX'}
-                    </button>
+                      <button
+                        onClick={handleRequestPayout}
+                        className="w-full bg-primary hover:bg-white text-background-dark font-black py-4 text-[9px] uppercase tracking-[.3em] transition-all"
+                      >
+                        SOLICITAR RESGATE PIX
+                      </button>
                   </div>
                 </div>
               </div>
