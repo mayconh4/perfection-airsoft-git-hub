@@ -46,6 +46,13 @@ export default function CreateEventPage() {
 
       if (error) throw error;
       if (data) {
+        // SEGURANÇA: Somente o criador pode editar a missão
+        if (data.organizer_id !== user?.id) {
+          alert('PROTOCOLO NEGADO: VOCÊ NÃO É O ORGANIZADOR DESTA MISSÃO.');
+          navigate('/organizador');
+          return;
+        }
+
         // Formatar data para input datetime-local
         const eventDate = new Date(data.event_date).toISOString().slice(0, 16);
         setFormData({

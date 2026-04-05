@@ -35,7 +35,7 @@ function getTimeUntil(dateStr: string) {
 }
 
 function EventCard({ event }: { event: Event }) {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const availableSlots = event.capacity - event.sold_count;
   const occupancyPercent = (event.sold_count / event.capacity) * 100;
   const isSoldOut = event.status === 'closed' || availableSlots === 0;
@@ -127,7 +127,7 @@ function EventCard({ event }: { event: Event }) {
             </button>
           ) : (
             <div className="flex-1 flex gap-2">
-              {(user?.id === event.organizer_id || isAdmin) && (
+              {user?.id === event.organizer_id && (
                 <Link 
                   to={`/organizador/eventos/${event.id}`}
                   className="bg-white/5 border border-white/10 text-white/50 hover:text-primary hover:border-primary/40 p-3 flex items-center justify-center transition-all group/edit"

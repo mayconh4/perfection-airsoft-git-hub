@@ -32,7 +32,6 @@ export default function EventDetailPage() {
   const [adding, setAdding] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [copying, setCopying] = useState(false);
 
   useEffect(() => {
@@ -52,15 +51,6 @@ export default function EventDetailPage() {
 
       if (error) throw error;
       setEvent(data);
-
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        if (profile?.role === 'admin') setIsAdmin(true);
-      }
     } catch (err: any) {
       setError('Evento não encontrado.');
     } finally {
@@ -281,7 +271,7 @@ export default function EventDetailPage() {
           {/* ── Checkout Card ── */}
           <div className="lg:col-span-1 space-y-8">
             
-            {(user?.id === event.organizer_id || isAdmin) && (
+            {user?.id === event.organizer_id && (
               <div className="bg-primary/5 border-2 border-primary/30 p-8 shadow-[0_0_50px_rgba(251,191,36,0.1)] relative overflow-hidden group">
                 {/* Decorative Elements */}
                 <div className="absolute top-0 right-0 p-2 text-[7px] font-mono text-primary/40 uppercase tracking-widest">
