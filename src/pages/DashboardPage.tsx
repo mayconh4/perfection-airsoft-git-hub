@@ -32,7 +32,7 @@ export function DashboardPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Sidebar Navigation */}
         <aside className="lg:w-64 shrink-0">
-          <div className="bg-surface border border-border-tactical p-2 flex flex-row lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible no-scrollbar">
+          <div className="bg-surface border border-border-tactical p-2 flex flex-col gap-1">
             {isVerified && (
               <Link
                 to="/painel-de-elite"
