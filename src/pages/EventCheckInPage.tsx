@@ -84,9 +84,17 @@ export default function EventCheckInPage() {
         setScannerError(null);
         try {
           html5QrCode = new Html5Qrcode("reader");
+          const config = { 
+            fps: 20, 
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+            experimentalFeatures: {
+              useBarCodeDetectorIfSupported: true
+            }
+          };
           await html5QrCode.start(
             { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 250, height: 250 } },
+            config,
             onScanSuccess,
             onScanFailure
           );
@@ -208,7 +216,7 @@ export default function EventCheckInPage() {
           <div className="flex items-center justify-between gap-2 text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-4">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-sm">security</span>
-              TERMINAL DE VALIDAÇÃO v1.3 - TACTICAL
+              TERMINAL DE VALIDAÇÃO v1.4 - ALTA SENSIBILIDADE
             </div>
             {isSharedOperator && (
               <div className="bg-primary text-black px-2 py-0.5 rounded-sm animate-pulse font-black">
@@ -256,23 +264,16 @@ export default function EventCheckInPage() {
               </div>
             </button>
           ) : (
-            <div className="relative overflow-hidden border-2 border-primary/30 bg-black aspect-square max-w-sm mx-auto shadow-[0_0_80px_rgba(251,191,36,0.15)]">
-              <div id="reader" className="w-full h-full"></div>
+            <div className="relative overflow-hidden border-2 border-primary/50 bg-black aspect-square max-w-sm mx-auto shadow-[0_0_80px_rgba(251,191,36,0.3)]">
+              {/* READER LIMPO (Sem HUD para evitar interferência óptica) */}
+              <div id="reader" className="w-full h-full [&_video]:object-cover [&_video]:w-full [&_video]:h-full"></div>
+              
               <button 
                 onClick={() => setIsScanning(false)}
                 className="absolute top-4 right-4 bg-red-500/80 hover:bg-red-500 text-white p-2 rounded-full shadow-lg z-20 backdrop-blur-sm transition-all flex items-center justify-center"
               >
                 <span className="material-symbols-outlined text-sm">close</span>
               </button>
-              
-              <div className="absolute inset-0 pointer-events-none z-10 border-[1px] border-white/5">
-                <div className="absolute top-4 left-4 size-12 border-t-2 border-l-2 border-primary/40"></div>
-                <div className="absolute top-4 right-4 size-12 border-t-2 border-r-2 border-primary/40"></div>
-                <div className="absolute bottom-4 left-4 size-12 border-b-2 border-l-2 border-primary/40"></div>
-                <div className="absolute bottom-4 right-4 size-12 border-b-2 border-r-2 border-primary/40"></div>
-                
-                <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 h-0.5 bg-primary/30 shadow-[0_0_15px_rgba(251,191,36,0.5)] animate-scan-fast"></div>
-              </div>
             </div>
           )}
 
