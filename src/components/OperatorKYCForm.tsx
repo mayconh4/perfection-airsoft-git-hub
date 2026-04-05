@@ -353,7 +353,7 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
               }}
               className="bg-green-500 text-black text-[9px] font-black uppercase tracking-[0.3em] px-8 py-3.5 hover:bg-white transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(34,197,94,0.2)]"
             >
-              RETORNAR AO CAMPO
+              PROSSEGUIR
             </button>
           </div>
         </div>
