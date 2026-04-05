@@ -4,7 +4,6 @@ import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { OperatorKYCForm } from '../components/OperatorKYCForm';
-import { OrganizerRequestForm } from '../components/OrganizerRequestForm';
 import { UATScannerTester } from '../components/UATScannerTester';
 
 interface EventStats {
@@ -27,9 +26,7 @@ export default function OrganizerDashboard() {
   const [winners, setWinners] = useState<any[]>([]);
   const [updatingLogisticsId, setUpdatingLogisticsId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isOrganizer, setIsOrganizer] = useState(false);
   const [activeRaffle, setActiveRaffle] = useState<any>(null); // Contexto de edição/intel
-  const [userProfile, setUserProfile] = useState<any>(null);
   const [selectedEventParticipants, setSelectedEventParticipants] = useState<any[]>([]);
   const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
@@ -100,10 +97,7 @@ export default function OrganizerDashboard() {
         .single();
 
       const profileIsAdmin = profile?.role === 'admin';
-      const profileIsOrganizer = profile?.role === 'organizer';
       if (profileIsAdmin) setIsAdmin(true);
-      if (profileIsOrganizer || profileIsAdmin) setIsOrganizer(true);
-      setUserProfile(profile);
 
       // Verificação de parâmetro de edição administrativa
       const urlParams = new URLSearchParams(window.location.search);
@@ -268,37 +262,8 @@ export default function OrganizerDashboard() {
       <div className="scanline"></div>
       <SEO title="Painel do Organizador | Perfection Airsoft" />
 
-      {/* Verificação de Role */}
-      {!isOrganizer && !isAdmin && (
-        <div className="max-w-xl mx-auto px-6 py-20 relative z-10 animate-in fade-in duration-700">
-          <div className="text-center mb-12">
-            <span className="material-symbols-outlined text-6xl text-slate-700 mb-4">lock</span>
-            <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Acesso Restrito</h2>
-            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-2 px-12">
-              Este painel é exclusivo para organizadores verificados e administradores da rede.
-            </p>
-          </div>
 
-          {userProfile?.role_request === 'organizer' ? (
-            <div className="bg-primary/5 border border-primary/20 p-8 text-center">
-              <span className="material-symbols-outlined text-primary text-4xl mb-4">hourglass_empty</span>
-              <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2 font-mono">Solicitação em Processamento</h3>
-              <p className="text-[10px] text-slate-500 uppercase tracking-widest leading-relaxed">
-                Seus dados foram enviados para o QG e estão em análise técnica.<br/>
-                Em breve notificaremos o resultado via WhatsApp.
-              </p>
-            </div>
-          ) : (
-            <OrganizerRequestForm onComplete={fetchDashboardData} />
-          )}
-
-          <Link to="/" className="block text-center mt-8 text-slate-500 hover:text-white text-[9px] uppercase font-black tracking-widest transition-all">
-            ← RETORNAR À ZONA DE OPERAÇÃO
-          </Link>
-        </div>
-      )}
-
-      {(isOrganizer || isAdmin) && (
+      {user && (
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
             <div>
@@ -477,12 +442,26 @@ export default function OrganizerDashboard() {
                             <span className="material-symbols-outlined text-sm">visibility</span>
                           </Link>
                           {event.type === 'mission' && (
-                            <Link 
-                              to={`/eventos/${event.id}/checkin`}
-                              className="p-3 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-black transition-all"
-                            >
-                              <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
-                            </Link>
+                            <div className="flex gap-2">
+                              <Link 
+                                title="Scanner de Check-in"
+                                to={`/eventos/${event.id}/checkin`}
+                                className="p-3 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-black transition-all"
+                              >
+                                <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
+                              </Link>
+                              <button 
+                                title="Copiar Link de Operador"
+                                onClick={() => {
+                                  const url = `${window.location.origin}/eventos/${event.id}/checkin?token=${event.checkin_token}`;
+                                  navigator.clipboard.writeText(url);
+                                  alert('Link de Operador copiado para a área de transferência!');
+                                }}
+                                className="p-3 bg-white/5 border border-white/10 text-white/40 hover:text-primary transition-all"
+                              >
+                                <span className="material-symbols-outlined text-sm">share</span>
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>

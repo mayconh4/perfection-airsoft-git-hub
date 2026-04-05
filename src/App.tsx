@@ -32,6 +32,7 @@ import SecurityNoticePage from './pages/SecurityNoticePage';
 import DashboardDemo from './pages/DashboardDemo';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 import MyTicketsPage from './pages/MyTicketsPage';
+import TicketPage from './pages/TicketPage';
 import EventCheckInPage from './pages/EventCheckInPage';
 import { AdminLayout } from './components/AdminLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -84,6 +85,7 @@ function App() {
                 <Route path="/organizador" element={<OrganizerDashboard />} />
                 <Route path="/dashboard-demo" element={<DashboardDemo />} />
                 <Route path="/organizador/eventos/:id" element={<CreateEventPage />} />
+                <Route path="/ingresso/:uuid" element={<TicketPage />} />
                 <Route path="/auth/callback" element={<AuthCallbackPage />} />
                 
                 {/* Admin Area */}

@@ -7,6 +7,14 @@
 
 ## 🎯 META DO DIA
 > **Até meia-noite, deve ser possível:**
+> - [/] BLOCO 5 — Email com QR Code [IMPORTANTE]
+  - [x] Refatorar asaas-webhook com SMTP Hostinger
+  - [x] Configurar Secrets no Supabase (SMTP_USERNAME, SMTP_PASSWORD, etc)
+  - [x] Deploy da função asaas-webhook
+  - [/] Depurar conexão SMTP (debug-smtp)
+  - [ ] Testar fluxo completo (Webhook -> Ticket -> Email)
+  - [ ] Validar QR Code no mobile
+  - [ ] Deploy final das Functions consolidada
 > - [x] Criar um evento real com ingressos
 > - [x] Comprar ingresso com PIX (Asaas — já integrado)
 > - [x] QR Code real gerado (Disponível em Meus Ingressos)
