@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { OperatorKYCForm } from '../components/OperatorKYCForm';
 
 export default function CreateEventPage() {
   const { user } = useAuth();
@@ -11,6 +12,8 @@ export default function CreateEventPage() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [maps, setMaps] = useState<any[]>([]);
+  const [hasVerifiedProfile, setHasVerifiedProfile] = useState<boolean | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -24,11 +27,35 @@ export default function CreateEventPage() {
   });
 
   useEffect(() => {
+    checkVerificationStatus();
     loadMaps();
     if (id) {
       loadEventData();
     }
-  }, [id]);
+  }, [id, user]);
+
+  const checkVerificationStatus = async () => {
+    if (!user) return;
+    try {
+      const isAdmin = user.email === 'admin@perfectionairsoft.com.br';
+      if (isAdmin) {
+        setHasVerifiedProfile(true);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('asaas_wallet_id')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) throw error;
+      setHasVerifiedProfile(!!data?.asaas_wallet_id);
+    } catch (err) {
+      console.error('Erro ao verificar Status Financeiro:', err);
+      setHasVerifiedProfile(false);
+    }
+  };
 
   const loadMaps = async () => {
     const { data } = await supabase.from('maps').select('id, name, city, state').order('name');
@@ -109,6 +136,12 @@ export default function CreateEventPage() {
       return;
     }
 
+    const isAdmin = user.email === 'admin@perfectionairsoft.com.br';
+    if (!hasVerifiedProfile && !isAdmin) {
+      alert('PROTOCOLO BLOQUEADO: VOCÊ PRECISA CONCLUIR O PROTOCOLO DE VERIFICAÇÃO TÁTICA PARA PROSSEGUIR.');
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {
@@ -159,7 +192,39 @@ export default function CreateEventPage() {
           </h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        {hasVerifiedProfile === false && user?.email !== 'admin@perfectionairsoft.com.br' && (
+          <div className={!isVerifying ? "bg-red-500/10 border border-red-500/50 p-8 flex flex-col items-center text-center gap-4 mb-12 shadow-[0_0_50px_rgba(239,68,68,0.1)]" : "mb-12 w-full"}>
+            {!isVerifying ? (
+              <>
+                <div className="size-16 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/30">
+                  <span className="material-symbols-outlined text-red-500 text-4xl">warning</span>
+                </div>
+                <div>
+                  <h3 className="text-white font-black uppercase tracking-[0.2em] mb-2 font-display italic text-xl">PERFIL FINANCEIRO NÃO VERIFICADO</h3>
+                  <p className="text-slate-400 text-[10px] uppercase font-mono max-w-md mx-auto leading-relaxed tracking-widest">
+                    PARA CRIAR UMA MISSÃO NO MARKETPLACE, VOCÊ PRECISA CONCLUIR O PROTOCOLO DE VERIFICAÇÃO TÁTICA.
+                  </p>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setIsVerifying(true)}
+                  className="bg-red-500 text-white font-black py-4 px-10 text-[10px] uppercase tracking-[0.3em] hover:bg-white hover:text-red-500 transition-all shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                >
+                  INICIAR VERIFICAÇÃO AGORA
+                </button>
+              </>
+            ) : (
+              <div className="w-full">
+                <OperatorKYCForm onComplete={() => {
+                  setIsVerifying(false);
+                  checkVerificationStatus();
+                }} />
+              </div>
+            )}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className={`space-y-8 transition-all duration-500 ${(hasVerifiedProfile === false && user?.email !== 'admin@perfectionairsoft.com.br') ? 'opacity-20 pointer-events-none grayscale blur-[2px]' : ''}`}>
           <div className="bg-surface/20 border border-white/5 p-8 space-y-8">
             {/* Title */}
             <div>

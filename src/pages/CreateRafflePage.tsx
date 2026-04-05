@@ -275,7 +275,7 @@ export default function CreateRafflePage() {
                 </div>
             )}
             
-            <div className={`space-y-8 ${(!user || hasPixKey === false) ? 'opacity-20 pointer-events-none grayscale' : ''}`}>
+            <div className={`space-y-8 transition-all duration-500 ${(!user || (hasPixKey === false && user.email !== 'admin@perfectionairsoft.com.br')) ? 'opacity-20 pointer-events-none grayscale blur-[2px]' : ''}`}>
                 {/* Title */}
                 <div>
                     <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">NOME DO EQUIPAMENTO / PRÊMIO</label>
