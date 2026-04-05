@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { SEO } from '../components/SEO';
@@ -29,6 +29,7 @@ export default function EventCheckInPage() {
   const [manualCode, setManualCode] = useState('');
   const [processing, setProcessing] = useState(false);
   const [isSharedOperator, setIsSharedOperator] = useState(false);
+  const [scannerError, setScannerError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
@@ -75,21 +76,34 @@ export default function EventCheckInPage() {
   };
 
   useEffect(() => {
-    let scanner: Html5QrcodeScanner | null = null;
+    let html5QrCode: Html5Qrcode | null = null;
 
-    if (isScanning && !loading) {
-      scanner = new Html5QrcodeScanner(
-        "reader",
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        false
-      );
+    const startScanner = async () => {
+      if (isScanning && !loading) {
+        setScannerError(null);
+        try {
+          html5QrCode = new Html5Qrcode("reader");
+          await html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            onScanSuccess,
+            onScanFailure
+          );
+        } catch (err: any) {
+          console.error("Camera Error:", err);
+          setScannerError("NÃO FOI POSSÍVEL ATIVAR A CÂMERA. VERIFIQUE AS PERMISSÕES.");
+          setIsScanning(false);
+        }
+      }
+    };
 
-      scanner.render(onScanSuccess, onScanFailure);
-    }
+    startScanner();
 
     return () => {
-      if (scanner) {
-        scanner.clear().catch(error => console.error("Failed to clear scanner", error));
+      if (html5QrCode) {
+        if (html5QrCode.isScanning) {
+          html5QrCode.stop().catch(err => console.error("Failed to stop scanner", err));
+        }
       }
     };
   }, [isScanning, loading]);
@@ -177,6 +191,13 @@ export default function EventCheckInPage() {
         </div>
 
         <div className="space-y-6">
+          {scannerError && (
+            <div className="bg-red-500/20 border border-red-500 p-4 text-red-500 text-[10px] font-black uppercase text-center animate-pulse">
+              <span className="material-symbols-outlined block mb-2">error</span>
+              {scannerError}
+            </div>
+          )}
+
           {!isScanning ? (
             <button
               onClick={() => setIsScanning(true)}
