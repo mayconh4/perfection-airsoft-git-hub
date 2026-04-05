@@ -674,7 +674,16 @@ export default function OrganizerDashboard() {
                     const eventTitle = ev.title || 'Missão';
                     const token = ev.checkin_token;
                     const url = `${window.location.origin}/checkin/${selectedEventParticipants[0].event_id}?token=${token}`;
-                    const msg = encodeURIComponent(`*OPERACIONAL: LISTA DE CHECK-IN*\n\nMudar para check-in manual na missão: *${eventTitle}*\n\nAcesse o link abaixo para validar os operadores no campo:\n${url}`);
+                    
+                    // Gerar lista resumida de operadores
+                    const participantsSummary = selectedEventParticipants
+                      .map(p => `${(p.buyer_name || 'Operador').padEnd(15)} Pago ✅`)
+                      .slice(0, 40) // Limite razoável para evitar URL overflow
+                      .join('\n');
+
+                    const footer = selectedEventParticipants.length > 40 ? `\n... (+${selectedEventParticipants.length - 40} outros)` : '';
+                    
+                    const msg = encodeURIComponent(`*OPERACIONAL: LISTA DE CHECK-IN*\n\nMissão: *${eventTitle}*\n\n*OPERADORES CONFIRMADOS:*\n${participantsSummary}${footer}\n\nAcesse o link abaixo para validar no sistema:\n${url}`);
                     window.open(`https://wa.me/?text=${msg}`, '_blank');
                   }}
                   className="bg-green-600 hover:bg-green-500 text-white font-black px-6 py-2 text-[9px] uppercase tracking-widest transition-all flex items-center gap-2 group"
