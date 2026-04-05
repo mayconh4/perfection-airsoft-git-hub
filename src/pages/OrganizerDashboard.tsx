@@ -673,12 +673,12 @@ export default function OrganizerDashboard() {
                     if (!ev) return;
                     const eventTitle = ev.title || 'Missão';
                     const token = ev.checkin_token;
-                    const url = `${window.location.origin}/checkin/${selectedEventParticipants[0].event_id}?token=${token}`;
+                    const url = `${window.location.origin}/qg/${selectedEventParticipants[0].event_id}?token=${token}`;
                     
                     // Gerar lista resumida de operadores
                     const participantsSummary = selectedEventParticipants
-                      .map(p => `${(p.buyer_name || 'Operador').padEnd(15)} Pago ✅`)
-                      .slice(0, 40) // Limite razoável para evitar URL overflow
+                      .map(p => `• ${(p.buyer_name || 'Operador').toUpperCase()} (PAGO ✅)`)
+                      .slice(0, 40)
                       .join('\n');
 
                     const footer = selectedEventParticipants.length > 40 ? `\n... (+${selectedEventParticipants.length - 40} outros)` : '';

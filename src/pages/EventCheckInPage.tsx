@@ -30,9 +30,13 @@ export default function EventCheckInPage() {
   const [isSharedOperator, setIsSharedOperator] = useState(false);
 
   useEffect(() => {
-    if (!user) { navigate('/login'); return; }
+    // Solo requer login se não houver token na URL
+    if (!token && !user) {
+      navigate('/login');
+      return;
+    }
     loadData();
-  }, [user, eventId]);
+  }, [user, eventId, token]);
 
   const loadData = async () => {
     setLoading(true);

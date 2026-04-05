@@ -75,7 +75,7 @@ function App() {
                   <Route path="/eventos" element={<EventsPage />} />
                   <Route path="/eventos/criar" element={<CreateEventPage />} />
                   <Route path="/eventos/:id" element={<EventDetailPage />} />
-                  <Route path="/eventos/:id/checkin" element={<EventCheckInPage />} />
+                  <Route path="/qg/:id" element={<EventCheckInPage />} />
                   <Route path="/drop" element={<DropPage />} />
                   <Route path="/drop/criar" element={<CreateRafflePage />} />
                   <Route path="/drop/editar/:id" element={<CreateRafflePage />} />
