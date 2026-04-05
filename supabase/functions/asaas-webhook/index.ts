@@ -37,14 +37,18 @@ function getTicketEmailHtml(data: {
   tickets: Array<{ qrUuid: string; id: string }>;
 }) {
   const ticketSections = data.tickets.map((ticket, index) => `
-    <div style="border: 1px solid #ffc10740; padding: 20px; margin-bottom: 20px; background: #1a1a15;">
-      <h3 style="color: #ffc107; text-transform: uppercase; margin-top: 0;">Ingresso #${index + 1}</h3>
-      <div style="text-align: center; background: white; padding: 10px; display: inline-block;">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${ticket.qrUuid}" 
-             alt="QR Code Ingresso" 
-             style="display: block;" />
+    <div style="border: 2px solid #ffc107; padding: 25px; margin-bottom: 25px; background: #000; color: #fff; text-align: center;">
+      <h3 style="color: #ffc107; text-transform: uppercase; margin-top: 0; font-size: 14px; letter-spacing: 2px;">Tag de Operador #${index + 1}</h3>
+      <div style="border: 1px solid #ffc10720; padding: 15px; margin: 15px 0; background: #1a1a15;">
+        <p style="margin: 0; font-size: 10px; color: #666; text-transform: uppercase;">Identificação</p>
+        <p style="margin: 5px 0 0 0; font-size: 18px; color: #fff; font-weight: 900; text-transform: uppercase;">${data.buyerName}</p>
       </div>
-      <p style="font-size: 10px; color: #666; margin-top: 10px;">ID: ${ticket.id}</p>
+      <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px;">
+        <div style="flex: 1; border-right: 1px solid #333; padding-right: 10px;">
+          <p style="margin: 0; font-size: 8px; color: #666; text-transform: uppercase;">ID Missão</p>
+          <p style="margin: 3px 0 0 0; font-size: 12px; color: #ffc107; font-family: monospace;">#${ticket.qrUuid.slice(0, 8).toUpperCase()}</p>
+        </div>
+      </div>
     </div>
   `).join('');
 
@@ -81,8 +85,8 @@ function getTicketEmailHtml(data: {
       ${ticketSections}
 
       <p style="margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #333; padding-top: 10px;">
-        <strong>Instrução Tática:</strong> Apresente estes QR Codes na entrada do evento para validação imediata. 
-        Cada código é único e será invalidado após o primeiro scan.
+        <strong>Instrução Tática:</strong> Apresente este documento ou informe seu Nome/CPF no QG do evento para validação de entrada. 
+        Sua presença será conferida manualmente em nossa lista de operadores autorizados.
       </p>
     </div>
     <div class="footer">

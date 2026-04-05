@@ -25,7 +25,7 @@ export default function EventCheckInPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [lastResult, setLastResult] = useState<ScanResult | null>(null);
-  const [history, setHistory] = useState<ScanResult[]>([]);
+
   const [processing, setProcessing] = useState(false);
   const [isSharedOperator, setIsSharedOperator] = useState(false);
 
@@ -104,7 +104,7 @@ export default function EventCheckInPage() {
       setLastResult(result);
       
       if (result.success) {
-        setHistory(prev => [result, ...prev].slice(0, 10));
+
         // Atualizar lista local instantaneamente
         setParticipants(prev => prev.map(p => 
           p.qr_uuid === cleanUuid ? { ...p, status: 'used', checked_in_at: new Date().toISOString() } : p
