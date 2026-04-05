@@ -21,7 +21,7 @@ export default function OrganizerDashboard() {
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<any[]>([]);
   const [stats, setStats] = useState<EventStats>({ ticketsSold: 0, revenue: 0, netRevenue: 0, pendingBalance: 0, trustLevel: 0, completedDrops: 0 });
-  const [activeTab, setActiveTab] = useState<'missions' | 'logistics' | 'reports'>('missions');
+  const [activeTab, setActiveTab] = useState<'missions' | 'drops' | 'logistics' | 'reports'>('missions');
   const [winners, setWinners] = useState<any[]>([]);
   const [updatingLogisticsId, setUpdatingLogisticsId] = useState<string | null>(null);
   const [activeRaffle, setActiveRaffle] = useState<any>(null); // Contexto de edição/intel
@@ -367,6 +367,13 @@ export default function OrganizerDashboard() {
               {activeTab === 'missions' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></span>}
             </button>
             <button
+              onClick={() => setActiveTab('drops')}
+              className={`pb-4 text-[10px] uppercase font-black tracking-[0.3em] transition-all relative ${activeTab === 'drops' ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
+            >
+              Drops / Rifas
+              {activeTab === 'drops' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></span>}
+            </button>
+            <button
               onClick={() => setActiveTab('logistics')}
               className={`pb-4 text-[10px] uppercase font-black tracking-[0.3em] transition-all relative ${activeTab === 'logistics' ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
             >
@@ -385,8 +392,8 @@ export default function OrganizerDashboard() {
           <div className="min-h-[400px]">
             {activeTab === 'missions' && (
               <div className="space-y-4 max-w-4xl">
-                {events.length > 0 ? (
-                  events.map(event => (
+                {events.filter(e => e.type === 'mission').length > 0 ? (
+                  events.filter(e => e.type === 'mission').map(event => (
                     <div key={event.id} className="bg-surface/20 border border-white/10 p-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-primary/30 transition-all">
                       <div className="flex gap-6 items-center flex-1">
                         <div className="size-16 bg-white/5 flex items-center justify-center relative overflow-hidden">
@@ -399,8 +406,8 @@ export default function OrganizerDashboard() {
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="text-sm font-black text-white uppercase tracking-widest">{event.title}</h4>
-                            <span className={`text-[7px] font-black px-1.5 py-0.5 rounded ${event.type === 'drop' ? 'bg-primary text-black' : 'bg-white/10 text-white/50'}`}>
-                              {event.type.toUpperCase()}
+                            <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-white/10 text-white/50">
+                              MISSION
                             </span>
                           </div>
                           <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">
@@ -417,50 +424,105 @@ export default function OrganizerDashboard() {
                           <button
                             onClick={() => fetchParticipants(event.id)}
                             className="p-3 bg-white/5 border border-white/10 text-white/50 hover:text-primary transition-all"
+                            title="Ver Operadores"
                           >
                             <span className="material-symbols-outlined text-sm">groups</span>
                           </button>
                           <Link
-                            to={event.type === 'drop' ? `/drop/${event.slug || event.id}` : `/eventos/${event.id}`}
+                            to={`/eventos/${event.id}`}
                             className="p-3 bg-white/5 border border-white/10 text-white/50 hover:text-primary transition-all"
+                            title="Ver Página"
                           >
                             <span className="material-symbols-outlined text-sm">visibility</span>
                           </Link>
-                          {event.type === 'mission' && (
-                            <div className="flex gap-2">
-                              <Link
-                                title="Scanner de Check-in"
-                                to={`/eventos/${event.id}/checkin`}
-                                className="p-3 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-black transition-all"
-                              >
-                                <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
-                              </Link>
-                              <button
-                                title="Copiar Link de Operador"
-                                onClick={() => {
-                                  const url = `${window.location.origin}/eventos/${event.id}/checkin?token=${event.checkin_token}`;
-                                  navigator.clipboard.writeText(url);
-                                  alert('Link de Operador copiado para a área de transferência!');
-                                }}
-                                className="p-3 bg-white/5 border border-white/10 text-white/40 hover:text-primary transition-all"
-                              >
-                                <span className="material-symbols-outlined text-sm">share</span>
-                              </button>
-                            </div>
-                          )}
+                          <div className="flex gap-2">
+                            <Link
+                              title="Scanner de Check-in"
+                              to={`/eventos/${event.id}/checkin`}
+                              className="p-3 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-black transition-all"
+                            >
+                              <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
+                            </Link>
+                            <button
+                              title="Copiar Link de Operador"
+                              onClick={() => {
+                                const url = `${window.location.origin}/eventos/${event.id}/checkin?token=${event.checkin_token}`;
+                                navigator.clipboard.writeText(url);
+                                alert('Link de Operador copiado para a área de transferência!');
+                              }}
+                              className="p-3 bg-white/5 border border-white/10 text-white/40 hover:text-primary transition-all"
+                            >
+                              <span className="material-symbols-outlined text-sm">share</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
 
-                      {event.type === 'mission' && (
-                        <div className="w-full mt-6 border-t border-white/5 pt-4">
-                          <UATScannerTester eventId={event.id} eventTitle={event.title} />
-                        </div>
-                      )}
+                      <div className="w-full mt-6 border-t border-white/5 pt-4">
+                        <UATScannerTester eventId={event.id} eventTitle={event.title} />
+                      </div>
                     </div>
                   ))
                 ) : (
                   <div className="text-center py-20 border border-dashed border-white/5 bg-surface/10">
                     <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Nenhuma missão em andamento.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'drops' && (
+              <div className="space-y-4 max-w-4xl">
+                {events.filter(e => e.type === 'drop').length > 0 ? (
+                  events.filter(e => e.type === 'drop').map(event => (
+                    <div key={event.id} className="bg-surface/20 border border-white/10 p-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-primary/30 transition-all">
+                      <div className="flex gap-6 items-center flex-1">
+                        <div className="size-16 bg-white/5 flex items-center justify-center relative overflow-hidden">
+                          {event.image_url ? (
+                            <img src={event.image_url} alt={event.title} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="material-symbols-outlined text-white/10 text-3xl">local_mall</span>
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="text-sm font-black text-white uppercase tracking-widest">{event.title}</h4>
+                            <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-primary text-black">
+                              DROP
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">
+                            Criado em: {new Date(event.event_date).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-8 text-center md:text-right w-full md:w-auto">
+                        <div>
+                          <span className="text-[10px] text-slate-600 font-black uppercase tracking-widest block mb-1">Tickets</span>
+                          <span className="text-sm font-black text-white">{event.sold_count} / {event.capacity}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Link
+                            to={`/drop/${event.slug || event.id}`}
+                            className="p-3 bg-white/5 border border-white/10 text-white/50 hover:text-primary transition-all"
+                            title="Ver Drop"
+                          >
+                            <span className="material-symbols-outlined text-sm">visibility</span>
+                          </Link>
+                          <Link
+                            to={`/organizador?edit=${event.id}`}
+                            className="p-3 bg-white/5 border border-white/10 text-white/50 hover:text-primary transition-all"
+                            title="Editar Drop"
+                          >
+                            <span className="material-symbols-outlined text-sm">settings</span>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-20 text-center border-2 border-dashed border-white/5 text-slate-600 uppercase font-black tracking-widest text-[10px]">
+                    Nenhum drop ativo encontrado.
                   </div>
                 )}
               </div>
