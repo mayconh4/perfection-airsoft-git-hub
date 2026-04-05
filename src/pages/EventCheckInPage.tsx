@@ -26,7 +26,6 @@ export default function EventCheckInPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [lastResult, setLastResult] = useState<ScanResult | null>(null);
 
-  const [processing, setProcessing] = useState(false);
   const [isSharedOperator, setIsSharedOperator] = useState(false);
 
   useEffect(() => {
@@ -89,40 +88,6 @@ export default function EventCheckInPage() {
     }
   };
 
-  const handleCheckIn = async (uuid: string) => {
-    try {
-      if (processing) return;
-      setProcessing(true);
-      setLastResult(null);
-      const cleanUuid = uuid?.trim();
-
-      const { data, error } = await supabase.rpc('checkin_ticket', {
-        p_ticket_id: cleanUuid,
-        p_checker_id: user?.id,
-        p_token: token
-      });
-
-      if (error) throw error;
-
-      const result = data as ScanResult;
-      setLastResult(result);
-      
-      if (result.success) {
-
-        // Atualizar lista local instantaneamente
-        setParticipants(prev => prev.map(p => 
-          p.qr_uuid === cleanUuid ? { ...p, status: 'used', checked_in_at: new Date().toISOString() } : p
-        ));
-        if ('vibrate' in navigator) navigator.vibrate(200);
-      } else {
-        if ('vibrate' in navigator) navigator.vibrate([100, 50, 100]);
-      }
-    } catch (err: any) {
-      console.error('Check-in Error:', err.message);
-    } finally {
-      setProcessing(false);
-    }
-  };
 
   const filteredParticipants = participants.filter(p => 
     p.buyer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -258,21 +223,12 @@ export default function EventCheckInPage() {
                     </div>
                   </div>
                   
-                  <div className="ml-4">
-                    {p.status !== 'used' ? (
-                      <button
-                        onClick={() => handleCheckIn(p.qr_uuid)}
-                        disabled={processing}
-                        className="bg-primary text-black font-black px-4 py-2 text-[9px] uppercase tracking-widest hover:bg-white transition-all shadow-lg active:scale-95 disabled:opacity-50"
-                      >
-                        {processing ? '...' : 'VALIDAR'}
-                      </button>
-                    ) : (
-                      <div className="text-green-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-1 p-2">
-                         <span className="material-symbols-outlined text-[14px]">done_all</span>
-                         OK
-                      </div>
-                    )}
+                  <div className="ml-4 flex flex-col items-end gap-1">
+                    <div className={`text-[9px] font-black uppercase px-2 py-1 rounded-sm ${
+                      p.status === 'used' ? 'bg-green-500/20 text-green-500' : 'bg-primary/20 text-primary'
+                    }`}>
+                      {p.status === 'used' ? 'PRESENTE' : 'CONFIRMADO'}
+                    </div>
                   </div>
                 </div>
               ))
