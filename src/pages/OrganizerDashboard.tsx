@@ -585,7 +585,10 @@ export default function OrganizerDashboard() {
                     {selectedEventParticipants.map((p, idx) => (
                       <tr key={p.id} className="text-[11px] hover:bg-white/5 transition-colors group">
                         <td className="py-4 px-4 font-mono text-slate-500">#{idx + 1}</td>
-                        <td className="py-4 px-4 font-black uppercase text-white">{p.buyer_name || 'Desconhecido'}</td>
+                        <td className="py-4 px-4">
+                          <div className="font-black uppercase text-white">{p.buyer_name || 'Desconhecido'}</div>
+                          <div className="text-[9px] text-slate-500 font-mono lowercase">{p.buyer_email}</div>
+                        </td>
                         <td className="py-4 px-4">
                           <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${p.status === 'confirmed' ? 'bg-primary/20 text-primary' : 'bg-green-500/20 text-green-500'}`}>
                             {p.status === 'confirmed' ? 'PAGO' : 'USADO'}
