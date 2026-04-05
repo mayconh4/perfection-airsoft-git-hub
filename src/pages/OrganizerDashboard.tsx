@@ -405,7 +405,25 @@ export default function OrganizerDashboard() {
 
           <div className="min-h-[400px]">
             {activeTab === 'missions' && (
-              <div className="space-y-4 max-w-4xl">
+              <div className="space-y-6 max-w-4xl">
+                {/* Quick Create Action */}
+                <Link 
+                  to="/eventos/criar"
+                  className="w-full flex items-center justify-between p-6 border border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="size-12 bg-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-all">
+                      <span className="material-symbols-outlined">add_circle</span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-white uppercase tracking-widest">Registrar Nova Missão</h4>
+                      <p className="text-[10px] text-slate-500 font-mono uppercase">Configurar operação, LZ, tickets e briefing.</p>
+                    </div>
+                  </div>
+                  <span className="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </Link>
+
+                <div className="space-y-4">
                 {events.filter(e => e.type === 'mission').length > 0 ? (
                   events.filter(e => e.type === 'mission').map(event => (
                     <div 
@@ -493,11 +511,30 @@ export default function OrganizerDashboard() {
                     <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Nenhuma missão em andamento.</p>
                   </div>
                 )}
+                </div>
               </div>
             )}
 
             {activeTab === 'drops' && (
-              <div className="space-y-4 max-w-4xl">
+              <div className="space-y-6 max-w-4xl">
+                {/* Quick Create Action */}
+                <Link 
+                  to="/drop/criar"
+                  className="w-full flex items-center justify-between p-6 border border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="size-12 bg-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-all">
+                      <span className="material-symbols-outlined">rocket</span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-white uppercase tracking-widest">Lançar Novo Drop (Rifa)</h4>
+                      <p className="text-[10px] text-slate-500 font-mono uppercase">Configurar prêmio, cotas, valores e regras.</p>
+                    </div>
+                  </div>
+                  <span className="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </Link>
+
+                <div className="space-y-4">
                 {events.filter(e => e.type === 'drop').length > 0 ? (
                   events.filter(e => e.type === 'drop').map(event => (
                     <div key={event.id} className="bg-surface/20 border border-white/10 p-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-primary/30 transition-all">
@@ -550,6 +587,7 @@ export default function OrganizerDashboard() {
                     Nenhum drop ativo encontrado.
                   </div>
                 )}
+                </div>
               </div>
             )}
 

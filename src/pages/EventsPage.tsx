@@ -198,7 +198,7 @@ export default function EventsPage() {
           </div>
           <div className="flex flex-wrap gap-4">
             <Link 
-              to="/organizador"
+              to="/eventos/criar"
               className="bg-primary text-background-dark font-black py-4 px-8 text-[10px] uppercase tracking-widest hover:bg-white transition-all flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-sm">rocket_launch</span>
