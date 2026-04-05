@@ -247,8 +247,10 @@ export function Layout({ children }: LayoutProps) {
                 {user && (
                     <div className={`absolute top-full right-0 mt-4 w-48 bg-background-dark border border-primary/20 shadow-[0_10px_30px_rgba(0,0,0,0.8)] transition-all duration-300 z-[110] ${isProfileOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2'}`}>
                         <div className="p-4 border-b border-white/5 bg-primary/5">
-                            <p className="text-[8px] text-primary/40 font-black uppercase tracking-widest mb-1">Status: Operacional</p>
-                            <p className="text-[10px] text-white font-black uppercase truncate">{user.email?.split('@')[0]}</p>
+                            <p className="text-[10px] text-white font-black uppercase truncate">
+                                {user.user_metadata?.full_name || user.email?.split('@')[0]}
+                            </p>
+                            <p className="text-[8px] text-white/40 font-mono lowercase truncate mt-0.5">{user.email}</p>
                         </div>
                         <nav className="p-2">
                             <a 

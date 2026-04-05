@@ -4,6 +4,7 @@ import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { OperatorKYCForm } from '../components/OperatorKYCForm';
+import { OrganizerRequestForm } from '../components/OrganizerRequestForm';
 import { UATScannerTester } from '../components/UATScannerTester';
 
 interface EventStats {
@@ -26,7 +27,9 @@ export default function OrganizerDashboard() {
   const [winners, setWinners] = useState<any[]>([]);
   const [updatingLogisticsId, setUpdatingLogisticsId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isOrganizer, setIsOrganizer] = useState(false);
   const [activeRaffle, setActiveRaffle] = useState<any>(null); // Contexto de edição/intel
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [selectedEventParticipants, setSelectedEventParticipants] = useState<any[]>([]);
   const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
@@ -71,12 +74,12 @@ export default function OrganizerDashboard() {
       // Merge de operações para visualização e estatísticas
       const allOps = [
         ...(eventsData || []).map(e => ({ ...e, type: 'mission' })),
-        ...(rafflesData || []).map(r => ({ 
-          ...r, 
-          type: 'drop', 
-          title: r.title, 
-          event_date: r.created_at, 
-          sold_count: r.sold_tickets, 
+        ...(rafflesData || []).map(r => ({
+          ...r,
+          type: 'drop',
+          title: r.title,
+          event_date: r.created_at,
+          sold_count: r.sold_tickets,
           capacity: r.total_tickets,
           image_url: r.image_url
         }))
@@ -97,7 +100,10 @@ export default function OrganizerDashboard() {
         .single();
 
       const profileIsAdmin = profile?.role === 'admin';
+      const profileIsOrganizer = profile?.role === 'organizer';
       if (profileIsAdmin) setIsAdmin(true);
+      if (profileIsOrganizer || profileIsAdmin) setIsOrganizer(true);
+      setUserProfile(profile);
 
       // Verificação de parâmetro de edição administrativa
       const urlParams = new URLSearchParams(window.location.search);
@@ -118,7 +124,7 @@ export default function OrganizerDashboard() {
           .select('*, profiles(full_name, phone)')
           .eq('id', editId)
           .single();
-        
+
         if (editRaffle) {
           setActiveRaffle(editRaffle);
           statsToSet = {
@@ -153,10 +159,10 @@ export default function OrganizerDashboard() {
 
     const channel = supabase
       .channel('dashboard-updates')
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'tickets' 
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'tickets'
       }, () => {
         fetchDashboardData();
       })
@@ -176,7 +182,7 @@ export default function OrganizerDashboard() {
         .select('*')
         .eq('event_id', eventId)
         .eq('status', 'confirmed');
-      
+
       if (error) throw error;
       setSelectedEventParticipants(data || []);
     } catch (err: any) {
@@ -199,7 +205,7 @@ export default function OrganizerDashboard() {
     setIsProcessingPayout(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/asaas-request-payout`, {
         method: 'POST',
         headers: {
@@ -232,7 +238,7 @@ export default function OrganizerDashboard() {
     try {
       const { error } = await supabase
         .from('raffle_winners')
-        .update({ 
+        .update({
           tracking_code: trackingCode,
           delivery_status: 'shipped',
           shipped_at: new Date().toISOString()
@@ -262,8 +268,37 @@ export default function OrganizerDashboard() {
       <div className="scanline"></div>
       <SEO title="Painel do Organizador | Perfection Airsoft" />
 
+      {/* Verificação de Role */}
+      {!isOrganizer && !isAdmin && (
+        <div className="max-w-xl mx-auto px-6 py-20 relative z-10 animate-in fade-in duration-700">
+          <div className="text-center mb-12">
+            <span className="material-symbols-outlined text-6xl text-slate-700 mb-4">lock</span>
+            <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Acesso Restrito</h2>
+            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-2 px-12">
+              Este painel é exclusivo para organizadores verificados e administradores da rede.
+            </p>
+          </div>
 
-      {user && (
+          {userProfile?.role_request === 'organizer' ? (
+            <div className="bg-primary/5 border border-primary/20 p-8 text-center">
+              <span className="material-symbols-outlined text-primary text-4xl mb-4">hourglass_empty</span>
+              <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2 font-mono">Solicitação em Processamento</h3>
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest leading-relaxed">
+                Seus dados foram enviados para o QG e estão em análise técnica.<br />
+                Em breve notificaremos o resultado via WhatsApp.
+              </p>
+            </div>
+          ) : (
+            <OrganizerRequestForm onComplete={fetchDashboardData} />
+          )}
+
+          <Link to="/" className="block text-center mt-8 text-slate-500 hover:text-white text-[9px] uppercase font-black tracking-widest transition-all">
+            ← RETORNAR À ZONA DE OPERAÇÃO
+          </Link>
+        </div>
+      )}
+
+      {(isOrganizer || isAdmin) && (
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
             <div>
@@ -271,8 +306,8 @@ export default function OrganizerDashboard() {
                 <span className="h-px w-8 bg-primary"></span>
                 <span className="text-primary font-black uppercase tracking-[0.3em] text-[10px]">Command Center</span>
                 {isAdmin && (
-                  <Link 
-                    to="/admin/moderacao" 
+                  <Link
+                    to="/admin/moderacao"
                     className="ml-4 bg-primary/20 text-primary border border-primary/30 px-3 py-1 text-[9px] font-black uppercase italic hover:bg-primary hover:text-black transition-all"
                   >
                     MODERAÇÃO ADMIN
@@ -284,15 +319,15 @@ export default function OrganizerDashboard() {
               </h1>
             </div>
             <div className="flex flex-wrap gap-4">
-              <Link 
-                to="/drop/criar" 
+              <Link
+                to="/drop/criar"
                 className="bg-primary text-background-dark font-black py-4 px-8 text-[10px] uppercase tracking-[0.3em] hover:bg-white transition-all text-center flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-sm">inventory_2</span>
                 Novo Drop (Rifa)
               </Link>
-              <Link 
-                to="/eventos/criar" 
+              <Link
+                to="/eventos/criar"
                 className="bg-white/5 border border-white/10 text-white font-black py-4 px-8 text-[10px] uppercase tracking-[0.3em] hover:bg-white hover:text-black transition-all text-center flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-sm">military_tech</span>
@@ -327,8 +362,8 @@ export default function OrganizerDashboard() {
                   <span className="text-primary font-mono">{stats.completedDrops} / {stats.trustLevel < 3 ? '3' : '15'} ENTREGAS</span>
                 </div>
                 <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 shadow-inner">
-                  <div 
-                    className="h-full bg-primary transition-all duration-1000 shadow-[0_0_10px_rgba(251,191,36,0.5)]" 
+                  <div
+                    className="h-full bg-primary transition-all duration-1000 shadow-[0_0_10px_rgba(251,191,36,0.5)]"
                     style={{ width: `${Math.min(100, (stats.completedDrops / (stats.trustLevel < 3 ? 3 : 15)) * 100)}%` }}
                   ></div>
                 </div>
@@ -347,8 +382,8 @@ export default function OrganizerDashboard() {
               </span>
               <div className="flex items-baseline gap-2">
                 <span className={`text-4xl font-black ${stats.trustLevel >= 3 || isAdmin ? 'text-primary' : 'text-white/40'}`}>
-                  R$ {activeRaffle 
-                    ? (activeRaffle.sold_tickets * activeRaffle.ticket_price).toFixed(2) 
+                  R$ {activeRaffle
+                    ? (activeRaffle.sold_tickets * activeRaffle.ticket_price).toFixed(2)
                     : stats.netRevenue.toFixed(2)}
                 </span>
                 {(stats.trustLevel < 3 && !isAdmin && !activeRaffle) && <span className="text-[8px] text-red-500 font-black uppercase animate-pulse font-mono">BLOQUEADO</span>}
@@ -374,21 +409,21 @@ export default function OrganizerDashboard() {
           </div>
 
           <div className="flex items-center gap-8 border-b border-white/5 mb-12">
-            <button 
+            <button
               onClick={() => setActiveTab('missions')}
               className={`pb-4 text-[10px] uppercase font-black tracking-[0.3em] transition-all relative ${activeTab === 'missions' ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
             >
               Operações Ativas
               {activeTab === 'missions' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></span>}
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('logistics')}
               className={`pb-4 text-[10px] uppercase font-black tracking-[0.3em] transition-all relative ${activeTab === 'logistics' ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
             >
               Logística
               {activeTab === 'logistics' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></span>}
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('reports')}
               className={`pb-4 text-[10px] uppercase font-black tracking-[0.3em] transition-all relative ${activeTab === 'reports' ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
             >
@@ -429,28 +464,28 @@ export default function OrganizerDashboard() {
                           <span className="text-sm font-black text-white">{event.sold_count} / {event.capacity}</span>
                         </div>
                         <div className="flex gap-2">
-                          <button 
+                          <button
                             onClick={() => fetchParticipants(event.id)}
                             className="p-3 bg-white/5 border border-white/10 text-white/50 hover:text-primary transition-all"
                           >
                             <span className="material-symbols-outlined text-sm">groups</span>
                           </button>
-                          <Link 
-                            to={event.type === 'drop' ? `/drop/${event.slug || event.id}` : `/eventos/${event.id}`} 
+                          <Link
+                            to={event.type === 'drop' ? `/drop/${event.slug || event.id}` : `/eventos/${event.id}`}
                             className="p-3 bg-white/5 border border-white/10 text-white/50 hover:text-primary transition-all"
                           >
                             <span className="material-symbols-outlined text-sm">visibility</span>
                           </Link>
                           {event.type === 'mission' && (
                             <div className="flex gap-2">
-                              <Link 
+                              <Link
                                 title="Scanner de Check-in"
                                 to={`/eventos/${event.id}/checkin`}
                                 className="p-3 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-black transition-all"
                               >
                                 <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
                               </Link>
-                              <button 
+                              <button
                                 title="Copiar Link de Operador"
                                 onClick={() => {
                                   const url = `${window.location.origin}/eventos/${event.id}/checkin?token=${event.checkin_token}`;
@@ -490,7 +525,7 @@ export default function OrganizerDashboard() {
                     <span className="material-symbols-outlined text-primary">local_shipping</span>
                     Logística de Entrega (Prêmios)
                   </h3>
-                  
+
                   {winners.length > 0 ? (
                     <div className="grid gap-4">
                       {winners.map((winner) => (
@@ -500,7 +535,7 @@ export default function OrganizerDashboard() {
                             <h4 className="text-sm font-bold text-white uppercase">{winner.winner_name}</h4>
                             <p className="text-[10px] text-slate-500 font-mono mt-1">GANHADOR EM: {new Date(winner.created_at).toLocaleDateString()}</p>
                           </div>
-                          
+
                           <div className="flex-1 max-w-xs">
                             {winner.delivery_status === 'shipped' ? (
                               <div className="bg-green-500/10 border border-green-500/20 p-3 flex items-center justify-between">
@@ -509,13 +544,13 @@ export default function OrganizerDashboard() {
                               </div>
                             ) : (
                               <div className="flex gap-2">
-                                <input 
+                                <input
                                   type="text"
                                   placeholder="CÓD. RASTREIO"
                                   className="flex-1 bg-white/5 border border-white/10 px-3 py-2 text-[10px] text-white focus:border-primary outline-none"
                                   id={`tracking-${winner.id}`}
                                 />
-                                <button 
+                                <button
                                   onClick={() => {
                                     const code = (document.getElementById(`tracking-${winner.id}`) as HTMLInputElement)?.value;
                                     handleUpdateTracking(winner.id, code);
@@ -547,7 +582,7 @@ export default function OrganizerDashboard() {
                         O saldo disponível pode ser sacado via PIX instantâneo para a conta vinculada ao seu CPF/CNPJ.
                       </p>
                     </div>
-                    <button 
+                    <button
                       onClick={handleRequestPayout}
                       disabled={isProcessingPayout}
                       className="w-full bg-primary hover:bg-white text-background-dark font-black py-4 text-[9px] uppercase tracking-[.3em] transition-all disabled:opacity-50"
@@ -573,7 +608,7 @@ export default function OrganizerDashboard() {
           <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setIsParticipantsModalOpen(false)}></div>
           <div className="relative w-full max-w-4xl bg-surface/90 border border-primary/30 p-8 pt-12 shadow-[0_0_50px_rgba(251,191,36,0.1)] overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-primary"></div>
-            <button 
+            <button
               onClick={() => setIsParticipantsModalOpen(false)}
               className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
             >
