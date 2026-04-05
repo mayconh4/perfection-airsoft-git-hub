@@ -181,7 +181,7 @@ export default function OrganizerDashboard() {
     try {
       const { data, error } = await supabase
         .from('tickets')
-        .select('*, events(title)')
+        .select('*, events(title, checkin_token)')
         .eq('event_id', eventId)
         .eq('status', 'confirmed');
 
@@ -666,13 +666,30 @@ export default function OrganizerDashboard() {
               <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">
                 LISTA DE <span className="text-primary">OPERADORES</span> INSCRITOS
               </h3>
-              <button 
-                onClick={() => window.print()}
-                className="bg-white/10 hover:bg-white text-white hover:text-black font-black px-6 py-2 text-[9px] uppercase tracking-widest transition-all flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-sm">print</span>
-                IMPRIMIR LISTA
-              </button>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => {
+                    const ev = selectedEventParticipants[0]?.events;
+                    if (!ev) return;
+                    const eventTitle = ev.title || 'Missão';
+                    const token = ev.checkin_token;
+                    const url = `${window.location.origin}/checkin/${selectedEventParticipants[0].event_id}?token=${token}`;
+                    const msg = encodeURIComponent(`*OPERACIONAL: LISTA DE CHECK-IN*\n\nMudar para check-in manual na missão: *${eventTitle}*\n\nAcesse o link abaixo para validar os operadores no campo:\n${url}`);
+                    window.open(`https://wa.me/?text=${msg}`, '_blank');
+                  }}
+                  className="bg-green-600 hover:bg-green-500 text-white font-black px-6 py-2 text-[9px] uppercase tracking-widest transition-all flex items-center gap-2 group"
+                >
+                  <span className="material-symbols-outlined text-sm group-hover:scale-110 transition-transform">share</span>
+                  ENVIAR POR WHATSAPP
+                </button>
+                <button 
+                  onClick={() => window.print()}
+                  className="bg-white/10 hover:bg-white text-white hover:text-black font-black px-6 py-2 text-[9px] uppercase tracking-widest transition-all flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-sm">print</span>
+                  IMPRIMIR LISTA
+                </button>
+              </div>
             </div>
 
             {loadingParticipants ? (
