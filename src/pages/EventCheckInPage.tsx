@@ -84,13 +84,14 @@ export default function EventCheckInPage() {
         setScannerError(null);
         try {
           html5QrCode = new Html5Qrcode("reader");
+          setDebugLog("INITIALIZING HARDWARE...");
           const config = { 
-            fps: 20, 
-            qrbox: { width: 250, height: 250 },
+            fps: 15, 
+            qrbox: (viewWidth: number, _viewHeight: number) => {
+              return { width: viewWidth * 0.8, height: viewWidth * 0.8 };
+            },
             aspectRatio: 1.0,
-            experimentalFeatures: {
-              useBarCodeDetectorIfSupported: true
-            }
+            rememberLastUsedCamera: true
           };
           await html5QrCode.start(
             { facingMode: "environment" },
@@ -98,6 +99,7 @@ export default function EventCheckInPage() {
             onScanSuccess,
             onScanFailure
           );
+          setDebugLog("TERMINAL ONLINE - SCANNING...");
         } catch (err: any) {
           console.error("Camera Error:", err);
           setScannerError("NÃO FOI POSSÍVEL ATIVAR A CÂMERA. VERIFIQUE AS PERMISSÕES.");
@@ -212,11 +214,14 @@ export default function EventCheckInPage() {
       <SEO title={`Check-in: ${event.title}`} />
       
       <div className="max-w-2xl mx-auto px-6 relative z-10">
-        <div className="mb-8 border-b border-white/5 pb-6">
-          <div className="flex items-center justify-between gap-2 text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-4">
+        <div className="mb-8 border-b border-red-500/20 bg-red-950/20 -mx-6 px-6 py-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-1 bg-red-600 text-white text-[7px] font-black uppercase rotate-45 translate-x-3 -translate-y-1 w-20 text-center shadow-lg">
+             ULTIMATUM
+          </div>
+          <div className="flex items-center justify-between gap-2 text-red-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm">security</span>
-              TERMINAL DE VALIDAÇÃO v1.4 - ALTA SENSIBILIDADE
+              <span className="material-symbols-outlined text-sm animate-pulse">warning</span>
+              TERMINAL DE VALIDAÇÃO v1.5 - ULTIMATUM
             </div>
             {isSharedOperator && (
               <div className="bg-primary text-black px-2 py-0.5 rounded-sm animate-pulse font-black">
@@ -268,12 +273,22 @@ export default function EventCheckInPage() {
               {/* READER LIMPO (Sem HUD para evitar interferência óptica) */}
               <div id="reader" className="w-full h-full [&_video]:object-cover [&_video]:w-full [&_video]:h-full"></div>
               
-              <button 
-                onClick={() => setIsScanning(false)}
-                className="absolute top-4 right-4 bg-red-500/80 hover:bg-red-500 text-white p-2 rounded-full shadow-lg z-20 backdrop-blur-sm transition-all flex items-center justify-center"
-              >
-                <span className="material-symbols-outlined text-sm">close</span>
-              </button>
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                <button 
+                  onClick={() => { setIsScanning(false); setTimeout(() => setIsScanning(true), 200); }}
+                  className="bg-primary/80 hover:bg-primary text-black px-3 py-1.5 text-[7px] font-black uppercase tracking-[0.2em] shadow-lg flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-[10px]">refresh</span>
+                  Hard Reset
+                </button>
+                <button 
+                  onClick={() => setIsScanning(false)}
+                  className="bg-red-500/80 hover:bg-red-500 text-white px-3 py-1.5 text-[7px] font-black uppercase tracking-[0.2em] shadow-lg flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-[10px]">close</span>
+                  Sair
+                </button>
+              </div>
             </div>
           )}
 
