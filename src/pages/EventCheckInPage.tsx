@@ -122,12 +122,14 @@ export default function EventCheckInPage() {
 
   const onScanSuccess = (decodedText: string) => {
     // Busca robusta pelo UUID ou código de teste (ignora trailing slashes)
-    setDebugLog(`SCANNED: ${decodedText}`);
-    const parts = decodedText.split('/').filter(Boolean);
+    const cleanedText = decodedText.trim();
+    setDebugLog(`SCAN RAW: ${cleanedText}`);
+    
+    const parts = cleanedText.split('/').filter(Boolean);
     const uuid = parts[parts.length - 1]?.trim();
     
-    if (decodedText.toUpperCase().includes('TAC-TEST-VALID-001') || (uuid && uuid.length === 36)) {
-      handleCheckIn(decodedText.toUpperCase().includes('TAC-TEST-VALID-001') ? 'TAC-TEST-VALID-001' : uuid || '');
+    if (cleanedText.toUpperCase().includes('TAC-TEST-VALID-001') || (uuid && uuid.length === 36)) {
+      handleCheckIn(cleanedText.toUpperCase().includes('TAC-TEST-VALID-001') ? 'TAC-TEST-VALID-001' : uuid || '');
       setIsScanning(false);
       setTimeout(() => setIsScanning(true), 3000); 
     }
@@ -136,32 +138,33 @@ export default function EventCheckInPage() {
   const onScanFailure = () => {};
 
   const handleCheckIn = async (uuid: string) => {
-    if (processing) return;
-    setProcessing(true);
-    setLastResult(null);
-    setDebugLog(`VALIDATING: ${uuid}`);
-
-    // MODO DE TREINAMENTO / BYPASS DE TESTE
-    if (uuid?.toUpperCase().includes('TAC-TEST-VALID-001')) {
-      setTimeout(() => {
-        const result = { 
-          success: true, 
-          buyer_name: 'OPERADOR DE TESTE (MODO QG)', 
-          event_title: event?.title || 'OPERACAO DE TESTE',
-          ticket_id: 'TRAINING-001'
-        };
-        setLastResult(result);
-        setHistory(prev => [result as ScanResult, ...prev].slice(0, 10));
-        if ('vibrate' in navigator) navigator.vibrate(200);
-        setProcessing(false);
-        setManualCode('');
-      }, 500);
-      return;
-    }
-
     try {
+      if (processing) return;
+      setProcessing(true);
+      setLastResult(null);
+      const cleanUuid = uuid?.trim();
+      setDebugLog(`VALIDATING: ${cleanUuid}`);
+
+      // MODO DE TREINAMENTO / BYPASS DE TESTE
+      if (cleanUuid?.toUpperCase().includes('TAC-TEST-VALID-001')) {
+        setTimeout(() => {
+          const result = { 
+            success: true, 
+            buyer_name: 'OPERADOR DE TESTE (MODO QG)', 
+            event_title: event?.title || 'OPERACAO DE TESTE',
+            ticket_id: 'TRAINING-001'
+          };
+          setLastResult(result);
+          setHistory(prev => [result as ScanResult, ...prev].slice(0, 10));
+          if ('vibrate' in navigator) navigator.vibrate(200);
+          setProcessing(false);
+          setManualCode('');
+        }, 800);
+        return;
+      }
+
       const { data, error } = await supabase.rpc('checkin_ticket', {
-        p_ticket_id: uuid,
+        p_ticket_id: cleanUuid,
         p_checker_id: user?.id,
         p_token: token
       });
@@ -179,6 +182,7 @@ export default function EventCheckInPage() {
       }
     } catch (err: any) {
       console.error('Check-in Error:', err.message);
+      setDebugLog(`ERROR: ${err.message}`);
       setLastResult({ success: false, reason: 'TICKET_NOT_FOUND' });
     } finally {
       setProcessing(false);
@@ -204,7 +208,7 @@ export default function EventCheckInPage() {
           <div className="flex items-center justify-between gap-2 text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-4">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-sm">security</span>
-              TERMINAL DE VALIDAÇÃO v1.2
+              TERMINAL DE VALIDAÇÃO v1.3 - TACTICAL
             </div>
             {isSharedOperator && (
               <div className="bg-primary text-black px-2 py-0.5 rounded-sm animate-pulse font-black">
@@ -290,16 +294,27 @@ export default function EventCheckInPage() {
           </div>
 
           {!lastResult && !isScanning && (
-            <div className="bg-white/5 border border-white/5 p-4 flex flex-col items-center justify-center gap-3">
+            <div className="bg-white/5 border border-white/5 p-4 flex flex-col items-center justify-center gap-4">
                <div className="flex items-center gap-2">
                  <span className="material-symbols-outlined text-slate-500 text-sm">info</span>
                  <span className="text-[8px] text-slate-600 uppercase font-mono tracking-widest">
                    DICA: Use o código <span className="text-primary font-black">TAC-TEST-VALID-001</span> para validar.
                  </span>
                </div>
+               
+               <button 
+                 onClick={() => handleCheckIn('TAC-TEST-VALID-001')}
+                 className="text-[8px] border border-primary/30 text-primary px-4 py-1 hover:bg-primary hover:text-black transition-all font-black uppercase tracking-widest"
+               >
+                 [ TESTE DE SINAL / FORÇAR SUCESSO ]
+               </button>
+
                {debugLog && (
-                 <div className="mt-2 pt-2 border-t border-white/5 w-full text-center">
-                   <span className="text-[7px] text-primary/40 font-mono uppercase tracking-tighter">TELEMETRIA: {debugLog}</span>
+                 <div className="mt-2 pt-4 border-t border-white/5 w-full text-center">
+                   <span className="text-[7px] text-primary/40 font-mono uppercase tracking-tighter">PROTOCOLO DE TELEMETRIA:</span>
+                   <div className="text-[9px] text-white/60 font-mono mt-1 break-all bg-black/40 p-2 border border-white/5">
+                     {debugLog}
+                   </div>
                  </div>
                )}
             </div>
