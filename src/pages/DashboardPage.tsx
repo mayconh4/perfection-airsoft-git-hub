@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useOrders } from '../hooks/useOrders';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+import { useEffect } from 'react';
 import { formatPrice, statusLabels, type Order } from '../types/database';
 
 type DashboardTab = 'pedidos' | 'perfil' | 'enderecos';
@@ -199,8 +201,34 @@ function OrderDetails({ order, onBack }: { order: Order, onBack: () => void }) {
 
 // Sub-component: Profile Form
 function ProfileForm({ user }: { user: any }) {
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      setProfile(data);
+    };
+    fetchProfile();
+  }, [user.id]);
+
   return (
-    <div className="bg-surface border border-border-tactical p-8 max-w-2xl">
+    <div className="bg-surface border border-border-tactical p-8 max-w-2xl relative overflow-hidden">
+      {/* Status Badges */}
+      <div className="absolute top-0 right-0 flex">
+        {profile?.kyc_status === 'approved' && (
+          <div className="bg-green-500 text-black font-black text-[8px] px-3 py-1 uppercase tracking-widest flex items-center gap-1">
+            <span className="material-symbols-outlined text-[10px]">verified</span>
+            Operador Verificado
+          </div>
+        )}
+        {(profile?.role === 'organizer' || profile?.role === 'admin') && (
+          <div className="bg-primary text-black font-black text-[8px] px-3 py-1 uppercase tracking-widest flex items-center gap-1">
+            <span className="material-symbols-outlined text-[10px]">military_tech</span>
+            Organizador {profile?.role === 'admin' ? 'QG' : 'Elite'}
+          </div>
+        )}
+      </div>
+
       <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-8">Credenciais do Operador</h3>
       <form className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

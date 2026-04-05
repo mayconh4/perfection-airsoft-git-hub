@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase, withRetry } from '../lib/supabase';
 import type { Product, Category } from '../types/database';
 
-const PRODUCT_FIELDS = 'id, name, slug, image_url, price, old_price, brand, category_id, images, badge, system, condition, status, color, created_at';
+const PRODUCT_FIELDS = 'id, name, slug, image_url, price, old_price, brand, category_id, images, badge, system, condition, created_at';
 
 export function useProducts(categorySlug?: string) {
   const [products, setProducts] = useState<Product[]>([]);

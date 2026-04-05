@@ -22,6 +22,8 @@ interface PendingProfile {
   pix_key_type?: string;
   asaas_wallet_id?: string;
   asaas_api_key?: string;
+  role: string;
+  role_request?: string;
 }
 
 export default function AdminModeration() {
@@ -63,14 +65,23 @@ export default function AdminModeration() {
 
   const fetchPendingProfiles = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data: kycPending, error: kycError } = await supabase
       .from('profiles')
       .select('*')
       .in('kyc_status', ['waiting_approval', 'pending'])
       .order('created_at', { ascending: true });
 
-    if (!error) {
-      setPendingProfiles(data || []);
+    const { data: rolePending, error: roleError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role_request', 'organizer')
+      .order('created_at', { ascending: true });
+
+    if (!kycError && !roleError) {
+      // Unificar sem duplicatas (um usuário pode estar em ambos)
+      const allPending = [...(kycPending || []), ...(rolePending || [])];
+      const uniquePending = allPending.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+      setPendingProfiles(uniquePending);
     }
     setLoading(false);
   };
@@ -83,9 +94,28 @@ export default function AdminModeration() {
       .eq('id', targetId);
 
     if (error) {
-      alert('Erro ao aprovar: ' + error.message);
+      alert('Erro ao aprovar KYC: ' + error.message);
     } else {
-      setPendingProfiles(prev => prev.filter(p => p.id !== targetId));
+      fetchPendingProfiles();
+    }
+    setProcessingId(null);
+  };
+
+  const handleApproveRole = async (targetId: string) => {
+    setProcessingId(targetId);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ 
+        role: 'organizer',
+        role_request: null // Limpa a solicitação após aprovação
+      })
+      .eq('id', targetId);
+
+    if (error) {
+      alert('Erro ao promover organizador: ' + error.message);
+    } else {
+      alert('OPERADOR PROMOVIDO A ORGANIZADOR!');
+      fetchPendingProfiles();
     }
     setProcessingId(null);
   };
@@ -131,24 +161,37 @@ export default function AdminModeration() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3 w-full md:w-auto">
-                    <button
-                      onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
-                      className="flex-1 md:flex-none py-3 px-6 bg-white/5 border border-white/10 text-white font-bold uppercase text-[10px] tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-sm">
-                        {expandedId === p.id ? 'expand_less' : 'expand_more'}
-                      </span>
-                      {expandedId === p.id ? 'OCULTAR' : 'VER MAIS'}
-                    </button>
-                    <button
-                      onClick={() => handleApprove(p.id)}
-                      disabled={processingId === p.id}
-                      className="flex-1 md:flex-none py-3 px-8 bg-primary text-black font-black uppercase italic hover:bg-yellow-400 transition-colors disabled:opacity-50 text-[11px] tracking-tighter"
-                    >
-                      {processingId === p.id ? 'PROCESSANDO...' : 'APROVAR OPERADOR'}
-                    </button>
-                  </div>
+                    <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                      <button
+                        onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
+                        className="flex-1 md:flex-none py-3 px-6 bg-white/5 border border-white/10 text-white font-bold uppercase text-[10px] tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-sm">
+                          {expandedId === p.id ? 'expand_less' : 'expand_more'}
+                        </span>
+                        {expandedId === p.id ? 'OCULTAR' : 'VER MAIS'}
+                      </button>
+                      
+                      {(p.kyc_status === 'pending' || p.kyc_status === 'waiting_approval') && (
+                        <button
+                          onClick={() => handleApprove(p.id)}
+                          disabled={processingId === p.id}
+                          className="flex-1 md:flex-none py-3 px-8 bg-white border border-white text-black font-black uppercase italic hover:bg-white/90 transition-colors disabled:opacity-50 text-[11px] tracking-tighter"
+                        >
+                          {processingId === p.id ? '...' : 'APROVAR KYC'}
+                        </button>
+                      )}
+
+                      {p.role_request === 'organizer' && (
+                        <button
+                          onClick={() => handleApproveRole(p.id)}
+                          disabled={processingId === p.id}
+                          className="flex-1 md:flex-none py-3 px-8 bg-primary text-black font-black uppercase italic hover:bg-yellow-400 transition-colors disabled:opacity-50 text-[11px] tracking-tighter"
+                        >
+                          {processingId === p.id ? '...' : 'PROMOVER ORGANIZADOR'}
+                        </button>
+                      )}
+                    </div>
                 </div>
 
                 {/* Detalhes Expandidos (Modo Tático) */}

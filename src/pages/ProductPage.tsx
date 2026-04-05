@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useProduct } from '../hooks/useProducts';
 import { useCart } from '../context/CartContext';
@@ -11,9 +11,38 @@ export function ProductPage() {
   const { idOrSlug } = useParams<{ idOrSlug: string }>();
   const [activeTab, setActiveTab] = useState<'descricao' | 'especificacoes'>('descricao');
   const { product, loading } = useProduct(idOrSlug || '');
+  const [activeImage, setActiveImage] = useState<string | null>(null);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const { addItem } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { user } = useAuth();
+
+  // Combine main image with gallery
+  const allImages = useMemo(() => {
+    if (!product) return [];
+    const imgs = product.image_url ? [product.image_url] : [];
+    if (product.images) {
+      product.images.forEach(img => {
+        if (img && img !== product.image_url) imgs.push(img);
+      });
+    }
+    return imgs;
+  }, [product]);
+
+  // Handle Autoplay (3s)
+  useEffect(() => {
+    if (!isAutoPlaying || allImages.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setActiveImage((prev) => {
+        const currentIndex = prev ? allImages.indexOf(prev) : 0;
+        const nextIndex = (currentIndex + 1) % allImages.length;
+        return allImages[nextIndex];
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isAutoPlaying, allImages]);
 
   if (loading) return <div className="py-20 text-center text-primary animate-pulse uppercase tracking-widest">Carregando produto...</div>;
   if (!product) return <div className="py-20 text-center text-slate-500 uppercase tracking-widest">Produto não encontrado</div>;
@@ -37,8 +66,36 @@ export function ProductPage() {
       </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-16">
-        <div className="relative aspect-square bg-white border border-primary/20 p-4 sm:p-8 flex items-center justify-center overflow-hidden">
-          <img alt={product.name} className="w-full h-full object-contain drop-shadow-md" src={product.image_url || ''}/>
+        <div className="flex flex-col gap-4">
+          <div className="relative aspect-square bg-white border border-primary/20 p-4 sm:p-8 flex items-center justify-center overflow-hidden">
+            <img 
+              alt={product.name} 
+              className="w-full h-full object-contain drop-shadow-md transition-all duration-700 ease-in-out" 
+              src={activeImage || product.image_url || ''}
+              key={activeImage || 'main'}
+            />
+          </div>
+          
+          {/* Gallery Thumbnails */}
+          {allImages.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+              {allImages.map((img, idx) => (
+                <button 
+                  key={idx}
+                  onClick={() => {
+                    setActiveImage(img || null);
+                    setIsAutoPlaying(false); // Pause auto-play on manual selection
+                  }}
+                  className={`relative size-20 flex-shrink-0 bg-white border-2 transition-all p-1 ${activeImage === img || (!activeImage && idx === 0) ? 'border-primary' : 'border-slate-800 opacity-50 hover:opacity-100'}`}
+                >
+                  <img src={img || ''} alt={`Thumb ${idx}`} className="w-full h-full object-contain" />
+                  {(activeImage === img || (!activeImage && idx === 0)) && (
+                    <div className="absolute inset-0 border-2 border-primary animate-pulse pointer-events-none"></div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col">

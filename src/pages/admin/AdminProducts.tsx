@@ -65,7 +65,8 @@ export function AdminProducts() {
     tax_nf: 3,
     source_url: '',
     is_available: true,
-    stock: 10
+    stock: 10,
+    images: [] as string[]
   };
 
   const [form, setForm] = useState(initialForm);
@@ -169,6 +170,7 @@ export function AdminProducts() {
       usd_price: form.usd_price ? parseFloat(form.usd_price) : null,
       stock: parseInt(form.stock as any, 10),
       slug: form.name.toLowerCase().replace(/ /g, '-'),
+      images: form.images, // Adicionado para persistência
       specs: {
         ...form.specs,
         model: classification.model,
@@ -208,7 +210,8 @@ export function AdminProducts() {
       tax_nf: (p as any).tax_nf || config.tax_nf,
       source_url: (p as any).source_url || '',
       is_available: (p as any).is_available ?? true,
-      stock: p.stock ?? 10
+      stock: p.stock ?? 10,
+      images: p.images || [] // Corrigido erro de lint: adicionado campo images
     });
     setEditingId(p.id);
     setImagePreview(p.image_url || null);
@@ -239,6 +242,7 @@ export function AdminProducts() {
           brand: p.brand || f.brand,
           description: p.description || f.description,
           image_url: p.image_url || f.image_url,
+          images: p.images || [p.image_url], // Captura o array de fotos do carrossel
           source_url: firecrawlUrl
         }));
         if (p.image_url) setImagePreview(p.image_url);
@@ -450,6 +454,28 @@ export function AdminProducts() {
                   </div>
                 )}
               </div>
+              
+              {/* Carrossel de Fotos Extraídas */}
+              {form.images && form.images.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <label className="text-[8px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[10px]">photo_library</span> Carrossel Disponível ({form.images.length})
+                  </label>
+                  <div className="flex flex-wrap gap-2 p-3 bg-black/40 border border-white/5">
+                    {form.images.map((img, idx) => (
+                      <div key={idx} className={`relative size-12 border cursor-pointer hover:border-primary transition-all ${form.image_url === img ? 'border-primary' : 'border-white/10'}`}
+                           onClick={() => setForm(f => ({ ...f, image_url: img }))}>
+                        <img src={img} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+                        {form.image_url === img && (
+                          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[10px] text-white">check</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <textarea placeholder="DESCRIÇÃO TÁTICA DO PRODUTO..." required value={form.description} 

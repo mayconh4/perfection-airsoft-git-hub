@@ -47,10 +47,13 @@ export function CheckoutPage() {
   });
 
   const isPureRaffle = items.length > 0 && items.every(i => i.product?.brand === 'DROP');
-  
+  const isPureTicket = items.length > 0 && items.every(i => i.product?.brand === 'TICKET');
+  // Rifas e tickets: sem endereço, sem frete, gateway Asaas
+  const isDigitalOnly = isPureRaffle || isPureTicket;
+
   // Taxas absorvidas pelo organizador (cliente paga valor nominal)
-  const serviceFee = 0; 
-  const grandTotal = total + (isPureRaffle ? 0 : (selectedShipping?.price || 0));
+  const serviceFee = 0;
+  const grandTotal = total + (isDigitalOnly ? 0 : (selectedShipping?.price || 0));
 
   const [memory, setMemory] = useState<Record<string, string[]>>(() => {
     const saved = localStorage.getItem('operator_memory');
@@ -74,8 +77,8 @@ export function CheckoutPage() {
       setMemory(newMemory);
       localStorage.setItem('operator_memory', JSON.stringify(newMemory));
 
-      // Se for RIFA PURO, pula endereço direto pro pagamento
-      if (isPureRaffle) {
+      // Rifas e TICKETS pulam endereço, vão direto ao pagamento
+      if (isDigitalOnly) {
         setStep(2);
         return;
       }
@@ -125,21 +128,21 @@ export function CheckoutPage() {
         }
       }
 
-      // [GUEST TÁTICO] Se for rifa e não logado, o pedido é criado via Edge Function para evitar Rate Limits
+      // [GUEST TÁTICO] Se for rifa/ticket e não logado, o pedido é criado via Edge Function
       let orderId = '';
       if (!isGuestFlow) {
         if (!currentUserId) { setError('Falha na autenticação do operador.'); return; }
-        
+
         const order = await createOrder(
           { name: form.name, cpf: form.cpf, email: form.email, phone: form.phone, payment_method: methodToUse },
           {
-            street: isPureRaffle ? 'Digital' : `${form.street}, ${form.number}${form.complement ? ' - ' + form.complement : ''}`,
-            district: isPureRaffle ? '-' : form.district,
-            cep: isPureRaffle ? '00000-000' : form.cep,
-            city: isPureRaffle ? 'Online' : `${form.city} - ${form.state}`,
-            shipping_method: isPureRaffle ? 'Entrega Digital' : selectedShipping?.name,
-            shipping_company: isPureRaffle ? 'DROP' : selectedShipping?.company,
-            shipping_price: isPureRaffle ? 0 : selectedShipping?.price
+            street: isDigitalOnly ? 'Digital' : `${form.street}, ${form.number}${form.complement ? ' - ' + form.complement : ''}`,
+            district: isDigitalOnly ? '-' : form.district,
+            cep: isDigitalOnly ? '00000-000' : form.cep,
+            city: isDigitalOnly ? 'Online' : `${form.city} - ${form.state}`,
+            shipping_method: isDigitalOnly ? 'Entrega Digital' : selectedShipping?.name,
+            shipping_company: isDigitalOnly ? 'DIGITAL' : selectedShipping?.company,
+            shipping_price: isDigitalOnly ? 0 : selectedShipping?.price
           },
           currentUserId
         );
@@ -151,8 +154,9 @@ export function CheckoutPage() {
         orderId = order.id;
       }
 
-      // [ROTEAMENTO TÁTICO] Escolha do Motor de Pagamento
-      const motorPath = isPureRaffle ? 'asaas-payment' : 'mercadopago-payment';
+      // [ROTEAMENTO] Escolha do Motor de Pagamento
+      // Rifas e Tickets → Asaas | Produtos físicos → MercadoPago
+      const motorPath = isDigitalOnly ? 'asaas-payment' : 'mercadopago-payment';
       const functionUrl = `https://seewdqetyolfmqsiyban.supabase.co/functions/v1/${motorPath}?t=${Date.now()}`;
       
       const payload = {
@@ -173,7 +177,10 @@ export function CheckoutPage() {
           product_name: i.product?.name,
           product_price: i.product?.price,
           quantity: i.quantity,
-          metadata: i.metadata
+          metadata: {
+            ...(i.metadata || {}),
+            brand: i.product?.brand,
+          }
         }))
       };
 
@@ -281,7 +288,7 @@ export function CheckoutPage() {
       {/* Step Indicator */}
       <div className="flex items-center gap-0 mb-10 border border-white/5 overflow-hidden max-w-4xl">
         {STEPS.map((s, i) => (
-          (isPureRaffle && i === 1) ? null : (
+          (isDigitalOnly && i === 1) ? null : (
             <div key={s} className={`flex-1 py-3 text-center text-[9px] font-black uppercase tracking-[0.2em] transition-colors border-r border-white/5 last:border-0 ${
               (i === step) ? 'bg-primary text-black' : (i < step) ? 'bg-primary/20 text-primary' : 'text-white/20 bg-black/20'
             }`}>
@@ -311,16 +318,14 @@ export function CheckoutPage() {
                 <InputField name="cpf" label="CPF (Faturamento)" placeholder="000.000.000-00" value={form.cpf} onChange={handleChange} list="list-cpf" />
                 <InputField name="phone" label="WhatsApp para Resultados" placeholder="(00) 00000-0000" type="tel" value={form.phone} onChange={handleChange} list="list-phone" />
                 
-                {!isPureRaffle && (
-                  <>
-                    <InputField name="email" label="E-mail de Confirmação" placeholder="email@exemplo.com" type="email" className="sm:col-span-2" value={form.email} onChange={handleChange} list="list-email" />
-                    {!user && (
-                      <div className="sm:col-span-2 pt-2">
-                        <InputField name="password" label="Definir Senha de Acesso" type="password" placeholder="Mínimo 6 caracteres" value={form.password} onChange={handleChange} />
-                      </div>
-                    )}
-                  </>
-                )}
+                <>
+                  <InputField name="email" label="E-mail de Confirmação" placeholder="email@exemplo.com" type="email" className="sm:col-span-2" value={form.email} onChange={handleChange} list="list-email" />
+                  {!user && (
+                    <div className="sm:col-span-2 pt-2">
+                      <InputField name="password" label="Definir Senha de Acesso" type="password" placeholder="Mínimo 6 caracteres" value={form.password} onChange={handleChange} />
+                    </div>
+                  )}
+                </>
               </div>
 
               {Object.entries(memory).map(([key, values]) => (
@@ -330,13 +335,13 @@ export function CheckoutPage() {
               ))}
 
               <button type="submit" className="w-full bg-primary text-black font-black py-5 uppercase tracking-[0.2em] hover:bg-white transition-all text-sm shadow-[0_10px_30px_rgba(255,193,7,0.1)]">
-                {isPureRaffle ? 'Ir para Pagamento PIX →' : 'Próximo: Endereço →'}
+                {isPureTicket ? 'Ir para Pagamento PIX →' : isPureRaffle ? 'Ir para Pagamento PIX →' : 'Próximo: Endereço →'}
               </button>
             </form>
           )}
 
           {/* Step 1 — Endereço (Só para produtos) */}
-          {step === 1 && !isPureRaffle && (
+          {step === 1 && !isDigitalOnly && (
             <form onSubmit={handleNext} className="bg-surface/30 border border-white/5 p-8 space-y-6">
               <h3 className="text-[10px] font-black tracking-[0.3em] text-primary uppercase flex items-center gap-2">
                 <span className="material-symbols-outlined text-sm">location_on</span> Endereço de Despacho
@@ -364,10 +369,10 @@ export function CheckoutPage() {
           {/* Step 2 — Pagamento */}
           {step === 2 && (
             <div className="bg-surface/30 border border-white/5 p-8 space-y-8">
-              <DynamicCheckoutAccordion 
+              <DynamicCheckoutAccordion
                 amount={grandTotal}
                 loading={creating}
-                pixOnly={isPureRaffle}
+                pixOnly={isDigitalOnly}
                 onCommitPayment={(method) => {
                   setPaymentMethod(method);
                   const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
@@ -376,7 +381,7 @@ export function CheckoutPage() {
               />
               
               <div className="flex gap-4 pt-4 border-t border-white/5">
-                <button type="button" onClick={() => setStep(isPureRaffle ? 0 : 1)} className="px-8 py-5 border border-white/10 text-white/40 hover:text-white font-black uppercase tracking-widest text-[10px] transition-colors w-full sm:w-auto">
+                <button type="button" onClick={() => setStep(isDigitalOnly ? 0 : 1)} className="px-8 py-5 border border-white/10 text-white/40 hover:text-white font-black uppercase tracking-widest text-[10px] transition-colors w-full sm:w-auto">
                   ← Voltar
                 </button>
               </div>

@@ -31,6 +31,8 @@ import OrganizerDashboard from './pages/OrganizerDashboard';
 import SecurityNoticePage from './pages/SecurityNoticePage';
 import DashboardDemo from './pages/DashboardDemo';
 import AuthCallbackPage from './pages/AuthCallbackPage';
+import MyTicketsPage from './pages/MyTicketsPage';
+import EventCheckInPage from './pages/EventCheckInPage';
 import { AdminLayout } from './components/AdminLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminProducts } from './pages/admin/AdminProducts';
@@ -61,6 +63,7 @@ function App() {
                 <Route path="/sucesso/:id" element={<OrderSuccessPage />} />
                 <Route path="/busca" element={<SearchPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/meus-ingressos" element={<MyTicketsPage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
                 <Route path="/privacidade" element={<PrivacyPage />} />
                 <Route path="/envios" element={<ShippingPage />} />
@@ -72,6 +75,7 @@ function App() {
                 <Route path="/eventos" element={<EventsPage />} />
                 <Route path="/eventos/criar" element={<CreateEventPage />} />
                 <Route path="/eventos/:id" element={<EventDetailPage />} />
+                <Route path="/eventos/:id/checkin" element={<EventCheckInPage />} />
                 <Route path="/drop" element={<DropPage />} />
                 <Route path="/drop/criar" element={<CreateRafflePage />} />
                 <Route path="/drop/editar/:id" element={<CreateRafflePage />} />

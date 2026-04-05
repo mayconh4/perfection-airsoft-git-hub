@@ -44,9 +44,14 @@ export async function scrapeProduct(url: string): Promise<FirecrawlResponse | nu
               price: { type: "number" },
               brand: { type: "string" },
               image_url: { type: "string" },
+              images: { 
+                type: "array", 
+                items: { type: "string" },
+                description: "Array com todas as URLs de imagens do produto (carrossel)"
+              },
               description: { type: "string" }
             },
-            required: ["name", "price"]
+            required: ["name", "price", "images"]
           }
         }
       })

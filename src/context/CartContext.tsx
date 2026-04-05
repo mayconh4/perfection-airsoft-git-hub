@@ -69,15 +69,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Pós-processamento para preencher dados de rifas se o produto for null
+    // Pós-processamento: preencher dados de rifas e tickets de eventos
     const processedItems = await Promise.all((cartData || []).map(async (item: any) => {
+      // Rifa (DROP)
       if (!item.product && item.metadata?.type === 'raffle') {
         const { data: raffleData } = await supabase
           .from('raffles')
           .select('*')
           .eq('id', item.product_id)
           .single();
-        
+
         if (raffleData) {
           return {
             ...item,
@@ -92,6 +93,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           };
         }
       }
+
+      // Ingresso de evento (TICKET)
+      if (item.metadata?.type === 'ticket') {
+        return {
+          ...item,
+          product: {
+            id: item.product_id,
+            name: item.metadata.event_title || 'Ingresso de Evento',
+            brand: 'TICKET',
+            price: item.metadata.unit_price || 0,
+            image_url: null,
+            stock: 1,
+            event_id: item.metadata.event_id,
+            event_date: item.metadata.event_date,
+            event_location: item.metadata.event_location,
+          }
+        };
+      }
+
       return item;
     }));
 
@@ -130,14 +150,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [user, fetchCart]);
 
   const addItem = async (productId: string, quantity: number = 1, metadata: any = null): Promise<boolean> => {
-    // [FRONTEND SPECIALIST] Suporte a metadados para rifas (Tickets)
     let productData: any = null;
-    
-    // Se for rifa, busca na tabela de rifas
-    if (metadata?.type === 'raffle') {
+
+    // Ingresso de evento (TICKET) — produto virtual, não existe na tabela products
+    if (metadata?.type === 'ticket') {
+      productData = {
+        id: productId,
+        name: metadata.event_title || 'Ingresso de Evento',
+        brand: 'TICKET',
+        price: metadata.unit_price || 0,
+        image_url: null,
+        stock: 1,
+        event_id: metadata.event_id,
+        event_date: metadata.event_date,
+        event_location: metadata.event_location,
+      };
+    // Rifa (DROP) — busca na tabela raffles
+    } else if (metadata?.type === 'raffle') {
       const { data: raffleData } = await supabase.from('raffles').select('*').eq('id', productId).single();
       if (raffleData) {
-        // Mapeia os campos da rifa para o formato de produto esperado pelo UI
         productData = {
           id: raffleData.id,
           name: raffleData.title,
@@ -147,6 +178,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           stock: 1
         };
       }
+    // Produto físico — busca na tabela products
     } else {
       const { data } = await supabase.from('products').select('*').eq('id', productId).single();
       productData = data;
@@ -234,7 +266,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
   const total = items.reduce((sum, i) => {
-    const isStrict = i.product?.brand === 'DROP';
+    // Rifas e tickets usam preço exato (sem arredondamento tático)
+    const isStrict = i.product?.brand === 'DROP' || i.product?.brand === 'TICKET';
     const unitPrice = roundTacticalPrice(i.product?.price || 0, isStrict);
     return sum + (unitPrice * i.quantity);
   }, 0);
