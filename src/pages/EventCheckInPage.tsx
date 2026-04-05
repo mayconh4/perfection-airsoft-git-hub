@@ -135,6 +135,24 @@ export default function EventCheckInPage() {
     setProcessing(true);
     setLastResult(null);
 
+    // MODO DE TREINAMENTO / BYPASS DE TESTE
+    if (uuid === 'TAC-TEST-VALID-001') {
+      setTimeout(() => {
+        const result = { 
+          success: true, 
+          buyer_name: 'OPERADOR DE TESTE (MODO QG)', 
+          event_title: event?.title || 'OPERACAO DE TESTE',
+          ticket_id: 'TRAINING-001'
+        };
+        setLastResult(result);
+        setHistory(prev => [result as ScanResult, ...prev].slice(0, 10));
+        if ('vibrate' in navigator) navigator.vibrate(200);
+        setProcessing(false);
+        setManualCode('');
+      }, 500);
+      return;
+    }
+
     try {
       const { data, error } = await supabase.rpc('checkin_ticket', {
         p_ticket_id: uuid,
@@ -264,6 +282,15 @@ export default function EventCheckInPage() {
               {processing ? '...' : 'VALIDAR'}
             </button>
           </div>
+
+          {!lastResult && !isScanning && (
+            <div className="bg-white/5 border border-white/5 p-4 flex items-center justify-center gap-3">
+               <span className="material-symbols-outlined text-slate-500 text-sm">info</span>
+               <span className="text-[8px] text-slate-600 uppercase font-mono tracking-widest">
+                 DICA: Use o código <span className="text-primary font-black">TAC-TEST-VALID-001</span> para validar o scanner.
+               </span>
+            </div>
+          )}
 
           {lastResult && (
             <div className={`p-8 border-2 animate-in slide-in-from-top duration-500 relative overflow-hidden ${
