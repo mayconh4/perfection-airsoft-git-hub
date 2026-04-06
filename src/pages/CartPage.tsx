@@ -18,14 +18,8 @@ export function CartPage() {
     return clean.length > 5 ? `${clean.slice(0, 5)}-${clean.slice(5)}` : clean;
   };
 
-  if (!user) return (
-    <div className="px-4 sm:px-6 lg:px-8 py-20 text-center">
-      <span className="material-symbols-outlined text-primary text-5xl mb-4 block">lock</span>
-      <p className="text-xl font-black uppercase tracking-widest mb-4">Acesso Restrito</p>
-      <p className="text-slate-400 mb-6 text-sm">Faça login para acessar seu carrinho</p>
-      <Link to="/login" className="bg-primary text-background-dark font-black py-4 px-10 uppercase tracking-widest inline-block">Fazer Login</Link>
-    </div>
-  );
+  // Removida a trava de login para permitir fluxo de convidado (Guest Checkout)
+  // O CartContext já gerencia itens locais via localStorage se o user for null
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8">

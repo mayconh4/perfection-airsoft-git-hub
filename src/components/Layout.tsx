@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import { usePricing } from '../context/PricingContext';
 import { VirtualAgent } from './VirtualAgent';
 import { CartDrawer } from './CartDrawer';
-import { LiveActivityTicker } from './LiveActivityTicker';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -530,7 +529,6 @@ export function Layout({ children }: LayoutProps) {
       </footer>
       <VirtualAgent />
       <CartDrawer />
-      <LiveActivityTicker />
     </div>
   );
 }

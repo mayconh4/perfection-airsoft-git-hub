@@ -22,6 +22,7 @@ const SMTP_PASSWORD = Deno.env.get('SMTP_PASSWORD') || '';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const ASAAS_WEBHOOK_TOKEN = 'whsec_gIbrQ_4GgOI6N0pulKcdQs8GVZKYp0swQuzyzuF4N4Q';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -102,6 +103,16 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
+    // Verificação de segurança via Token do Asaas (Opcional apenas para teste inicial)
+    const asaasToken = req.headers.get('asaas-access-token');
+    if (asaasToken && asaasToken !== ASAAS_WEBHOOK_TOKEN) {
+      console.warn('[ASAAS-WEBHOOK] Token inválido detectado.');
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const body = await req.json();
     console.log('[ASAAS-WEBHOOK] Payload recebido:', JSON.stringify(body));
 
@@ -133,7 +144,6 @@ Deno.serve(async (req: Request) => {
         .from('orders')
         .update({
           status: 'pago',
-          payment_status: 'pago',
           payment_type: 'pix',
         })
         .eq('id', orderId);

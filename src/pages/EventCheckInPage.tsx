@@ -89,11 +89,45 @@ export default function EventCheckInPage() {
   };
 
 
-  const filteredParticipants = participants.filter(p => 
+  const filteredParticipants = participants.filter(p =>
     p.buyer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.buyer_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.buyer_cpf?.includes(searchTerm)
   );
+
+  const handleCheckIn = async (ticketId: string) => {
+    try {
+      // Atualiza localmente primeiro (responsividade imediata)
+      setParticipants(prev =>
+        prev.map(p =>
+          p.id === ticketId
+            ? { ...p, status: 'used', checked_in_at: new Date().toISOString() }
+            : p
+        )
+      );
+
+      // Persiste no banco via update direto
+      const { error } = await supabase
+        .from('tickets')
+        .update({ status: 'used', checked_in_at: new Date().toISOString() })
+        .eq('id', ticketId);
+
+      if (error) {
+        // Reverter em caso de erro
+        setParticipants(prev =>
+          prev.map(p =>
+            p.id === ticketId ? { ...p, status: 'confirmed', checked_in_at: null } : p
+          )
+        );
+        setLastResult({ success: false, reason: 'TICKET_NOT_FOUND' });
+      } else {
+        const ticket = participants.find(p => p.id === ticketId);
+        setLastResult({ success: true, buyer_name: ticket?.buyer_name, ticket_id: ticketId });
+      }
+    } catch (err: any) {
+      setLastResult({ success: false, reason: 'TICKET_NOT_FOUND' });
+    }
+  };
 
   const stats = {
     total: participants.length,
@@ -223,21 +257,39 @@ export default function EventCheckInPage() {
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-white text-[12px] font-black uppercase truncate tracking-tight">{p.buyer_name}</span>
                       {p.status === 'used' && (
-                        <span className="bg-green-500 text-black text-[7px] font-black px-1 rounded-sm uppercase">CONCLUÍDO</span>
+                        <span className="bg-green-500 text-black text-[7px] font-black px-1 rounded-sm uppercase">PRESENTE</span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-slate-600 text-[8px] font-mono tracking-tighter">
                       <span className="truncate">{p.buyer_email}</span>
                       <span className="hidden sm:inline border-l border-white/10 pl-3">CPF: {p.buyer_cpf || '---'}</span>
                     </div>
+                    {p.status === 'used' && p.checked_in_at && (
+                      <div className="text-[7px] text-green-500/40 font-mono mt-1">
+                        check-in: {new Date(p.checked_in_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="ml-4 flex flex-col items-end gap-1">
-                    <div className={`text-[9px] font-black uppercase px-2 py-1 rounded-sm ${
-                      p.status === 'used' ? 'bg-green-500/20 text-green-500' : 'bg-primary/20 text-primary'
-                    }`}>
-                      {p.status === 'used' ? 'PRESENTE' : 'CONFIRMADO'}
-                    </div>
+                  <div className="ml-4 flex flex-col items-end gap-2">
+                    {p.status === 'used' ? (
+                      <div className="text-[9px] font-black uppercase px-2 py-1 bg-green-500/20 text-green-500 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[12px]">check_circle</span>
+                        PRESENTE
+                      </div>
+                    ) : p.status === 'confirmed' ? (
+                      <button
+                        onClick={() => handleCheckIn(p.id)}
+                        className="text-[9px] font-black uppercase px-3 py-2 bg-primary text-black hover:bg-white transition-all flex items-center gap-1 tracking-wide"
+                      >
+                        <span className="material-symbols-outlined text-[12px]">how_to_reg</span>
+                        MARCAR PRESENÇA
+                      </button>
+                    ) : (
+                      <div className="text-[9px] font-black uppercase px-2 py-1 bg-yellow-500/20 text-yellow-500">
+                        {p.status.toUpperCase()}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))

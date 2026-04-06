@@ -61,12 +61,6 @@ export default function EventDetailPage() {
   const handleBuyTicket = async () => {
     if (!event) return;
 
-    // Exige login para comprar ingresso
-    if (!user) {
-      navigate(`/login?redirect=/eventos/${event.id}`);
-      return;
-    }
-
     setAdding(true);
     setError(null);
 
@@ -89,6 +83,7 @@ export default function EventDetailPage() {
       );
 
       if (success) {
+        // Redireciona direto para o checkout como convidado
         navigate('/checkout');
       } else {
         setError('Não foi possível adicionar o ingresso. Tente novamente.');
@@ -332,15 +327,10 @@ export default function EventDetailPage() {
                       </>
                     )}
                   </button>
-                  <p className="text-[9px] text-center text-slate-600 font-mono uppercase italic">
+                  {/* Info de Pagamento Seguro */}
+                  <p className="text-[9px] text-center text-slate-600 font-mono uppercase italic mt-4">
                     Pagamento seguro via PIX • Ingresso digital enviado por email
                   </p>
-
-                  {!user && (
-                    <p className="text-[9px] text-center text-primary/70 font-mono uppercase mt-3 border-t border-white/5 pt-3">
-                      ⚠ Login necessário para comprar
-                    </p>
-                  )}
                 </>
               ) : (
                 <div className="text-center py-12">

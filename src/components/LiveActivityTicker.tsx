@@ -13,46 +13,46 @@ export function LiveActivityTicker() {
   const [activities, setActivities] = useState<Activity[]>([]);
 
   useEffect(() => {
-    // 1. Carga inicial das últimas 5 transações
     fetchRecentActivity();
 
-    // 2. Realtime Subscription
+    // Realtime: escuta novos tickets confirmados
     const channel = supabase
       .channel('live-activity')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'financial_transactions' },
+        { event: 'INSERT', schema: 'public', table: 'tickets' },
         (payload) => {
-          console.log('[REALTIME] Nova transação detectada!', payload);
-          const newActivity: Activity = {
-            id: payload.new.id,
-            amount: payload.new.amount,
-            type: payload.new.type,
-            timestamp: payload.new.created_at
-          };
-          
-          setActivities(prev => [newActivity, ...prev].slice(0, 5));
+          if (payload.new.status === 'confirmed') {
+            const newActivity: Activity = {
+              id: payload.new.id,
+              amount: payload.new.price_paid,
+              type: 'ticket_confirmed',
+              user_name: payload.new.buyer_name,
+              timestamp: payload.new.created_at
+            };
+            setActivities(prev => [newActivity, ...prev].slice(0, 5));
+          }
         }
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const fetchRecentActivity = async () => {
     const { data } = await supabase
-      .from('financial_transactions')
-      .select('*')
+      .from('tickets')
+      .select('id, price_paid, buyer_name, created_at, status')
+      .eq('status', 'confirmed')
       .order('created_at', { ascending: false })
       .limit(5);
 
     if (data) {
       setActivities(data.map(d => ({
         id: d.id,
-        amount: d.amount,
-        type: d.type,
+        amount: d.price_paid,
+        type: 'ticket_confirmed',
+        user_name: d.buyer_name,
         timestamp: d.created_at
       })));
     }
@@ -75,12 +75,12 @@ export function LiveActivityTicker() {
                 </span>
              </div>
              <div>
-                <span className="text-[10px] text-white font-black uppercase tracking-widest block">
-                  {activity.type === 'fee_platform' ? 'Taxa Processada' : 'Novo Ticket Confirmado'}
-                </span>
-                <span className="text-[9px] text-primary font-mono uppercase">
-                   R$ {activity.amount.toFixed(2)} // {new Date(activity.timestamp).toLocaleTimeString()}
-                </span>
+                 <span className="text-[10px] text-white font-black uppercase tracking-widest block">
+                   {activity.user_name || 'Operador'} — Ingresso Confirmado
+                 </span>
+                 <span className="text-[9px] text-primary font-mono uppercase">
+                    R$ {(activity.amount || 0).toFixed(2)} // {new Date(activity.timestamp).toLocaleTimeString()}
+                 </span>
              </div>
           </div>
           

@@ -257,6 +257,27 @@ export default function MyTicketsPage() {
                  <p className="text-[10px] text-primary/60 font-mono mt-1 lowercase">{selectedTicket.buyer_email}</p>
               </div>
 
+              {/* QR Code do Ingresso */}
+              <div className="flex flex-col items-center gap-3">
+                <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest">QR CODE DE ACESSO</p>
+                <div className="relative">
+                  {/* Cantos táticos */}
+                  <div className="absolute -top-1.5 -left-1.5 w-4 h-4 border-t-2 border-l-2 border-primary" />
+                  <div className="absolute -top-1.5 -right-1.5 w-4 h-4 border-t-2 border-r-2 border-primary" />
+                  <div className="absolute -bottom-1.5 -left-1.5 w-4 h-4 border-b-2 border-l-2 border-primary" />
+                  <div className="absolute -bottom-1.5 -right-1.5 w-4 h-4 border-b-2 border-r-2 border-primary" />
+                  <div className="bg-white p-3 shadow-[0_0_30px_rgba(255,193,7,0.2)]">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${selectedTicket.qr_uuid}&format=png&color=000000&bgcolor=ffffff`}
+                      alt={`QR Code ingresso ${selectedTicket.qr_uuid.slice(0,8)}`}
+                      className="w-40 h-40"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+                <p className="text-[8px] font-mono text-white/30 uppercase tracking-wider">{selectedTicket.qr_uuid}</p>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/5 border border-white/5 p-4 text-center">
                    <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest mb-1">ID DA MISSÃO</p>

@@ -40,7 +40,7 @@ export interface CartItem {
 export interface Order {
   id: string;
   user_id: string;
-  status: 'pendente' | 'processando' | 'em_transito' | 'entregue' | 'cancelado';
+  status: 'pendente' | 'pago' | 'processando' | 'em_transito' | 'entregue' | 'cancelado';
   payment_status?: string;
   mercadopago_id?: string;
   payment_type?: string;
@@ -95,5 +95,6 @@ export const statusLabels: Record<string, { label: string; color: string }> = {
   processando: { label: 'Processando', color: 'text-blue-400' },
   em_transito: { label: 'Em Trânsito', color: 'text-primary' },
   entregue: { label: 'Entregue', color: 'text-green-500' },
+  pago: { label: 'Pago', color: 'text-green-400' },
   cancelado: { label: 'Cancelado', color: 'text-red-500' },
 };

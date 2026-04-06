@@ -1,29 +1,22 @@
-# ⚡ WAR ROOM — CHECKLIST DE EXECUÇÃO (HOJE)
+# ⚡ WAR ROOM — CHECKLIST DE EXECUÇÃO
 
 > Projeto: `tactical-ops-react` | Stack: React + TS + Supabase + Asaas  
-> Hora de início: ~09h30 | Meta: MVP de Eventos funcional até meia-noite
+> Atualizado: 2026-04-06
 
 ---
 
-## 🎯 META DO DIA
-> **Até meia-noite, deve ser possível:**
-> - [/] BLOCO 5 — Email com QR Code [IMPORTANTE]
-  - [x] Refatorar asaas-webhook com SMTP Hostinger
-  - [x] Configurar Secrets no Supabase (SMTP_USERNAME, SMTP_PASSWORD, etc)
-  - [x] Deploy da função asaas-webhook
-  - [/] Depurar conexão SMTP (debug-smtp)
-  - [ ] Testar fluxo completo (Webhook -> Ticket -> Email)
-  - [ ] Validar QR Code no mobile
-  - [ ] Deploy final das Functions consolidada
+## 🎯 STATUS GERAL
+
 > - [x] Criar um evento real com ingressos
 > - [x] Comprar ingresso com PIX (Asaas — já integrado)
-> - [x] QR Code real gerado (Disponível em Meus Ingressos)
-> - [x] Validar ingresso via scanner web
+> - [x] Ingresso confirmado e salvo no banco (Disponível em Meus Ingressos)
+> - [x] ~~QR Code~~ — **CANCELADO** — Check-in via lista (nome/email/CPF)
+> - [x] Check-in funcional via `EventCheckInPage` (busca por nome, email, CPF)
 > - [x] Organizador ver vendas em tempo real no dashboard
 
 ---
 
-## ☀️ STATUS ATUAL (RESUMO)
+## ✅ STATUS ATUAL (RESUMO)
 
 - [x] **Item 1: Fluxo de Upgrade de Role (`organizer`)**
   - [x] Criar formulário de solicitação (`OrganizerRequestForm`)
@@ -32,12 +25,12 @@
 - [x] **Item 2: Moderador Dashboard (Aprovação de Roles)**
   - [x] Criar interface para admin visualizar pendências
   - [x] Implementar lógica de aprovação (`handleApproveRole`) no `AdminModeration.tsx`
-- [x] Item 3: Teste de fumaça (E2E)
+- [x] **Item 3: Teste de fumaça (E2E)**
   - [x] Simular compra -> Webhook -> Geração Ingresso -> Check-in
-  - [x] Criado `UATScannerTester` para simulação direta via Dashboard.
-- [x] Item 4: Refinamento UX Dashboards
-  - [x] Tooltips explicativos sobre split de pagamento Asaas.
-  - [x] Feedback visual de "Approved" (Badges) no perfil do operador.
+  - [x] Criado `UATScannerTester` para simulação direta via Dashboard
+- [x] **Item 4: Refinamento UX Dashboards**
+  - [x] Tooltips explicativos sobre split de pagamento Asaas
+  - [x] Feedback visual de "Approved" (Badges) no perfil do operador
 
 ---
 
@@ -54,11 +47,30 @@
 - [x] Adicionar Logística de Rifas (Winner tracking)
 - [x] Implementar `AdminModeration.tsx` com aprovação de organizadores
 
-### BLOCO 3 — Próximos Passos (TARDE/NOITE)
-- [ ] **Validação do Webhook:** Confirmar se o `create_event_ticket` está sendo disparado corretamente no fluxo real.
-- [ ] **Layout de E-mail:** Melhorar o template enviado pelo Resend com o QR Code.
+### BLOCO 5 — E-mail de Confirmação [EM ANDAMENTO]
+- [x] Refatorar asaas-webhook com SMTP Hostinger
+- [x] Secrets configurados no Supabase (SMTP_USERNAME, SMTP_PASSWORD, etc)
+- [x] Template HTML do e-mail implementado (sem QR Code — decisão do produto)
+- [ ] **Testar fluxo completo:** Webhook → Ticket criado → E-mail enviado
+- [ ] **Deploy final** consolidado do `asaas-webhook`
+
+### ~~QR Code~~ [CANCELADO — não será implementado]
+- [x] ~~Imagem QR Code no e-mail~~ — fora do escopo
+- [x] ~~Scanner QR~~ — substituído por lista (nome/email/CPF)
 
 ---
 
-## 🔥 PRIORIDADE AGORA
-Finalizar o **Item 4** (Refinamento de UX) e realizar o **Teste de Fumaça** definitivo.
+## 🔧 BUGS CORRIGIDOS (2026-04-06)
+- [x] **DropPage:** Drops com `status: draft/cancelado` apareciam na listagem pública — **CORRIGIDO** (filtro `.eq('status', 'ativo')` para não-admins)
+- [x] **EventCheckInPage:** Botão "MARCAR PRESENÇA" ausente — **CORRIGIDO** (função `handleCheckIn` + update no banco com reversão em erro)
+- [x] **CheckoutPage:** Campo senha aparecia para usuários logados e em compras digitais — **CORRIGIDO** (condição `!user && !isDigitalOnly`)
+- [ ] **CreateClassPage:** Erro TS pré-existente (`string | null` não atribuível a `string | undefined`) — pendente de análise
+
+---
+
+## 🔥 PRÓXIMAS PRIORIDADES
+1. 🔑 Confirmar Secrets SMTP no painel Supabase (SMTP_HOSTNAME, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD)
+2. 🧪 Testar fluxo Webhook → Ticket → E-mail ponta-a-ponta (via UATScannerTester)
+3. 🚀 Deploy final consolidado das Edge Functions
+4. 🏪 Validar trava: Drop só publicável com chave PIX cadastrada (já implementado em CreateRafflePage — validar em teste UAT)
+5. 🍃 Fix TS no CreateClassPage (erro pré-existente)

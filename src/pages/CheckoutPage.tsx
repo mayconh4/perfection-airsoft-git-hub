@@ -32,7 +32,7 @@ const InputField = ({ name, label, type = 'text', placeholder = '', className = 
 export function CheckoutPage() {
   const { items, total, selectedShipping, clearCart } = useCart();
   const { user } = useAuth();
-  const { createOrder, creating } = useCreateOrder();
+  const { createOrder } = useCreateOrder();
   const navigate = useNavigate();
 
   // Estados
@@ -40,16 +40,23 @@ export function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('pix');
   const [paymentData, setPaymentData] = useState<{ qr_code?: string; qr_code_base64?: string; checkout_url?: string; order_id?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false); // controle local do botão
   const [form, setForm] = useState({
     name: '', cpf: '', email: user?.email || '', phone: '',
     street: '', number: '', complement: '', district: '', city: '', state: '', cep: '',
     password: ''
   });
 
-  const isPureRaffle = items.length > 0 && items.every(i => i.product?.brand === 'DROP');
-  const isPureTicket = items.length > 0 && items.every(i => i.product?.brand === 'TICKET');
+  const isPureRaffle = items.length > 0 && items.some(i => i.product?.brand === 'DROP' || i.product?.category?.slug === 'rifas');
+  const isPureTicket = items.length > 0 && items.some(i => 
+    i.product?.brand === 'TICKET' || 
+    i.metadata?.type === 'ticket' || 
+    i.product?.name?.toLowerCase().includes('ingresso') ||
+    i.product?.name?.toLowerCase().includes('ticket')
+  );
   // Rifas e tickets: sem endereço, sem frete, gateway Asaas
   const isDigitalOnly = isPureRaffle || isPureTicket;
+  const isGuestFlow = isDigitalOnly; // <--- Habilita fluxo rápido para tickets
 
   // Taxas absorvidas pelo organizador (cliente paga valor nominal)
   const serviceFee = 0;
@@ -90,12 +97,19 @@ export function CheckoutPage() {
     e.preventDefault();
     setError(null);
     if (items.length === 0) return;
-    
+
+    // Valida CPF mínimo (sandbox Asaas rejeita CPFs inválidos)
+    const cpfDigits = form.cpf.replace(/\D/g, '');
+    if (cpfDigits.length !== 11) {
+      setError('CPF inválido. Informe um CPF com 11 dígitos válidos.');
+      return;
+    }
+
+    setProcessing(true);
     const methodToUse = methodOverride || paymentMethod;
 
     try {
       let currentUserId = user?.id;
-      const isGuestFlow = isPureRaffle && !currentUserId;
 
       // Se não for fluxo de convidado e não estiver logado, tenta identificar
       if (!currentUserId && !isGuestFlow) {
@@ -168,7 +182,7 @@ export function CheckoutPage() {
         paymentMethod: methodToUse,
         customerData: { 
           name: form.name, 
-          email: isGuestFlow ? `op_${form.cpf.replace(/\D/g, '')}@perfectionairsoft.com.br` : (form.email || user?.email), 
+          email: form.email || (isGuestFlow ? `op_${form.cpf.replace(/\D/g, '')}@perfectionairsoft.com.br` : user?.email), 
           cpf: form.cpf, 
           phone: form.phone 
         },
@@ -186,8 +200,12 @@ export function CheckoutPage() {
 
       console.log(`[CHECKOUT] Redirecionando para Motor: ${motorPath}`);
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
       const response = await fetch(functionUrl, {
         method: 'POST',
+        signal: controller.signal,
         headers: { 
           'Content-Type': 'application/json',
           'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
@@ -195,6 +213,7 @@ export function CheckoutPage() {
         },
         body: JSON.stringify(payload)
       });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errBody = await response.json().catch(() => ({}));
@@ -231,7 +250,13 @@ export function CheckoutPage() {
       }
     } catch (err: any) {
       console.error('Erro no checkout:', err);
-      setError('Erro inesperado: ' + err.message);
+      if (err.name === 'AbortError') {
+        setError('TEMPO ESGOTADO. A conexão com o servidor demorou demais. Tente novamente.');
+      } else {
+        setError('Erro inesperado: ' + err.message);
+      }
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -320,7 +345,8 @@ export function CheckoutPage() {
                 
                 <>
                   <InputField name="email" label="E-mail de Confirmação" placeholder="email@exemplo.com" type="email" className="sm:col-span-2" value={form.email} onChange={handleChange} list="list-email" />
-                  {!user && (
+                  {/* Campo de senha: apenas para usuários NÃO logados comprando produtos FÍSICOS */}
+                  {!user && !isDigitalOnly && (
                     <div className="sm:col-span-2 pt-2">
                       <InputField name="password" label="Definir Senha de Acesso" type="password" placeholder="Mínimo 6 caracteres" value={form.password} onChange={handleChange} />
                     </div>
@@ -371,7 +397,7 @@ export function CheckoutPage() {
             <div className="bg-surface/30 border border-white/5 p-8 space-y-8">
               <DynamicCheckoutAccordion
                 amount={grandTotal}
-                loading={creating}
+                loading={processing}
                 pixOnly={isDigitalOnly}
                 onCommitPayment={(method) => {
                   setPaymentMethod(method);

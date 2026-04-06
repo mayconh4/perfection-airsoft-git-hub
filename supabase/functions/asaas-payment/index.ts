@@ -102,11 +102,11 @@ Deno.serve(async (req: Request) => {
         .eq('id', creatorId)
         .single();
 
-      if (!profile?.asaas_wallet_id) {
-        throw new Error('ORGANIZADOR SEM CONTA FINANCEIRA CONFIGURADA. ENTRE EM CONTATO COM O SUPORTE.');
+      if (profile?.asaas_wallet_id) {
+        walletId = profile.asaas_wallet_id;
+      } else {
+        console.warn(`[ASAAS] Organizador ${creatorId} sem wallet configurada — PIX irá para conta principal`);
       }
-      walletId = profile.asaas_wallet_id;
-
     } else {
       // ── TICKET DE RIFA (comportamento original) ──
       const raffleId = firstItem?.product_id || firstItem?.metadata?.raffle_id || firstItem?.product?.id;
@@ -128,10 +128,11 @@ Deno.serve(async (req: Request) => {
         .eq('id', creatorId)
         .single();
 
-      if (!profile?.asaas_wallet_id) {
-        throw new Error('ESTE DROP ESTÁ EM MANUTENÇÃO FINANCEIRA. TENTE NOVAMENTE EM ALGUNS MINUTOS.');
+      if (profile?.asaas_wallet_id) {
+        walletId = profile.asaas_wallet_id;
+      } else {
+        console.warn(`[ASAAS] Criador de rifa ${creatorId} sem wallet — PIX irá para conta principal`);
       }
-      walletId = profile.asaas_wallet_id;
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -165,10 +166,11 @@ Deno.serve(async (req: Request) => {
     const asaasPixCost       = 0.99;
     const organizerShare     = Number(total) - (Number(total) * platformFeePercent) - asaasPixCost;
 
-    const splitConfig = {
-      walletId,
-      fixedValue: Number(organizerShare.toFixed(2)),
-    };
+    // SANDBOX MODE: split desabilitado — wallets de subconta nao sao validas no sandbox.
+    // Para producao, reativar: const splitConfig = walletId ? [...] : [];
+    const splitConfig: any[] = [];
+
+
 
     // Criar Customer no Asaas
     const customerRes = await fetch(`${ASAAS_API_URL}/customers`, {
@@ -185,15 +187,19 @@ Deno.serve(async (req: Request) => {
     if (!customerRes.ok) throw new Error(`Asaas Customer: ${customer.errors?.[0]?.description}`);
 
     // Criar Cobrança PIX
-    const asaasPayload = {
+    const asaasPayload: any = {
       customer:          customer.id,
       billingType:       'PIX',
       value:             Number(total),
       dueDate:           new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString().split('T')[0],
       description:       `${orderDescription} - Perfection Airsoft`,
       externalReference: finalOrderId,
-      split:             [splitConfig],
     };
+
+    // Só adiciona split se houver wallet configurada
+    if (splitConfig.length > 0) {
+      asaasPayload.split = splitConfig;
+    }
 
     const paymentRes = await fetch(`${ASAAS_API_URL}/payments`, {
       method: 'POST',
@@ -203,13 +209,22 @@ Deno.serve(async (req: Request) => {
     const payment = await paymentRes.json();
     if (!paymentRes.ok) throw new Error(`Asaas Payment: ${payment.errors?.[0]?.description}`);
 
-    // Buscar QR Code PIX
-    const pixRes = await fetch(`${ASAAS_API_URL}/payments/${payment.id}/pixQrCode`, {
-      method: 'GET',
-      headers: { 'access_token': ASAAS_API_KEY },
-    });
-    const pixData = await pixRes.json();
-    if (!pixRes.ok) throw new Error('Erro ao gerar QR Code PIX.');
+    // Buscar QR Code PIX — com retry (Asaas sandbox pode ter delay)
+    let pixData: any = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const pixRes = await fetch(`${ASAAS_API_URL}/payments/${payment.id}/pixQrCode`, {
+        method: 'GET',
+        headers: { 'access_token': ASAAS_API_KEY },
+      });
+      const pixJson = await pixRes.json();
+      if (pixRes.ok && (pixJson.payload || pixJson.encodedImage)) {
+        pixData = pixJson;
+        break;
+      }
+      console.warn(`[ASAAS] QR Code tentativa ${attempt}/3 falhou:`, JSON.stringify(pixJson));
+      if (attempt < 3) await new Promise(r => setTimeout(r, 1500));
+    }
+    if (!pixData) throw new Error('QR Code PIX nao disponivel apos 3 tentativas. Tente novamente.');
 
     // ─────────────────────────────────────────────────────────────────────
     // 5. ATUALIZAR PEDIDO COM DADOS DO ASAAS

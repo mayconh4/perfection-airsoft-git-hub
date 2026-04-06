@@ -94,12 +94,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Ingresso de evento (TICKET)
+      // Ingresso de evento (TICKET) - product_id pode ser null (produto virtual)
       if (item.metadata?.type === 'ticket') {
+        const virtualId = item.metadata._virtual_id || item.product_id || item.metadata.event_id;
         return {
           ...item,
+          product_id: virtualId || item.product_id, // restaura o ID virtual para o estado local
           product: {
-            id: item.product_id,
+            id: virtualId,
             name: item.metadata.event_title || 'Ingresso de Evento',
             brand: 'TICKET',
             price: item.metadata.unit_price || 0,
@@ -186,21 +188,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     if (!user) {
       const local = getLocalCart();
-      // Para rifas (com metadados), tratamos como itens distintos
-      const existingIndex = local.findIndex(i => 
-        i.product_id === productId && 
+      const existingIndex = local.findIndex(i =>
+        i.product_id === productId &&
         JSON.stringify(i.metadata || {}) === JSON.stringify(metadata || {})
       );
 
-      if (existingIndex > -1 && !metadata) { // Agrupa apenas se não houver metadados (produtos normais)
+      if (existingIndex > -1 && !metadata) {
         local[existingIndex].quantity += quantity;
         saveLocalCart([...local]);
       } else {
-        saveLocalCart([...local, { 
-          id: `guest_${Math.random().toString(36).substr(2, 9)}`, 
-          user_id: 'guest', 
-          product_id: productId, 
-          quantity: quantity, 
+        saveLocalCart([...local, {
+          id: 'guest_' + Math.random().toString(36).substr(2, 9),
+          user_id: 'guest',
+          product_id: productId,
+          quantity: quantity,
           created_at: new Date().toISOString(),
           product: productData,
           metadata: metadata
@@ -210,16 +211,41 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return true;
     }
 
-    // Se logado, salva no DB
-    const { error } = await supabase.from('cart_items').insert({ 
-      user_id: user.id, 
-      product_id: productId, 
+    // Para tickets: product_id = null (produto virtual sem FK)
+    // Para rifas e físicos: product_id = o ID real
+    const dbProductId = metadata?.type === 'ticket' ? null : productId;
+
+    const { error } = await supabase.from('cart_items').insert({
+      user_id: user.id,
+      product_id: dbProductId,
       quantity: quantity,
-      metadata: metadata
+      metadata: { ...metadata, _virtual_id: productId } // guarda o ID virtual no metadata
     });
 
     if (error) {
-       console.warn('[CartContext] Erro ao salvar no DB, usando fallback local:', error);
+      console.warn('[CartContext] Erro ao salvar no DB:', error.message);
+      // Fallback: usa carrinho local mesmo estando logado
+      const local = getLocalCart();
+      saveLocalCart([...local, {
+        id: 'fallback_' + Math.random().toString(36).substr(2, 9),
+        user_id: user.id,
+        product_id: productId,
+        quantity: quantity,
+        created_at: new Date().toISOString(),
+        product: productData,
+        metadata: metadata
+      }]);
+      setItems(prev => [...prev, {
+        id: 'fallback_' + Math.random().toString(36).substr(2, 9),
+        user_id: user.id,
+        product_id: productId,
+        quantity: quantity,
+        created_at: new Date().toISOString(),
+        product: productData,
+        metadata: metadata
+      } as any]);
+      setShowToast(true);
+      return true;
     }
 
     await fetchCart();

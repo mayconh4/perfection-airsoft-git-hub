@@ -33,7 +33,7 @@ export function useOrders() {
 
 export function useCreateOrder() {
   const { user } = useAuth();
-  const { items: cartItems, clearCart, total, selectedShipping } = useCart();
+  const { items: cartItems, total, selectedShipping } = useCart();
   const [creating, setCreating] = useState(false);
 
   const grandTotal = total + (selectedShipping?.price || 0);
@@ -59,19 +59,31 @@ export function useCreateOrder() {
     if (error || !order) { setCreating(false); return null; }
 
     // 2. Criar itens do pedido
-    const orderItems = (cartItems as any[]).map(ci => ({
-      order_id: order.id,
-      product_id: ci.product_id,
-      product_name: ci.product?.name || 'Produto',
-      product_price: ci.product?.price || 0,
-      quantity: ci.quantity,
-      metadata: ci.metadata || null // [FRONTEND SPECIALIST] Persistir tickets
-    }));
+    const orderItems = (cartItems as any[]).map(ci => {
+      // Para tickets (produto virtual), product_id é uma string como 'ticket_uuid' — não é UUID válido.
+      // Usamos null e preservamos o ID no metadata para rastreamento.
+      const isVirtualProduct = ci.metadata?.type === 'ticket' || ci.metadata?.type === 'raffle' ||
+        (typeof ci.product_id === 'string' && !ci.product_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i));
+      
+      return {
+        order_id: order.id,
+        product_id: isVirtualProduct ? null : ci.product_id,
+        product_name: ci.product?.name || ci.metadata?.event_title || 'Produto',
+        product_price: ci.product?.price || ci.metadata?.unit_price || 0,
+        quantity: ci.quantity,
+        metadata: {
+          ...(ci.metadata || {}),
+          _virtual_product_id: isVirtualProduct ? ci.product_id : undefined,
+          brand: ci.product?.brand || ci.metadata?.type?.toUpperCase()
+        }
+      };
+    });
 
     await supabase.from('order_items').insert(orderItems);
 
-    // 3. Limpar carrinho
-    await clearCart();
+    // NOTA: clearCart() foi removido daqui.
+    // O carrinho é limpo pelo CheckoutPage somente após confirmacao do pagamento,
+    // evitando que o checkout fique com carrinho vazio no meio do fluxo PIX.
     setCreating(false);
     return order as Order;
   };

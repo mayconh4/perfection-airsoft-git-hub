@@ -1,0 +1,27 @@
+{
+  "orderId": "test-order-debug-002",
+  "isGuest": false,
+  "total": 35,
+  "subtotal": 35,
+  "serviceFee": 0,
+  "paymentMethod": "pix",
+  "customerData": {
+    "name": "Operador Teste",
+    "email": "maycontuliomkd@gmail.com",
+    "cpf": "52998224725",
+    "phone": "37991065120"
+  },
+  "items": [{
+    "product_id": null,
+    "product_name": "Ingresso Teste",
+    "product_price": 35,
+    "quantity": 1,
+    "metadata": {
+      "type": "ticket",
+      "event_id": "ea848122-37db-4d42-a9e0-9f8849817cac",
+      "event_title": "OPERACAO TESTE 01",
+      "unit_price": 35,
+      "brand": "TICKET"
+    }
+  }]
+}

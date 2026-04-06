@@ -1,20 +1,23 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { formatPrice } from '../../types/database';
+import { UATScannerTester } from '../../components/UATScannerTester';
 
 export function AdminDashboard() {
   const [stats, setStats] = useState({ products: 0, orders: 0, revenue: 0, messages: 0, pendingOperators: 0 });
   const [pendingOps, setPendingOps] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadStats() {
-      const [p, o, m, ops] = await Promise.all([
+      const [p, o, ops, ev] = await Promise.all([
         supabase.from('products').select('*', { count: 'exact', head: true }),
         supabase.from('orders').select('total'),
-        supabase.from('contact_messages').select('*', { count: 'exact', head: true }),
-        supabase.from('profiles').select('*').eq('kyc_status', 'waiting_approval')
+        supabase.from('profiles').select('*').eq('kyc_status', 'waiting_approval'),
+        supabase.from('events').select('id, title').eq('status', 'published').order('created_at', { ascending: false }).limit(10),
       ]);
 
       const totalRevenue = o.data?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
@@ -23,10 +26,13 @@ export function AdminDashboard() {
         products: p.count || 0,
         orders: o.data?.length || 0,
         revenue: totalRevenue,
-        messages: m.count || 0,
+        messages: 0,
         pendingOperators: ops.data?.length || 0
       });
       setPendingOps(ops.data || []);
+      const evList = ev.data || [];
+      setEvents(evList);
+      if (evList.length > 0) setSelectedEventId(evList[0].id);
       setLoading(false);
     }
     loadStats();
@@ -174,6 +180,40 @@ export function AdminDashboard() {
                 <span className="text-[9px] text-blue-500 font-mono font-bold">ATIVADOS</span>
               </div>
             </div>
+         </div>
+
+         {/* ── UAT TESTER ──────────────────────────────────────────────── */}
+         <div className="bg-surface border border-primary/20 p-6">
+           <h3 className="text-sm font-bold text-primary uppercase tracking-widest mb-4 border-b border-primary/20 pb-4 flex items-center gap-2">
+             <span className="material-symbols-outlined text-primary">terminal</span>
+             Simulador de Compra (UAT)
+           </h3>
+           {events.length > 0 ? (
+             <>
+               <label className="text-[10px] text-slate-500 uppercase tracking-widest font-black block mb-2">
+                 Selecionar Evento para Teste
+               </label>
+               <select
+                 value={selectedEventId}
+                 onChange={e => setSelectedEventId(e.target.value)}
+                 className="w-full bg-background-dark border border-white/10 text-white text-[11px] px-3 py-2 mb-4 font-mono uppercase tracking-wide focus:outline-none focus:border-primary"
+               >
+                 {events.map(ev => (
+                   <option key={ev.id} value={ev.id}>{ev.title}</option>
+                 ))}
+               </select>
+               {selectedEventId && (
+                 <UATScannerTester
+                   eventId={selectedEventId}
+                   eventTitle={events.find(e => e.id === selectedEventId)?.title || ''}
+                 />
+               )}
+             </>
+           ) : (
+             <p className="text-[9px] text-slate-500 uppercase tracking-widest">
+               Nenhum evento publicado encontrado. Crie e publique um evento primeiro.
+             </p>
+           )}
          </div>
       </div>
     </div>

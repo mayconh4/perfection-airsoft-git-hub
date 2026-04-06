@@ -22,7 +22,7 @@ export function OrderSuccessPage() {
     }
 
     const fetchOrder = async () => {
-      // Tenta buscar o pedido. Se for guest, o RLS deve permitir se o ID bater (ou usamos uma query sem filtro de user se o anon permitir)
+      setLoading(true);
       const { data, error } = await supabase
         .from('orders')
         .select('*, items:order_items(*)')
@@ -38,6 +38,28 @@ export function OrderSuccessPage() {
     };
 
     fetchOrder();
+
+    // Listener Realtime para atualizar status se o usuário ficar na página aguardando
+    const channel = supabase
+      .channel(`order_status_success_${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${id}`
+        },
+        (payload) => {
+          console.log('[REALTIME-SUCCESS] Alteração detectada:', payload.new.status);
+          setOrder(prev => prev ? { ...prev, status: payload.new.status } : null);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [id, navigate]);
 
   const handleFinalizeRegistration = async (e: React.FormEvent) => {
@@ -192,7 +214,9 @@ export function OrderSuccessPage() {
               <p className="text-white text-sm uppercase font-black italic mb-2">{order.customer_data?.name}</p>
               <p className="text-slate-400 text-[10px] uppercase font-bold tracking-[0.2em] leading-loose">
                 {order.shipping_address?.street === 'Digital' 
-                  ? 'SEUS TICKETS SERÃO LIBERADOS NO PAINEL ASSIM QUE O PIX FOR CONFIRMADO.'
+                  ? (order.status === 'pago' 
+                      ? 'SUA OPERAÇÃO FOI CONFIRMADA! OS TICKETS JÁ ESTÃO DISPONÍVEIS NO SEU PAINEL.' 
+                      : 'SEUS TICKETS SERÃO LIBERADOS NO PAINEL ASSIM QUE O PIX FOR CONFIRMADO.')
                   : `ENTREGA FÍSICA: ${order.shipping_address?.street} \n${order.shipping_address?.city} - CEP ${order.shipping_address?.cep}`
                 }
               </p>
@@ -219,12 +243,18 @@ export function OrderSuccessPage() {
           <div className="border-t-2 border-primary/20 pt-8 flex justify-between items-end">
             <div>
               <span className="text-[10px] font-black tracking-[0.3em] text-white/30 uppercase italic block mb-1">Status da Transação</span>
-              <span className="text-yellow-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                <span className="material-symbols-outlined text-[12px]">schedule</span> Aguardando Confirmação PIX
-              </span>
+              {order.status === 'pago' ? (
+                <span className="text-green-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 bg-green-500/10 px-3 py-1 border border-green-500/20">
+                  <span className="material-symbols-outlined text-[14px]">verified</span> PAGAMENTO APROVADO
+                </span>
+              ) : (
+                <span className="text-yellow-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[12px]">schedule</span> Aguardando Confirmação PIX
+                </span>
+              )}
             </div>
             <div className="text-right">
-              <span className="text-[10px] font-black tracking-[0.3em] text-white/30 uppercase italic block mb-1">Total a Pagar</span>
+              <span className="text-[10px] font-black tracking-[0.3em] text-white/30 uppercase italic block mb-1">Total a Investir</span>
               <span className="text-4xl font-black text-primary font-mono tracking-tighter italic">{formatPrice(order.total, true)}</span>
             </div>
           </div>

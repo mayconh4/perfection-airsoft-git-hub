@@ -615,18 +615,30 @@ export default function DropPage() {
 
   const loadRaffles = async () => {
     try {
-      console.log('>>> HQ CONTROL INFILTRATION - USER EMAIL:', user?.email);
-      const { data, error } = await supabase
+      // Admins veem todos; usuários comuns só veem drops ativos
+      let query = supabase
         .from('raffles')
         .select('*, profiles(*)')
         .order('created_at', { ascending: false });
+
+      // Filtro de status: só exibe drops 'ativo' para o público geral
+      if (!isAdmin) {
+        query = query.eq('status', 'ativo') as typeof query;
+      }
+
+      const { data, error } = await query;
       
       if (error) {
         console.error('>>> FALHA TÁTICA NO JOIN DE PERFIS:', error.message);
-        const { data: simpleData, error: simpleError } = await supabase
+        // Fallback sem join de profiles, mas mantém filtro de status
+        let simpleQuery = supabase
           .from('raffles')
           .select('*')
           .order('created_at', { ascending: false });
+        if (!isAdmin) {
+          simpleQuery = simpleQuery.eq('status', 'ativo') as typeof simpleQuery;
+        }
+        const { data: simpleData, error: simpleError } = await simpleQuery;
         if (simpleError) throw simpleError;
         setRaffles(simpleData as any);
       } else {

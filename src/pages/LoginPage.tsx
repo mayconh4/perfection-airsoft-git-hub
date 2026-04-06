@@ -15,7 +15,9 @@ export function LoginPage() {
   const navigate = useNavigate();
 
   if (user) {
-    navigate('/dashboard');
+    const params = new URLSearchParams(window.location.search);
+    const redirectTo = params.get('redirect') || '/dashboard';
+    navigate(redirectTo);
     return null;
   }
 
@@ -57,7 +59,11 @@ export function LoginPage() {
           setMessage('Credenciais inválidas. Tente novamente.');
         }
       }
-      else { navigate('/'); }
+      else {
+        const params = new URLSearchParams(window.location.search);
+        const redirectTo = params.get('redirect') || '/';
+        navigate(redirectTo);
+      }
     } else {
       const { error } = await signUp(email, password, name);
       if (error) { setMessage(error.message); }

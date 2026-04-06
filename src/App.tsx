@@ -40,6 +40,7 @@ import { AdminOrders } from './pages/admin/AdminOrders';
 import { AdminMessages } from './pages/admin/AdminMessages';
 import AdminModeration from './pages/AdminModeration';
 import FinanceDashboard from './pages/FinanceDashboard';
+import { CreateClassPage } from './pages/CreateClassPage';
 
 import { PricingProvider } from './context/PricingContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -88,6 +89,7 @@ function App() {
                   <Route path="/dashboard-demo" element={<DashboardDemo />} />
                   <Route path="/organizador/eventos/:id" element={<CreateEventPage />} />
                   <Route path="/auth/callback" element={<AuthCallbackPage />} />
+                  <Route path="/create-class" element={<CreateClassPage />} />
 
                   {/* Admin Area */}
                   <Route path="/admin" element={<AdminLayout />}>
