@@ -650,11 +650,11 @@ export default function OrganizerDashboard() {
                       
                       <div className="flex overflow-x-auto lg:grid lg:grid-cols-5 gap-4 pb-4 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
                          {[
-                           { label: 'Engajamento', icon: 'confirmation_number', done: stats.ticketsSold > 0, desc: 'Mobilização' },
-                           { label: 'Sorteio', icon: 'casino', done: stats.completedDrops > 0, desc: 'Processamento' },
-                           { label: 'Target ID', icon: 'person_search', done: winners.length > 0, desc: 'Identificação' },
-                           { label: 'Deployment', icon: 'local_shipping', done: stats.successfulShipments > 0, desc: 'Logística' },
-                           { label: 'Extração', icon: 'payments', done: false, desc: 'Provisões' }
+                           { label: 'Venda de Tickets', icon: 'confirmation_number', done: stats.ticketsSold > 0, desc: 'Tickets vendidos' },
+                           { label: 'Sorteio do Prêmio', icon: 'casino', done: stats.completedDrops > 0, desc: 'Realização do sorteio' },
+                           { label: 'Ganhador', icon: 'person_search', done: winners.length > 0, desc: 'Vencedor identificado' },
+                           { label: 'Envio do Produto', icon: 'local_shipping', done: stats.successfulShipments > 0, desc: 'Logística de entrega' },
+                           { label: 'Saque do Saldo', icon: 'payments', done: false, desc: 'Resgate de valores' }
                          ].map((step, idx) => (
                            <div key={idx} className={`flex-shrink-0 w-[160px] lg:w-full group p-6 lg:p-8 border transition-all relative overflow-hidden ${step.done ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-surface/10 border-white/10 border-dashed opacity-70'}`}>
                               {step.done && (
@@ -686,11 +686,11 @@ export default function OrganizerDashboard() {
                       
                       <div className="flex overflow-x-auto lg:grid lg:grid-cols-5 gap-4 pb-4 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
                          {[
-                           { label: 'Setor Recon', icon: 'domain', done: events.filter(e => e.type === 'mission').length > 0, desc: 'Área' },
-                           { label: 'Intel Script', icon: 'description', done: events.filter(e => e.type === 'mission').length > 0, desc: 'Regras' },
-                           { label: 'Troop Build', icon: 'group_add', done: events.some(e => e.type === 'mission' && e.sold_count > 0), desc: 'Inscrições' },
-                           { label: 'Execute', icon: 'sports_esports', done: events.some(e => e.type === 'mission' && new Date(e.event_date) < new Date()), desc: 'Missão' },
-                           { label: 'Payday', icon: 'payments', done: false, desc: 'Créditos' }
+                           { label: 'Cadastro de Campo', icon: 'domain', done: events.filter(e => e.type === 'mission').length > 0, desc: 'Área do jogo' },
+                           { label: 'Cadastro de Missão', icon: 'description', done: events.filter(e => e.type === 'mission').length > 0, desc: 'Regras e briefings' },
+                           { label: 'Venda de Tickets', icon: 'group_add', done: events.some(e => e.type === 'mission' && e.sold_count > 0), desc: 'Inscrições ativas' },
+                           { label: 'Realização do Game', icon: 'sports_esports', done: events.some(e => e.type === 'mission' && new Date(e.event_date) < new Date()), desc: 'Missão em campo' },
+                           { label: 'Saque do Saldo', icon: 'payments', done: false, desc: 'Resgate de valores' }
                          ].map((step, idx) => (
                            <div key={idx} className={`flex-shrink-0 w-[160px] lg:w-full group p-6 lg:p-8 border transition-all relative overflow-hidden ${step.done ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-surface/10 border-white/10 border-dashed opacity-60'}`}>
                               {step.done && (
