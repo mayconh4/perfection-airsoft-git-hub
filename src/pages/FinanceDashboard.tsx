@@ -22,10 +22,13 @@ export default function FinanceDashboard() {
     pending: 0, 
     totalEarned: 0, 
     trustLevel: 0, 
-    completedDrops: 0 
+    completedDrops: 0
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [isKYCModalOpen, setIsKYCModalOpen] = useState(false);
+  const [isPayoutAmountOpen, setIsPayoutAmountOpen] = useState(false);
+  const [withdrawalValue, setWithdrawalValue] = useState('');
+  const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -84,16 +87,28 @@ export default function FinanceDashboard() {
       return;
     }
 
-    // 2º VERIFICAR SALDO APENAS SE JÁ ESTIVER VERIFICADO
-    if (stats.available <= 0) {
-      alert('SALDO INSUFICIENTE PARA RESGATE.');
+    // 2º SE JÁ VERIFICADO, ABRIR ETAPA DE VALOR
+    setIsPayoutAmountOpen(true);
+    setWithdrawalValue(stats.available.toString()); // Sugerir o total como padrão
+  };
+
+  const executePayout = async () => {
+    const val = parseFloat(withdrawalValue);
+    if (isNaN(val) || val <= 0) {
+      alert('VALOR INVÁLIDO.');
       return;
     }
 
-    if (!confirm('DESEJA SOLICITAR O RESGATE TOTAL PARA SUA CONTA BANCÁRIA?')) {
+    if (val > stats.available) {
+      alert('VALOR ACIMA DO SALDO DISPONÍVEL.');
       return;
     }
 
+    if (!confirm(`CONFIRMA O RESGATE DE R$ ${val.toFixed(2)}?`)) {
+      return;
+    }
+
+    setRequesting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/asaas-request-payout`, {
@@ -103,16 +118,22 @@ export default function FinanceDashboard() {
           'Authorization': `Bearer ${session?.access_token}`,
           'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
         },
-        body: JSON.stringify({ userId: user?.id })
+        body: JSON.stringify({ 
+          userId: user?.id,
+          amount: val // Enviando o valor customizado
+        })
       });
 
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Falha ao processar saque.');
 
       alert(`SUCESSO! Resgate de R$ ${result.value.toFixed(2)} processado.`);
+      setIsPayoutAmountOpen(false);
       fetchFinanceData();
     } catch (err: any) {
       alert(`ERRO: ${err.message}`);
+    } finally {
+      setRequesting(false);
     }
   };
 
@@ -238,8 +259,57 @@ export default function FinanceDashboard() {
               <OperatorKYCForm onComplete={() => {
                 setIsKYCModalOpen(false);
                 fetchFinanceData();
-                alert('PROTOCOLO CONCLUÍDO! AGORA VOCÊ PODE SOLICITAR SEU RESGATE.');
+                setIsPayoutAmountOpen(true);
+                setWithdrawalValue(stats.available.toString());
               }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DEFINIR VALOR DO SAQUE */}
+      {isPayoutAmountOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setIsPayoutAmountOpen(false)}></div>
+          <div className="relative w-full max-w-md bg-surface border border-primary/30 p-8 shadow-[0_0_50px_rgba(251,191,36,0.1)]">
+            <h3 className="text-sm font-black text-white uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary">payments</span>
+              Solicitar Resgate
+            </h3>
+            
+            <div className="mb-6 bg-black/40 p-4 border border-white/5">
+              <span className="text-[10px] text-slate-500 uppercase font-black block mb-1">Disponível para saque</span>
+              <span className="text-xl font-black text-primary italic">R$ {stats.available.toFixed(2)}</span>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-[9px] text-slate-500 font-black uppercase tracking-widest block mb-1">Valor do Resgate (R$)</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  value={withdrawalValue}
+                  onChange={(e) => setWithdrawalValue(e.target.value)}
+                  placeholder="0,00"
+                  className="w-full bg-background-dark/50 border border-white/10 p-4 text-xl font-black text-white outline-none focus:border-primary transition-colors text-center italic"
+                />
+              </div>
+
+              <div className="pt-4 flex gap-2">
+                <button 
+                  onClick={() => setIsPayoutAmountOpen(false)}
+                  className="flex-1 bg-white/5 hover:bg-white/10 text-white font-black py-4 px-6 text-[9px] uppercase tracking-[0.2em] transition-all"
+                >
+                  CANCELAR
+                </button>
+                <button 
+                  onClick={executePayout}
+                  disabled={requesting}
+                  className="flex-[2] bg-primary hover:bg-white text-background-dark font-black py-4 px-8 text-[9px] uppercase tracking-[0.2em] transition-all disabled:opacity-50"
+                >
+                  {requesting ? 'PROCESSANDO...' : 'CONFIRMAR RESGATE'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

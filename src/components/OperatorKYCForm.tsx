@@ -639,16 +639,24 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
                     AVANÇAR
                   </button>
                 ) : (
-                  kycStatus !== 'approved' && (
-                    <button 
-                      type="button"
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="bg-primary hover:bg-white text-background-dark font-black py-4 px-8 text-[9px] uppercase tracking-[0.2em] transition-all disabled:opacity-50 w-full md:w-auto"
-                    >
-                      {saving ? 'PROCESSANDO...' : 'FINALIZAR VERIFICAÇÃO'}
-                    </button>
-                  )
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      if (kycStatus === 'approved') {
+                        if (onComplete) onComplete();
+                      } else {
+                        handleSave();
+                      }
+                    }}
+                    disabled={saving}
+                    className="bg-primary hover:bg-white text-background-dark font-black py-4 px-8 text-[9px] uppercase tracking-[0.2em] transition-all disabled:opacity-50 w-full md:w-auto"
+                  >
+                    {saving 
+                      ? 'PROCESSANDO...' 
+                      : kycStatus === 'approved' 
+                        ? 'PROSSEGUIR PARA SAQUE' 
+                        : 'FINALIZAR VERIFICAÇÃO'}
+                  </button>
                 )}
               </div>
           </div>
