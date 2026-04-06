@@ -656,7 +656,7 @@ export default function OrganizerDashboard() {
                            { label: 'Deployment', icon: 'local_shipping', done: stats.successfulShipments > 0, desc: 'Logística' },
                            { label: 'Extração', icon: 'payments', done: false, desc: 'Provisões' }
                          ].map((step, idx) => (
-                           <div key={idx} className={`flex-shrink-0 w-[160px] lg:w-full group p-6 lg:p-8 border transition-all relative overflow-hidden ${step.done ? 'card-hud border-primary/30' : 'bg-surface/5 border-white/5 opacity-30 grayscale'}`}>
+                           <div key={idx} className={`flex-shrink-0 w-[160px] lg:w-full group p-6 lg:p-8 border transition-all relative overflow-hidden ${step.done ? 'card-hud border-primary/30 shadow-[0_0_20px_rgba(251,191,36,0.05)]' : 'bg-surface/10 border-white/10 border-dashed opacity-70'}`}>
                               {step.done && (
                                 <div className="windows-loader">
                                    <div className="windows-loader-bar"></div>
@@ -692,7 +692,7 @@ export default function OrganizerDashboard() {
                            { label: 'Execute', icon: 'sports_esports', done: events.some(e => e.type === 'mission' && new Date(e.event_date) < new Date()), desc: 'Missão' },
                            { label: 'Payday', icon: 'payments', done: false, desc: 'Créditos' }
                          ].map((step, idx) => (
-                           <div key={idx} className={`flex-shrink-0 w-[160px] lg:w-full group p-6 lg:p-8 border transition-all relative overflow-hidden ${step.done ? 'bg-primary/5 border-primary/20 shadow-[0_0_15px_rgba(251,191,36,0.05)]' : 'bg-surface/5 border-white/5 opacity-20'}`}>
+                           <div key={idx} className={`flex-shrink-0 w-[160px] lg:w-full group p-6 lg:p-8 border transition-all relative overflow-hidden ${step.done ? 'bg-primary/5 border-primary/20 shadow-[0_0_15px_rgba(251,191,36,0.05)]' : 'bg-surface/10 border-white/10 border-dashed opacity-60'}`}>
                               {step.done && (
                                 <div className="windows-loader">
                                    <div className="windows-loader-bar"></div>
