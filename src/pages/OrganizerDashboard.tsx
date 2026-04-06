@@ -244,8 +244,8 @@ export default function OrganizerDashboard() {
           left: -40%;
           width: 40%;
           height: 100%;
-          background: var(--primary);
-          box-shadow: 0 0 10px var(--primary);
+          background: #10b981; /* Verde Emerald 500 */
+          box-shadow: 0 0 10px #10b981;
           animation: windows-loading 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
         }
         .no-scrollbar::-webkit-scrollbar {
@@ -656,14 +656,14 @@ export default function OrganizerDashboard() {
                            { label: 'Deployment', icon: 'local_shipping', done: stats.successfulShipments > 0, desc: 'Logística' },
                            { label: 'Extração', icon: 'payments', done: false, desc: 'Provisões' }
                          ].map((step, idx) => (
-                           <div key={idx} className={`flex-shrink-0 w-[160px] lg:w-full group p-6 lg:p-8 border transition-all relative overflow-hidden ${step.done ? 'card-hud border-primary/30 shadow-[0_0_20px_rgba(251,191,36,0.05)]' : 'bg-surface/10 border-white/10 border-dashed opacity-70'}`}>
+                           <div key={idx} className={`flex-shrink-0 w-[160px] lg:w-full group p-6 lg:p-8 border transition-all relative overflow-hidden ${step.done ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-surface/10 border-white/10 border-dashed opacity-70'}`}>
                               {step.done && (
                                 <div className="windows-loader">
                                    <div className="windows-loader-bar"></div>
                                 </div>
                               )}
                               <div className="flex flex-col items-center text-center relative z-10">
-                                 <span className={`material-symbols-outlined text-2xl lg:text-3xl mb-3 transition-transform group-hover:scale-110 ${step.done ? 'text-primary drop-shadow-[0_0_10px_rgba(251,191,36,0.3)]' : 'text-slate-700'}`}>
+                                 <span className={`material-symbols-outlined text-2xl lg:text-3xl mb-3 transition-transform group-hover:scale-110 ${step.done ? 'text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'text-slate-700'}`}>
                                    {step.icon}
                                  </span>
                                  <div className={`text-[9px] lg:text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${step.done ? 'text-white' : 'text-slate-600'}`}>
@@ -684,7 +684,7 @@ export default function OrganizerDashboard() {
                          <h4 className="text-sm font-black text-white uppercase tracking-[0.4em] italic text-white/50">Fluxo Operacional: Missões</h4>
                       </div>
                       
-                      <div className="flex overflow-x-auto lg:grid lg:grid-cols-5 gap-4 pb-4 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0 opacity-80">
+                      <div className="flex overflow-x-auto lg:grid lg:grid-cols-5 gap-4 pb-4 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
                          {[
                            { label: 'Setor Recon', icon: 'domain', done: events.filter(e => e.type === 'mission').length > 0, desc: 'Área' },
                            { label: 'Intel Script', icon: 'description', done: events.filter(e => e.type === 'mission').length > 0, desc: 'Regras' },
@@ -692,20 +692,21 @@ export default function OrganizerDashboard() {
                            { label: 'Execute', icon: 'sports_esports', done: events.some(e => e.type === 'mission' && new Date(e.event_date) < new Date()), desc: 'Missão' },
                            { label: 'Payday', icon: 'payments', done: false, desc: 'Créditos' }
                          ].map((step, idx) => (
-                           <div key={idx} className={`flex-shrink-0 w-[160px] lg:w-full group p-6 lg:p-8 border transition-all relative overflow-hidden ${step.done ? 'bg-primary/5 border-primary/20 shadow-[0_0_15px_rgba(251,191,36,0.05)]' : 'bg-surface/10 border-white/10 border-dashed opacity-60'}`}>
+                           <div key={idx} className={`flex-shrink-0 w-[160px] lg:w-full group p-6 lg:p-8 border transition-all relative overflow-hidden ${step.done ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-surface/10 border-white/10 border-dashed opacity-60'}`}>
                               {step.done && (
                                 <div className="windows-loader">
                                    <div className="windows-loader-bar"></div>
                                 </div>
                               )}
-                              <div className="flex flex-col items-center text-center">
-                                 <span className={`material-symbols-outlined text-2xl lg:text-3xl mb-3 ${step.done ? 'text-primary' : 'text-slate-800'}`}>
+                              <div className="flex flex-col items-center text-center relative z-10">
+                                 <span className={`material-symbols-outlined text-2xl lg:text-3xl mb-3 transition-transform group-hover:scale-110 ${step.done ? 'text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'text-slate-700'}`}>
                                    {step.icon}
                                  </span>
-                                 <div className={`text-[9px] lg:text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${step.done ? 'text-white' : 'text-slate-700'}`}>
+                                 <div className={`text-[9px] lg:text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${step.done ? 'text-white' : 'text-slate-600'}`}>
                                    {step.label}
                                  </div>
-                                 <p className="text-[8px] text-slate-500 font-mono uppercase italic tracking-tighter tracking-[0.1em]">{step.desc}</p>
+                                 <div className="h-px w-6 bg-white/10 mb-3"></div>
+                                 <p className="text-[8px] text-slate-500 font-mono uppercase italic tracking-tighter leading-tight tracking-[0.1em]">{step.desc}</p>
                               </div>
                            </div>
                          ))}
