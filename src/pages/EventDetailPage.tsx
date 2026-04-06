@@ -356,20 +356,7 @@ export default function EventDetailPage() {
                 </div>
               )}
 
-              {/* Info do QR Code */}
-              {!isSoldOut && (
-                <div className="mt-6 pt-6 border-t border-white/5">
-                  <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 p-4">
-                    <span className="material-symbols-outlined text-primary text-xl">qr_code_2</span>
-                    <div>
-                      <p className="text-[9px] font-black text-white uppercase tracking-widest">Ingresso Digital</p>
-                      <p className="text-[8px] text-slate-500 font-mono uppercase">
-                        QR Code enviado por email após pagamento
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Info do QR Code removida conforme solicitação do usuário */}
             </div>
           </div>
 
