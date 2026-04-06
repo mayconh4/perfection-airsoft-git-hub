@@ -308,10 +308,6 @@ export default function EventDetailPage() {
                       <span>{quantity}x Ingresso</span>
                       <span>R$ {event.ticket_price.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-[11px] font-mono uppercase text-slate-400">
-                      <span>Taxa de Operação</span>
-                      <span>Incluso</span>
-                    </div>
                     <div className="pt-4 border-t border-white/10 flex justify-between items-center">
                       <span className="text-xs font-black text-white uppercase tracking-widest">Total</span>
                       <span className="text-2xl font-black text-primary">R$ {totalPrice.toFixed(2)}</span>
