@@ -225,6 +225,36 @@ export default function OrganizerDashboard() {
           border-color: rgba(251, 191, 36, 0.2);
           background: linear-gradient(135deg, rgba(251, 191, 36, 0.05) 0%, rgba(251, 191, 36, 0.02) 100%);
         }
+        @keyframes windows-loading {
+          0% { left: -40%; }
+          100% { left: 100%; }
+        }
+        .windows-loader {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: 2px;
+          background: rgba(255, 255, 255, 0.05);
+          overflow: hidden;
+        }
+        .windows-loader-bar {
+          position: absolute;
+          top: 0;
+          left: -40%;
+          width: 40%;
+          height: 100%;
+          background: var(--primary);
+          box-shadow: 0 0 10px var(--primary);
+          animation: windows-loading 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
       `}</style>
       <SEO title="Painel do Organizador | Perfection Airsoft" />
 
@@ -618,31 +648,29 @@ export default function OrganizerDashboard() {
                          <h4 className="text-sm font-black text-white uppercase tracking-[0.4em] italic">Análise de Fluxo: Drops</h4>
                       </div>
                       
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                      <div className="flex overflow-x-auto lg:grid lg:grid-cols-5 gap-4 pb-4 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
                          {[
-                           { label: 'Engajamento', icon: 'confirmation_number', done: stats.ticketsSold > 0, desc: 'Mobilização de base' },
-                           { label: 'Sorteio', icon: 'casino', done: stats.completedDrops > 0, desc: 'Processamento aleatório' },
-                           { label: 'Target ID', icon: 'person_search', done: winners.length > 0, desc: 'Identificação vencedor' },
-                           { label: 'Deployment', icon: 'local_shipping', done: stats.successfulShipments > 0, desc: 'Logística de prêmio' },
-                           { label: 'Extração', icon: 'payments', done: false, desc: 'Resgate de provisões' }
+                           { label: 'Engajamento', icon: 'confirmation_number', done: stats.ticketsSold > 0, desc: 'Mobilização' },
+                           { label: 'Sorteio', icon: 'casino', done: stats.completedDrops > 0, desc: 'Processamento' },
+                           { label: 'Target ID', icon: 'person_search', done: winners.length > 0, desc: 'Identificação' },
+                           { label: 'Deployment', icon: 'local_shipping', done: stats.successfulShipments > 0, desc: 'Logística' },
+                           { label: 'Extração', icon: 'payments', done: false, desc: 'Provisões' }
                          ].map((step, idx) => (
-                           <div key={idx} className={`group p-8 border transition-all relative overflow-hidden ${step.done ? 'card-hud border-primary/30' : 'bg-surface/5 border-white/5 opacity-30 grayscale'}`}>
-                              {step.done && <div className="absolute top-0 left-0 w-full h-[1px] bg-primary animate-scanner opacity-50"></div>}
+                           <div key={idx} className={`flex-shrink-0 w-[160px] lg:w-full group p-6 lg:p-8 border transition-all relative overflow-hidden ${step.done ? 'card-hud border-primary/30' : 'bg-surface/5 border-white/5 opacity-30 grayscale'}`}>
+                              {step.done && (
+                                <div className="windows-loader">
+                                   <div className="windows-loader-bar"></div>
+                                </div>
+                              )}
                               <div className="flex flex-col items-center text-center relative z-10">
-                                 <span className={`material-symbols-outlined text-3xl mb-4 transition-transform group-hover:scale-110 ${step.done ? 'text-primary drop-shadow-[0_0_10px_rgba(251,191,36,0.3)]' : 'text-slate-700'}`}>
+                                 <span className={`material-symbols-outlined text-2xl lg:text-3xl mb-3 transition-transform group-hover:scale-110 ${step.done ? 'text-primary drop-shadow-[0_0_10px_rgba(251,191,36,0.3)]' : 'text-slate-700'}`}>
                                    {step.icon}
                                  </span>
-                                 <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${step.done ? 'text-white' : 'text-slate-600'}`}>
+                                 <div className={`text-[9px] lg:text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${step.done ? 'text-white' : 'text-slate-600'}`}>
                                    {step.label}
                                  </div>
                                  <div className="h-px w-6 bg-white/10 mb-3"></div>
                                  <p className="text-[8px] text-slate-500 font-mono uppercase italic tracking-tighter leading-tight tracking-[0.1em]">{step.desc}</p>
-                                 {step.done && (
-                                   <div className="mt-5 flex items-center gap-1.5 text-[8px] font-black text-primary animate-pulse tracking-widest">
-                                      <span className="material-symbols-outlined text-[14px]">verified</span>
-                                      SYSTEM_OK
-                                   </div>
-                                 )}
                               </div>
                            </div>
                          ))}
@@ -656,28 +684,28 @@ export default function OrganizerDashboard() {
                          <h4 className="text-sm font-black text-white uppercase tracking-[0.4em] italic text-white/50">Fluxo Operacional: Missões</h4>
                       </div>
                       
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 opacity-80">
+                      <div className="flex overflow-x-auto lg:grid lg:grid-cols-5 gap-4 pb-4 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0 opacity-80">
                          {[
-                           { label: 'Setor Recon', icon: 'domain', done: events.filter(e => e.type === 'mission').length > 0, desc: 'Cadastro de área' },
-                           { label: 'Intel Script', icon: 'description', done: events.filter(e => e.type === 'mission').length > 0, desc: 'Missão & Regras' },
-                           { label: 'Troop Build', icon: 'group_add', done: events.some(e => e.type === 'mission' && e.sold_count > 0), desc: 'Venda de tickets' },
-                           { label: 'Execute', icon: 'sports_esports', done: events.some(e => e.type === 'mission' && new Date(e.event_date) < new Date()), desc: 'Operação tática' },
-                           { label: 'Payday', icon: 'payments', done: false, desc: 'Resgate de créditos' }
+                           { label: 'Setor Recon', icon: 'domain', done: events.filter(e => e.type === 'mission').length > 0, desc: 'Área' },
+                           { label: 'Intel Script', icon: 'description', done: events.filter(e => e.type === 'mission').length > 0, desc: 'Regras' },
+                           { label: 'Troop Build', icon: 'group_add', done: events.some(e => e.type === 'mission' && e.sold_count > 0), desc: 'Inscrições' },
+                           { label: 'Execute', icon: 'sports_esports', done: events.some(e => e.type === 'mission' && new Date(e.event_date) < new Date()), desc: 'Missão' },
+                           { label: 'Payday', icon: 'payments', done: false, desc: 'Créditos' }
                          ].map((step, idx) => (
-                           <div key={idx} className={`group p-8 border transition-all relative overflow-hidden ${step.done ? 'bg-primary/5 border-primary/20 shadow-[0_0_15px_rgba(251,191,36,0.05)]' : 'bg-surface/5 border-white/5 opacity-20'}`}>
+                           <div key={idx} className={`flex-shrink-0 w-[160px] lg:w-full group p-6 lg:p-8 border transition-all relative overflow-hidden ${step.done ? 'bg-primary/5 border-primary/20 shadow-[0_0_15px_rgba(251,191,36,0.05)]' : 'bg-surface/5 border-white/5 opacity-20'}`}>
+                              {step.done && (
+                                <div className="windows-loader">
+                                   <div className="windows-loader-bar"></div>
+                                </div>
+                              )}
                               <div className="flex flex-col items-center text-center">
-                                 <span className={`material-symbols-outlined text-3xl mb-4 ${step.done ? 'text-primary' : 'text-slate-800'}`}>
+                                 <span className={`material-symbols-outlined text-2xl lg:text-3xl mb-3 ${step.done ? 'text-primary' : 'text-slate-800'}`}>
                                    {step.icon}
                                  </span>
-                                 <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${step.done ? 'text-white' : 'text-slate-700'}`}>
+                                 <div className={`text-[9px] lg:text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${step.done ? 'text-white' : 'text-slate-700'}`}>
                                    {step.label}
                                  </div>
                                  <p className="text-[8px] text-slate-500 font-mono uppercase italic tracking-tighter tracking-[0.1em]">{step.desc}</p>
-                                 {step.done && (
-                                   <div className="mt-5 text-[8px] font-black text-primary/60 tracking-widest">
-                                      ACK_SIGNAL
-                                   </div>
-                                 )}
                               </div>
                            </div>
                          ))}
