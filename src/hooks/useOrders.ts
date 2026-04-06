@@ -17,7 +17,7 @@ export function useOrders() {
       const { data } = await withRetry<Order[]>(async () => {
         return await supabase
           .from('orders')
-          .select('id, total, status, created_at, items:order_items(id, product_name, product_price, quantity)')
+          .select('id, total, status, created_at, items:order_items(id, product_name, product_price, quantity, metadata)')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
       });

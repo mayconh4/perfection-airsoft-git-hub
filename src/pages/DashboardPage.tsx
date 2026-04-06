@@ -5,8 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useEffect } from 'react';
 import { formatPrice, statusLabels, type Order } from '../types/database';
+import { getTacticalCode, formatTacticalTimestamp } from '../lib/utils';
 
-type DashboardTab = 'pedidos' | 'perfil' | 'enderecos';
+type DashboardTab = 'pedidos' | 'eventos' | 'perfil' | 'enderecos';
 
 export function DashboardPage() {
   const { orders, loading } = useOrders();
@@ -45,6 +46,7 @@ export function DashboardPage() {
 
             {[
               { id: 'pedidos', label: 'Meus Pedidos', icon: 'receipt_long' },
+              { id: 'eventos', label: 'Meus Eventos', icon: 'confirmation_number' },
               { id: 'perfil', label: 'Dados do Operador', icon: 'person' },
               { id: 'enderecos', label: 'Endereços', icon: 'location_on' },
             ].map(tab => (
@@ -68,6 +70,10 @@ export function DashboardPage() {
             ) : (
               <OrdersList orders={orders} loading={loading} onSelect={setSelectedOrder} />
             )
+          )}
+
+          {activeTab === 'eventos' && (
+            <EventsList orders={orders} loading={loading} />
           )}
           
           {activeTab === 'perfil' && <ProfileForm user={user} />}
@@ -139,7 +145,7 @@ function OrdersList({ orders, loading, onSelect }: { orders: Order[], loading: b
             return (
               <tr key={o.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
                 <td className="p-4">
-                  <span className="text-xs font-mono text-primary group-hover:underline">#{o.id.slice(0, 8).toUpperCase()}</span>
+                  <span className="text-xs font-mono text-primary group-hover:underline uppercase font-bold tracking-widest">{getTacticalCode(o.id)}</span>
                   <p className="text-[10px] text-white/30 hidden sm:block">{formatPrice(o.total)}</p>
                 </td>
                 <td className="p-4 text-[10px] text-slate-400 hidden sm:table-cell text-center font-bold tracking-widest">
@@ -182,8 +188,8 @@ function OrderDetails({ order, onBack }: { order: Order, onBack: () => void }) {
           <div className="bg-surface border border-border-tactical p-6">
             <div className="flex justify-between items-start mb-6">
               <div>
-                <h2 className="text-xl font-black text-white tracking-tighter uppercase mb-2">Pedido #{order.id.slice(0, 8).toUpperCase()}</h2>
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Realizado em {new Date(order.created_at).toLocaleString('pt-BR')}</p>
+                <h2 className="text-xl font-black text-white tracking-tighter uppercase mb-2">Pedido {getTacticalCode(order.id)}</h2>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Realizado em {formatTacticalTimestamp(order.created_at)}</p>
               </div>
               <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 border ${st.color}`}>{st.label}</span>
             </div>
@@ -313,6 +319,101 @@ function ProfileForm({ user }: { user: any }) {
           Abrir Rádio
         </a>
       </div>
+    </div>
+  );
+}
+
+// Sub-component: Events List
+function EventsList({ orders, loading }: { orders: Order[], loading: boolean }) {
+  if (loading) return <div className="text-center py-20 text-primary animate-pulse uppercase tracking-widest text-xs">Escaneando base de dados...</div>;
+
+  // Extrair tickets válidos de pedidos pagos
+  const tickets: { item: any, order: Order }[] = [];
+  orders.forEach(order => {
+    if (order.status === 'pago') {
+      order.items?.forEach(item => {
+        if (item.metadata?.type === 'ticket') {
+          tickets.push({ item, order });
+        }
+      });
+    }
+  });
+
+  if (tickets.length === 0) return (
+    <div className="bg-surface border border-border-tactical p-12 text-center">
+      <span className="material-symbols-outlined text-slate-600 text-6xl mb-4 block">confirmation_number</span>
+      <p className="text-slate-500 uppercase tracking-widest mb-6 font-bold">Nenhum evento reservado</p>
+      <Link to="/eventos" className="bg-primary text-background-dark font-bold py-3 px-8 uppercase tracking-widest inline-block text-xs">Ver Eventos</Link>
+    </div>
+  );
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {tickets.map((t, idx) => {
+        const eventDate = t.item.metadata?.event_date ? new Date(t.item.metadata.event_date) : null;
+        const purchaseDate = new Date(t.order.created_at);
+        const location = t.item.metadata?.event_location || 'Local não informado';
+        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+        
+        return (
+          <div key={idx} className="bg-surface border border-white/5 overflow-hidden flex flex-col group hover:border-primary/30 transition-all duration-300">
+            {/* Header: Imagem/Mapa (Simulado) */}
+            <div className="h-32 bg-background-dark relative overflow-hidden">
+               <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent opacity-60 z-10" />
+               <div className="absolute inset-0 flex items-center justify-center">
+                 <span className="material-symbols-outlined text-white/5 text-8xl">map</span>
+               </div>
+               {/* Se houver imagem no produto, ela apareceria aqui */}
+               <div className="absolute bottom-4 left-4 z-20">
+                  <span className="text-[9px] font-black bg-primary text-black px-2 py-0.5 uppercase tracking-widest shadow-lg italic">Confirmado</span>
+               </div>
+            </div>
+
+            <div className="p-5 space-y-4 flex-1">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="text-sm font-black text-white uppercase tracking-tighter mb-1 select-none">{t.item.metadata?.event_title || t.item.product_name}</h4>
+                  <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold flex items-center gap-1 group-hover:text-primary transition-colors">
+                    <span className="material-symbols-outlined text-xs">pin_drop</span>
+                    {location}
+                  </p>
+                </div>
+                <div className="text-right">
+                   <p className="text-[8px] text-slate-600 uppercase font-black tracking-widest mb-1">ID Tático</p>
+                   <p className="text-[10px] text-white font-mono font-bold tracking-widest bg-white/5 px-2 py-0.5 uppercase">{getTacticalCode(t.order.id)}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 py-4 border-y border-white/5">
+                <div>
+                  <span className="text-[8px] text-slate-600 uppercase font-black tracking-widest mb-1 block">Operador Digital</span>
+                  <p className="text-[10px] text-white font-black uppercase truncate">{t.order.customer_data?.name || 'Recruta'}</p>
+                </div>
+                <div>
+                  <span className="text-[8px] text-slate-600 uppercase font-black tracking-widest mb-1 block">Data da Missão</span>
+                  <p className="text-[10px] text-primary font-black uppercase font-mono">{eventDate?.toLocaleDateString('pt-BR') || '---'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <div>
+                  <span className="text-[8px] text-slate-600 uppercase font-black tracking-widest mb-1 block">Alistamento</span>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase">{purchaseDate.toLocaleDateString('pt-BR')}</p>
+                </div>
+                <a 
+                  href={mapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 text-[8px] font-black text-white uppercase tracking-widest hover:bg-primary hover:text-black hover:border-primary transition-all rounded-sm"
+                >
+                  <span className="material-symbols-outlined text-sm">open_in_new</span>
+                  Mapa de Operações
+                </a>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

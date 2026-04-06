@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { formatPrice } from '../types/database';
+import { getTacticalCode, formatTacticalTimestamp } from '../lib/utils';
 import type { Order } from '../types/database';
 
 export function OrderSuccessPage() {
@@ -125,22 +126,22 @@ export function OrderSuccessPage() {
   const isGuestOrder = !order.user_id;
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-12 max-w-4xl mx-auto">
-      <div className="text-center mb-12">
-        <span className="material-symbols-outlined text-green-500 text-6xl mb-4 block animate-bounce">task_alt</span>
-        <h1 className="text-4xl sm:text-5xl font-black text-white uppercase tracking-tighter mb-4 italic">Operação <span className="text-primary">Iniciada</span></h1>
-        <p className="text-slate-400 uppercase tracking-widest text-xs font-bold">Relatório tático gerado com sucesso</p>
+    <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-4xl mx-auto">
+      <div className="text-center mb-6">
+        <span className="material-symbols-outlined text-green-500 text-5xl mb-2 block animate-bounce">task_alt</span>
+        <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-tighter mb-2 italic">Operação <span className="text-primary">Iniciada</span></h1>
+        <p className="text-slate-400 uppercase tracking-widest text-[10px] font-bold">Relatório tático gerado com sucesso</p>
       </div>
 
       {isGuestOrder && !currentUser && !regSuccess && (
-        <div className="bg-primary/10 border border-primary/30 p-8 mb-8 rounded-lg shadow-[0_0_30px_rgba(255,193,7,0.1)] backdrop-blur-md">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="bg-primary text-black p-3 rounded-full">
-              <span className="material-symbols-outlined font-black">person_add</span>
+        <div className="bg-primary/10 border border-primary/30 p-6 mb-6 rounded-lg shadow-[0_0_30px_rgba(255,193,7,0.1)] backdrop-blur-md">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="bg-primary text-black p-2 rounded-full">
+              <span className="material-symbols-outlined font-black text-sm">person_add</span>
             </div>
             <div>
-              <h4 className="text-primary font-black uppercase text-sm tracking-widest">Finalizar Meu Acesso</h4>
-              <p className="text-[10px] text-white/50 uppercase font-bold">Crie seu login oficial para salvar seus tickets e prêmios.</p>
+              <h4 className="text-primary font-black uppercase text-xs tracking-widest">Finalizar Meu Acesso</h4>
+              <p className="text-[9px] text-white/50 uppercase font-bold">Salve seus tickets e prêmios agora.</p>
             </div>
           </div>
 
@@ -191,35 +192,35 @@ export function OrderSuccessPage() {
         </div>
       )}
 
-      <div className="bg-surface border border-white/5 p-8 relative overflow-hidden mb-8 backdrop-blur-md">
-        <div className="absolute top-0 right-0 p-8 opacity-5">
-          <span className="material-symbols-outlined text-[150px] text-primary">verified_user</span>
+      <div className="bg-surface border border-white/5 p-5 relative overflow-hidden mb-6 backdrop-blur-md">
+        <div className="absolute top-0 right-0 p-5 opacity-5">
+          <span className="material-symbols-outlined text-[120px] text-primary">verified_user</span>
         </div>
         
         <div className="relative z-10">
-          <h2 className="text-xs font-black tracking-[0.3em] text-primary uppercase mb-8 flex items-center gap-2">
+          <h2 className="text-[10px] font-black tracking-[0.3em] text-primary uppercase mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined text-sm">terminal</span> Manifesto Técnico do Pedido
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <p className="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest mb-2">Código da Operação</p>
-              <p className="text-white font-mono text-sm tracking-tighter bg-black/30 p-3 border border-white/5">{order.id.slice(0, 18)}...</p>
+              <p className="text-[9px] text-slate-500 font-extrabold uppercase tracking-widest mb-1">Código da Operação</p>
+              <p className="text-white font-mono text-xs tracking-widest bg-black/30 p-2 border border-white/5 uppercase font-bold">{getTacticalCode(order.id)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest mb-2">Timestamp do Pedido</p>
-              <p className="text-white text-sm uppercase font-black">{new Date(order.created_at).toLocaleString('pt-BR')}</p>
+              <p className="text-[9px] text-slate-500 font-extrabold uppercase tracking-widest mb-1">Timestamp do Pedido</p>
+              <p className="text-white text-xs uppercase font-black">{formatTacticalTimestamp(order.created_at)}</p>
             </div>
           </div>
 
-          <div className="border-t border-white/5 pt-8 mb-8">
-            <h3 className="text-xs font-black tracking-[0.3em] text-primary uppercase mb-5 flex items-center gap-2">
+          <div className="border-t border-white/5 pt-4 mb-4">
+            <h3 className="text-[10px] font-black tracking-[0.3em] text-primary uppercase mb-3 flex items-center gap-2">
               <span className="material-symbols-outlined text-sm">local_shipping</span> 
               {order.shipping_address?.street === 'Digital' ? 'Logística Digital' : 'Destino da Carga'}
             </h3>
-            <div className="bg-black/20 p-5 border border-white/5">
-              <p className="text-white text-sm uppercase font-black italic mb-2">{order.customer_data?.name}</p>
-              <p className="text-slate-400 text-[10px] uppercase font-bold tracking-[0.2em] leading-loose">
+            <div className="bg-black/20 p-4 border border-white/5">
+              <p className="text-white text-xs uppercase font-black italic mb-1">{order.customer_data?.name}</p>
+              <p className="text-slate-400 text-[9px] uppercase font-bold tracking-[0.2em] leading-relaxed">
                 {order.shipping_address?.street === 'Digital' 
                   ? (order.status === 'pago' 
                       ? 'SUA OPERAÇÃO FOI CONFIRMADA! OS TICKETS JÁ ESTÃO DISPONÍVEIS NO SEU PAINEL.' 
@@ -230,8 +231,8 @@ export function OrderSuccessPage() {
             </div>
           </div>
 
-          <div className="border-t border-white/5 pt-8 mb-8">
-            <h3 className="text-xs font-black tracking-[0.3em] text-primary uppercase mb-6 flex items-center gap-2">
+          <div className="border-t border-white/5 pt-4 mb-4">
+            <h3 className="text-[10px] font-black tracking-[0.3em] text-primary uppercase mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-sm">inventory</span> Inventário Adquirido
             </h3>
             <div className="space-y-4">
@@ -247,22 +248,22 @@ export function OrderSuccessPage() {
             </div>
           </div>
 
-          <div className="border-t-2 border-primary/20 pt-8 flex justify-between items-end">
+          <div className="border-t-2 border-primary/20 pt-6 flex justify-between items-end">
             <div>
-              <span className="text-[10px] font-black tracking-[0.3em] text-white/30 uppercase italic block mb-1">Status da Transação</span>
+              <span className="text-[9px] font-black tracking-[0.3em] text-white/30 uppercase italic block mb-1">Status da Transação</span>
               {order.status === 'pago' ? (
-                <span className="text-green-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 bg-green-500/10 px-3 py-1 border border-green-500/20">
-                  <span className="material-symbols-outlined text-[14px]">verified</span> PAGAMENTO APROVADO
+                <span className="text-green-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-1 bg-green-500/10 px-2 py-1 border border-green-500/20">
+                  <span className="material-symbols-outlined text-[12px]">verified</span> PAGAMENTO APROVADO
                 </span>
               ) : (
-                <span className="text-yellow-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[12px]">schedule</span> Aguardando Confirmação PIX
+                <span className="text-yellow-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[10px]">schedule</span> Aguardando Confirmação
                 </span>
               )}
             </div>
             <div className="text-right">
-              <span className="text-[10px] font-black tracking-[0.3em] text-white/30 uppercase italic block mb-1">Total a Investir</span>
-              <span className="text-4xl font-black text-primary font-mono tracking-tighter italic">{formatPrice(order.total, true)}</span>
+              <span className="text-[9px] font-black tracking-[0.3em] text-white/30 uppercase italic block mb-1">Total a Investir</span>
+              <span className="text-3xl font-black text-primary font-mono tracking-tighter italic">{formatPrice(order.total, true)}</span>
             </div>
           </div>
         </div>
