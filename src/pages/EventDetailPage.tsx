@@ -196,28 +196,28 @@ export default function EventDetailPage() {
             </section>
 
             {/* Info Grid */}
-            <section className="grid sm:grid-cols-2 gap-6">
-              <div className="bg-surface/30 p-6 border border-white/5">
-                <span className="material-symbols-outlined text-primary mb-3 block">event</span>
-                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Data e Hora</h4>
-                <p className="text-sm font-black text-white uppercase tracking-tighter">{dateStr}</p>
+            <section className="grid grid-cols-2 gap-3 md:gap-6">
+              <div className="bg-surface/30 p-4 md:p-6 border border-white/5">
+                <span className="material-symbols-outlined text-primary mb-2 md:mb-3 block text-xl">event</span>
+                <h4 className="text-[8px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 md:mb-2 text-wrap">Data e Hora</h4>
+                <p className="text-[11px] md:text-sm font-black text-white uppercase tracking-tighter">{dateStr}</p>
               </div>
-              <div className="bg-surface/30 p-6 border border-white/5">
-                <span className="material-symbols-outlined text-primary mb-3 block">pin_drop</span>
-                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Localização</h4>
-                <p className="text-sm font-black text-white uppercase tracking-tighter">{event.location || '—'}</p>
+              <div className="bg-surface/30 p-4 md:p-6 border border-white/5">
+                <span className="material-symbols-outlined text-primary mb-2 md:mb-3 block text-xl">pin_drop</span>
+                <h4 className="text-[8px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 md:mb-2 text-wrap">Localização</h4>
+                <p className="text-[11px] md:text-sm font-black text-white uppercase tracking-tighter">{event.location || '—'}</p>
               </div>
-              <div className="bg-surface/30 p-6 border border-white/5">
-                <span className="material-symbols-outlined text-primary mb-3 block">group</span>
-                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Capacidade</h4>
-                <p className="text-sm font-black text-white uppercase tracking-tighter">
-                  {event.sold_count} / {event.capacity} operadores
+              <div className="bg-surface/30 p-4 md:p-6 border border-white/5">
+                <span className="material-symbols-outlined text-primary mb-2 md:mb-3 block text-xl">group</span>
+                <h4 className="text-[8px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 md:mb-2 text-wrap">Capacidade</h4>
+                <p className="text-[11px] md:text-sm font-black text-white uppercase tracking-tighter text-wrap">
+                  {event.sold_count} / {event.capacity} ops
                 </p>
               </div>
-              <div className="bg-surface/30 p-6 border border-white/5">
-                <span className="material-symbols-outlined text-primary mb-3 block">confirmation_number</span>
-                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Vagas Restantes</h4>
-                <p className={`text-sm font-black uppercase tracking-tighter ${isSoldOut ? 'text-red-400' : 'text-primary'}`}>
+              <div className="bg-surface/30 p-4 md:p-6 border border-white/5">
+                <span className="material-symbols-outlined text-primary mb-2 md:mb-3 block text-xl">confirmation_number</span>
+                <h4 className="text-[8px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 md:mb-2 text-wrap">Vagas</h4>
+                <p className={`text-[11px] md:text-sm font-black uppercase tracking-tighter ${isSoldOut ? 'text-red-400' : 'text-primary'}`}>
                   {isSoldOut ? 'ESGOTADO' : `${spotsLeft} vagas`}
                 </p>
               </div>
