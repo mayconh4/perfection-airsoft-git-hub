@@ -438,7 +438,7 @@ export default function OrganizerDashboard() {
                     <div className="flex-1 text-center md:text-left">
                       <div className="flex items-center gap-3 justify-center md:justify-start mb-2">
                         <span className={`text-[10px] font-black uppercase tracking-[0.4em] px-3 py-1 border ${stats.trustLevel >= 5 ? 'border-yellow-500 text-yellow-500' : stats.trustLevel >= 3 ? 'border-primary text-primary' : 'border-slate-500 text-slate-500'}`}>
-                          {stats.trustLevel >= 5 ? 'OPERADOR ELITE' : stats.trustLevel >= 3 ? 'SPETSNAZ' : 'RECRUTA'}
+                          {stats.trustLevel >= 5 ? 'OPERADOR ELITE' : stats.trustLevel >= 3 ? 'OFICIAL 1' : 'RECRUTA'}
                         </span>
                         <span className="text-[10px] text-slate-500 font-mono">ID: {user?.id.slice(0, 8)}</span>
                       </div>
@@ -447,9 +447,19 @@ export default function OrganizerDashboard() {
                       </h3>
                       
                       <div className="space-y-2">
-                        <div className="flex justify-between text-[9px] font-black text-slate-500 uppercase">
-                          <span>Envios com Sucesso</span>
-                          <span>{stats.successfulShipments} / 3</span>
+                        <div className="flex justify-between items-end text-[9px] font-black text-slate-500 uppercase mb-1">
+                          <div className="flex flex-col items-start gap-1">
+                            <span className="text-[7px] text-slate-600 tracking-widest">NÍVEL ATUAL</span>
+                            <span className={stats.trustLevel < 3 ? 'text-white' : ''}>RECRUTA</span>
+                          </div>
+                          <div className="text-center pb-1">
+                            <span className="text-[10px] text-primary">{stats.successfulShipments} / 3</span>
+                            <div className="text-[7px] tracking-tighter opacity-50">ENVIOS</div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-[7px] text-slate-600 tracking-widest">PRÓX. PATENTE</span>
+                            <span className={stats.trustLevel >= 3 ? 'text-primary' : ''}>OFICIAL 1</span>
+                          </div>
                         </div>
                         <div className="h-2 w-full bg-white/5 overflow-hidden">
                           <div 
@@ -458,7 +468,7 @@ export default function OrganizerDashboard() {
                           />
                         </div>
                         <p className="text-[10px] text-slate-600 font-medium leading-relaxed italic mt-2">
-                          * 3 envios confirmados garantem a promoção para SPETSNAZ e agilizam seus resgates.
+                          * 3 envios confirmados garantem a promoção para OFICIAL 1 e agilizam seus resgates.
                         </p>
                       </div>
                     </div>
