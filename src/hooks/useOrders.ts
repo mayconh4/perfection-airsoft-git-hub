@@ -15,10 +15,12 @@ export function useOrders() {
       setLoading(true);
       
       const { data } = await withRetry<Order[]>(async () => {
+        // Busca híbrida: pedidos vinculados ao ID do usuário OU ao e-mail operacional (para casos de compra de convidado)
+        // Usamos .or() para capturar pedidos onde o user_id é o ID do usuário ou o e-mail no customer_data bate.
         return await supabase
           .from('orders')
-          .select('id, total, status, created_at, items:order_items(id, product_name, product_price, quantity, metadata)')
-          .eq('user_id', user.id)
+          .select('id, total, status, created_at, customer_data, items:order_items(id, product_name, product_price, quantity, metadata)')
+          .or(`user_id.eq.${user.id},customer_data->>email.eq.${user.email}`)
           .order('created_at', { ascending: false });
       });
       

@@ -327,11 +327,16 @@ function ProfileForm({ user }: { user: any }) {
 function EventsList({ orders, loading }: { orders: Order[], loading: boolean }) {
   if (loading) return <div className="text-center py-20 text-primary animate-pulse uppercase tracking-widest text-xs">Escaneando base de dados...</div>;
 
-  // Extrair tickets válidos de pedidos pagos
+  // Extrair tickets válidos (de pedidos pagos, pendentes ou em processamento)
   const tickets: { item: any, order: Order }[] = [];
   orders.forEach(order => {
-    if (order.status === 'pago') {
+    // Flexibilizar o filtro de status (permitir visualizar mesmo que pendente, mas com badge)
+    const status = order.status?.toLowerCase();
+    const isRelevantStatus = status === 'pago' || status === 'paga' || status === 'pendente' || status === 'processing';
+    
+    if (isRelevantStatus) {
       order.items?.forEach(item => {
+        // Log para depuração interna se necessário (removido no build final)
         if (item.metadata?.type === 'ticket') {
           tickets.push({ item, order });
         }
@@ -355,17 +360,37 @@ function EventsList({ orders, loading }: { orders: Order[], loading: boolean }) 
         const location = t.item.metadata?.event_location || 'Local não informado';
         const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
         
+        // Lógica de Status Temporal
+        const now = new Date();
+        const eventDateObj = t.item.metadata?.event_date ? new Date(t.item.metadata.event_date) : null;
+        const isFinished = eventDateObj && eventDateObj < now;
+        const isUpcoming = eventDateObj && eventDateObj >= now;
+        
+        // Status de Pagamento/Acesso
+        const isPaid = t.order.status?.toLowerCase() === 'pago' || t.order.status?.toLowerCase() === 'paga';
+
         return (
-          <div key={idx} className="bg-surface border border-white/5 overflow-hidden flex flex-col group hover:border-primary/30 transition-all duration-300">
+          <div key={idx} className={`bg-surface border overflow-hidden flex flex-col group transition-all duration-300 ${isFinished ? 'border-white/5 opacity-70' : 'border-white/5 hover:border-primary/30'}`}>
             {/* Header: Imagem/Mapa (Simulado) */}
             <div className="h-32 bg-background-dark relative overflow-hidden">
                <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent opacity-60 z-10" />
                <div className="absolute inset-0 flex items-center justify-center">
-                 <span className="material-symbols-outlined text-white/5 text-8xl">map</span>
+                 <span className={`material-symbols-outlined text-8xl ${isFinished ? 'text-white/5' : 'text-white/5 group-hover:text-primary/10 transition-colors'}`}>map</span>
                </div>
-               {/* Se houver imagem no produto, ela apareceria aqui */}
-               <div className="absolute bottom-4 left-4 z-20">
-                  <span className="text-[9px] font-black bg-primary text-black px-2 py-0.5 uppercase tracking-widest shadow-lg italic">Confirmado</span>
+               
+               <div className="absolute bottom-4 left-4 z-20 flex gap-2">
+                  {/* Status do Evento (Temporal) */}
+                  {isUpcoming && (
+                    <span className="text-[9px] font-black bg-primary text-black px-2 py-0.5 uppercase tracking-widest shadow-lg italic">🟢 Agendado</span>
+                  )}
+                  {isFinished && (
+                    <span className="text-[9px] font-black bg-slate-700 text-slate-300 px-2 py-0.5 uppercase tracking-widest shadow-lg italic">🔘 Finalizado</span>
+                  )}
+
+                  {/* Status de Pagamento */}
+                  {!isPaid && (
+                    <span className="text-[9px] font-black bg-amber-500 text-black px-2 py-0.5 uppercase tracking-widest shadow-lg italic">Aguardando PIX</span>
+                  )}
                </div>
             </div>
 
