@@ -78,14 +78,15 @@ export default function FinanceDashboard() {
   };
 
   const handleRequestPayout = async () => {
-    if (stats.available <= 0) {
-      alert('SALDO INSUFICIENTE PARA RESGATE.');
+    // 1º EXIGIR PROTOCOLO DE VERIFICAÇÃO SE NÃO ESTIVER VERIFICADO (Trust Level <= 0)
+    if (stats.trustLevel <= 0) {
+      setIsKYCModalOpen(true);
       return;
     }
 
-    // EXIGIR PROTOCOLO DE VERIFICAÇÃO SE NÃO ESTIVER VERIFICADO (Trust Level <= 0)
-    if (stats.trustLevel <= 0) {
-      setIsKYCModalOpen(true);
+    // 2º VERIFICAR SALDO APENAS SE JÁ ESTIVER VERIFICADO
+    if (stats.available <= 0) {
+      alert('SALDO INSUFICIENTE PARA RESGATE.');
       return;
     }
 
