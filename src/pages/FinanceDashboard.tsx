@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { OperatorKYCForm } from '../components/OperatorKYCForm';
 
 interface FinanceStats {
   available: number;
@@ -39,14 +40,12 @@ export default function FinanceDashboard() {
   const fetchFinanceData = async () => {
     setLoading(true);
     try {
-      // 1. Buscar Saldo Real
       const { data: balanceData } = await supabase
         .from('user_balances')
         .select('available_balance, pending_balance, total_earned')
         .eq('user_id', user?.id)
         .single();
 
-      // 2. Buscar Perfil para Rank/Confiança
       const { data: profile } = await supabase
         .from('profiles')
         .select('trust_level, completed_drops')
@@ -61,12 +60,10 @@ export default function FinanceDashboard() {
         completedDrops: profile?.completed_drops || 0
       });
 
-      // 3. Buscar Vendas Recentes (Extrato)
       const { data: orders } = await supabase
         .from('orders')
         .select('*, tickets(event_id, events(title))')
-        .eq('user_id', user?.id) // Idealmente filtrar por orders de outros que geraram saldo para este user, mas por enquanto pegamos as dele ou vinculadas ao seu evento
-        // NOTA: Em um sistema multi-vendedor, buscaríamos orders onde os tickets pertencem ao organizador
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -141,7 +138,6 @@ export default function FinanceDashboard() {
           </div>
         </div>
 
-        {/* Cards de Saldo - Design Premium Dourado */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <div className="bg-primary/10 border-2 border-primary p-10 relative overflow-hidden group">
             <div className="absolute -right-4 -top-4 opacity-5 group-hover:rotate-12 transition-transform">
@@ -179,15 +175,13 @@ export default function FinanceDashboard() {
           </div>
         </div>
 
-        {/* Extrato / Vendas Recentes */}
-        <div className="grid grid-cols-1 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           <div className="bg-surface/10 border border-white/5 p-8">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-primary">history</span>
-                <h3 className="text-lg font-black text-white uppercase tracking-widest">Extrato de Vendas</h3>
+                <h3 className="text-lg font-black text-white uppercase tracking-widest">Extrato Recente</h3>
               </div>
-              <span className="text-[10px] text-slate-600 font-mono">MOSTRANDO ÚLTIMAS 10 OPERAÇÕES</span>
             </div>
 
             <div className="space-y-4">
@@ -207,17 +201,19 @@ export default function FinanceDashboard() {
                     </div>
                     <div className="text-right">
                       <div className="text-[14px] font-black text-primary">+ R$ {order.total_amount.toFixed(2)}</div>
-                      <div className="text-[8px] text-slate-600 font-black uppercase tracking-tighter">CONFIRMADO via PIX</div>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="py-20 text-center border border-dashed border-white/5">
-                  <span className="material-symbols-outlined text-slate-700 text-5xl block mb-4">search_off</span>
-                  <p className="text-xs text-slate-500 uppercase font-black">Nenhuma venda registrada no extrato.</p>
+                <div className="py-12 text-center border border-dashed border-white/5">
+                  <p className="text-xs text-slate-500 uppercase font-black">Sem transações.</p>
                 </div>
               )}
             </div>
+          </div>
+
+          <div className="bg-black/20 p-2">
+             <OperatorKYCForm />
           </div>
         </div>
       </div>

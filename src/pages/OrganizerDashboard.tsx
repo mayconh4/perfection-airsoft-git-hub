@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { OperatorKYCForm } from '../components/OperatorKYCForm';
 
 interface EventStats {
   ticketsSold: number;
@@ -343,7 +342,9 @@ export default function OrganizerDashboard() {
               <div className="space-y-6">
                 <Link to="/drop/criar" className="w-full flex items-center justify-between p-6 border border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all group">
                   <div className="flex items-center gap-4">
-                    <div className="size-12 bg-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-all"><span className="material-symbols-outlined">rocket</span></div>
+                    <div className="size-12 bg-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-all">
+                      <span className="material-symbols-outlined">rocket</span>
+                    </div>
                     <div>
                       <h4 className="text-sm font-black text-white uppercase tracking-widest">Lançar Novo Drop (Rifa)</h4>
                       <p className="text-[10px] text-slate-500 font-mono uppercase">Configurar prêmio, cotas, valores e regras.</p>
@@ -415,7 +416,6 @@ export default function OrganizerDashboard() {
                     </div>
                   ) : <p className="text-[10px] text-slate-600 font-black text-center py-12 border border-dashed border-white/5 uppercase">Nenhuma entrega pendente.</p>}
                 </div>
-                <OperatorKYCForm />
               </div>
             )}
 
