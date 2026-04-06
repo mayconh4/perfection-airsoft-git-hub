@@ -336,22 +336,22 @@ export default function OrganizerDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
-            <div className="card-hud p-10 group hover:border-primary/20 transition-all relative overflow-hidden">
+          <div className="grid grid-cols-2 gap-3 md:gap-6 mb-12">
+            <div className="card-hud p-4 md:p-10 group hover:border-primary/20 transition-all relative overflow-hidden flex flex-col justify-center">
                {/* Decorative Background Icon */}
-               <span className="material-symbols-outlined absolute -right-4 -bottom-4 text-8xl text-white/[0.02] rotate-12 group-hover:text-primary/[0.05] transition-colors">monitoring</span>
-              <span className="text-[9px] text-slate-500 font-black uppercase tracking-[0.3em] block mb-2 font-mono">Operações Monitoradas</span>
-              <div className="flex items-end gap-2">
-                <span className="text-5xl font-black text-white leading-none tracking-tighter">{events.length}</span>
-                <span className="text-primary font-black text-[10px] mb-1.5 animate-pulse">ACTIVE</span>
+               <span className="material-symbols-outlined absolute -right-2 -bottom-2 md:-right-4 md:-bottom-4 text-5xl md:text-8xl text-white/[0.02] rotate-12 group-hover:text-primary/[0.05] transition-colors">monitoring</span>
+              <span className="text-[7px] md:text-[9px] text-slate-500 font-black uppercase tracking-[0.2em] md:tracking-[0.3em] block mb-1 md:mb-2 font-mono">Operações Monitoradas</span>
+              <div className="flex items-end gap-1 md:gap-2">
+                <span className="text-2xl md:text-5xl font-black text-white leading-none tracking-tighter">{events.length}</span>
+                <span className="text-primary font-black text-[8px] md:text-[10px] mb-0.5 md:mb-1.5 animate-pulse">ACTIVE</span>
               </div>
             </div>
-            <div className="card-hud p-10 group hover:border-primary/20 transition-all relative overflow-hidden">
-               <span className="material-symbols-outlined absolute -right-4 -bottom-4 text-8xl text-white/[0.02] -rotate-12 group-hover:text-primary/[0.05] transition-colors">group</span>
-              <span className="text-[9px] text-slate-500 font-black uppercase tracking-[0.3em] block mb-2 font-mono">Engajamento Total</span>
-              <div className="flex items-end gap-2">
-                <span className="text-5xl font-black text-white leading-none tracking-tighter">{stats.ticketsSold}</span>
-                <span className="text-slate-600 font-black text-[9px] mb-1.5 uppercase tracking-tighter">Tickets v7.4</span>
+            <div className="card-hud p-4 md:p-10 group hover:border-primary/20 transition-all relative overflow-hidden flex flex-col justify-center">
+               <span className="material-symbols-outlined absolute -right-2 -bottom-2 md:-right-4 md:-bottom-4 text-5xl md:text-8xl text-white/[0.02] -rotate-12 group-hover:text-primary/[0.05] transition-colors">group</span>
+              <span className="text-[7px] md:text-[9px] text-slate-500 font-black uppercase tracking-[0.2em] md:tracking-[0.3em] block mb-1 md:mb-2 font-mono">Engajamento Total</span>
+              <div className="flex items-end gap-1 md:gap-2">
+                <span className="text-2xl md:text-5xl font-black text-white leading-none tracking-tighter">{stats.ticketsSold}</span>
+                <span className="text-slate-600 font-black text-[7px] md:text-[9px] mb-0.5 md:mb-1.5 uppercase tracking-tighter">Tickets</span>
               </div>
             </div>
           </div>
