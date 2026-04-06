@@ -284,7 +284,7 @@ export default function OrganizerDashboard() {
                 onClick={() => setActiveTab(tab as any)}
                 className={`pb-4 text-[10px] uppercase font-black tracking-[0.3em] transition-all relative ${activeTab === tab ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
               >
-                {tab === 'missions' ? 'Operações Ativas' : tab === 'drops' ? 'Drops / Rifas' : tab === 'logistics' ? 'Saque/ entrega' : 'Relatórios'}
+                {tab === 'missions' ? 'Operações Ativas' : tab === 'drops' ? 'Drops / Rifas' : tab === 'logistics' ? 'Logística' : 'Relatórios'}
                 {activeTab === tab && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></span>}
               </button>
             ))}
@@ -387,7 +387,7 @@ export default function OrganizerDashboard() {
                 <div className="bg-surface/20 border border-white/5 p-8">
                   <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6 flex items-center gap-3">
                     <span className="material-symbols-outlined text-primary">local_shipping</span>
-                    Saque/ entrega
+                    Logística
                   </h3>
                   {winners.length > 0 ? (
                     <div className="grid gap-4">
