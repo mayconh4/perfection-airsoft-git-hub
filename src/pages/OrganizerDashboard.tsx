@@ -358,18 +358,18 @@ export default function OrganizerDashboard() {
 
           <div className="flex flex-wrap items-center gap-2 mb-10 bg-surface/20 p-2 rounded-sm border border-white/5">
             {[
-              { id: 'missions', label: 'Operações Ativas', icon: 'military_tech' },
-              { id: 'drops', label: 'Drops / Rifas', icon: 'rocket' },
+              { id: 'missions', label: 'Missões', icon: 'military_tech' },
+              { id: 'drops', label: 'Drops', icon: 'rocket' },
               { id: 'logistics', label: 'Logística', icon: 'local_shipping' },
-              { id: 'reports', label: 'Relatórios', icon: 'analytics' }
+              { id: 'reports', label: 'Progressão', icon: 'analytics' }
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex-1 flex items-center justify-center gap-3 py-4 px-6 text-[9px] uppercase font-black tracking-[0.2em] transition-all rounded-sm border ${activeTab === tab.id ? 'bg-primary/20 border-primary/50 text-white shadow-[0_4px_15px_rgba(251,191,36,0.1)]' : 'bg-transparent border-transparent text-slate-500 hover:text-white hover:bg-white/5'}`}
+                className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-4 px-2 md:px-6 text-center transition-all rounded-sm border ${activeTab === tab.id ? 'bg-primary/20 border-primary/50 text-white shadow-[0_4px_15px_rgba(251,191,36,0.1)]' : 'bg-transparent border-transparent text-slate-500 hover:text-white hover:bg-white/5'}`}
               >
-                <span className={`material-symbols-outlined text-sm ${activeTab === tab.id ? 'text-primary' : ''}`}>{tab.icon}</span>
-                <span className="hidden sm:inline">{tab.label}</span>
+                <span className={`material-symbols-outlined text-base md:text-lg ${activeTab === tab.id ? 'text-primary' : ''}`}>{tab.icon}</span>
+                <span className="text-[7px] md:text-[9px] uppercase font-black tracking-widest leading-none truncate w-full">{tab.label}</span>
               </button>
             ))}
           </div>
