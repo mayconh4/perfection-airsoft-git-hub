@@ -524,25 +524,38 @@ export default function OrganizerDashboard() {
                   </div>
                 </div>
 
-                {/* VISÃO DE EVENTOS */}
-                <div className="bg-surface/20 border border-white/5 p-8">
-                   <div className="flex items-center gap-3 mb-6">
+                <div>
+                  <div className="flex items-center gap-3 mb-8 text-white/40">
                     <span className="material-symbols-outlined text-primary">event_available</span>
-                    <h4 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Metas de Eventos Presenciais</h4>
+                    <h4 className="text-sm font-black text-white uppercase tracking-[0.3em]">Fluxo de Eventos Presenciais</h4>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="border border-white/5 p-6 bg-black/20">
-                      <span className="text-[8px] text-slate-500 uppercase font-black block mb-1">Check-ins Realizados</span>
-                      <span className="text-2xl font-black text-white">0</span>
-                    </div>
-                    <div className="border border-white/5 p-6 bg-black/20">
-                      <span className="text-[8px] text-slate-500 uppercase font-black block mb-1">Operadores Validados</span>
-                      <span className="text-2xl font-black text-white">0</span>
-                    </div>
-                    <div className="border border-white/5 p-6 bg-black/20">
-                      <span className="text-[8px] text-slate-500 uppercase font-black block mb-1">Meta: Saque Imediato</span>
-                      <span className="text-2xl font-black text-slate-700 uppercase italic">Aguardando...</span>
-                    </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    {[
+                      { label: 'Cadastro do Campo', icon: 'domain', done: events.filter(e => e.type === 'mission').length > 0, desc: 'Reconhecimento de área' },
+                      { label: 'Cadastro da Missão', icon: 'assignment', done: events.filter(e => e.type === 'mission').length > 0, desc: 'Briefing estratégico' },
+                      { label: 'Venda de Ticket', icon: 'confirmation_number', done: events.some(e => e.type === 'mission' && e.sold_count > 0), desc: 'Mobilização de tropas' },
+                      { label: 'Realização do Game', icon: 'sports_esports', done: events.some(e => e.type === 'mission' && new Date(e.event_date) < new Date()), desc: 'Operação em campo' },
+                      { label: 'Saque', icon: 'payments', done: false, desc: 'Extração de recursos' }
+                    ].map((step, idx) => (
+                      <div key={idx} className={`p-6 border transition-all ${step.done ? 'bg-primary/5 border-primary/30 shadow-[0_0_20px_rgba(251,191,36,0.05)]' : 'bg-surface/10 border-white/5 opacity-40'}`}>
+                        <div className="flex flex-col items-center text-center">
+                          <span className={`material-symbols-outlined text-2xl mb-4 ${step.done ? 'text-primary' : 'text-slate-700'}`}>
+                            {step.icon}
+                          </span>
+                          <div className={`text-[9px] font-black uppercase tracking-widest mb-1 ${step.done ? 'text-white' : 'text-slate-600'}`}>
+                            {step.label}
+                          </div>
+                          <p className="text-[8px] text-slate-500 font-mono uppercase italic">{step.desc}</p>
+                          {step.done && (
+                            <div className="mt-4 flex items-center gap-1 text-[8px] font-black text-primary animate-pulse">
+                              <span className="material-symbols-outlined text-[12px]">check</span>
+                              CONCLUÍDO
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
