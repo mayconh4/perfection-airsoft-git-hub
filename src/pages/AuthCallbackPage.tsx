@@ -30,13 +30,14 @@ export default function AuthCallbackPage() {
         const { data, error } = await supabase.auth.getSession();
         if (error) throw error;
 
+        const next = urlParams.get('next') || '/dashboard';
         if (data.session) {
           // SUCESSO: Sessão estabelecida e e-mail confirmado.
           // Pequeno delay para garantir propagação de estado no AuthContext
-          setTimeout(() => navigate('/'), 1000);
+          setTimeout(() => navigate(next), 1000);
         } else {
           // Nenhuma sessão — pode ser um link expirado
-          navigate('/login?error=link_expired');
+          navigate(`/login?error=link_expired&redirect=${encodeURIComponent(next)}`);
         }
       } catch (err: any) {
         console.error('Erro no callback de auth:', err.message);

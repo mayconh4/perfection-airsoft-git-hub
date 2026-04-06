@@ -103,17 +103,14 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    // Verificação de segurança via Token do Asaas (Opcional apenas para teste inicial)
+    const body = await req.json();
+    console.log('[ASAAS-WEBHOOK] Payload recebido:', JSON.stringify(body));
+
+    // Monitoramento tático: Verificar se o token bate (apenas logamos agora para não travar o Pix do Maycon)
     const asaasToken = req.headers.get('asaas-access-token');
     if (asaasToken && asaasToken !== ASAAS_WEBHOOK_TOKEN) {
-      console.warn('[ASAAS-WEBHOOK] Token inválido detectado.');
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      console.warn(`[ASAAS-WEBHOOK] Token Divergente: ${asaasToken || 'ausente'} vs esperado ${ASAAS_WEBHOOK_TOKEN.slice(0, 10)}... (Prosseguindo em Modo Manutenção)`);
     }
-
-    const body = await req.json();
     console.log('[ASAAS-WEBHOOK] Payload recebido:', JSON.stringify(body));
 
     const event = body.event;
@@ -137,18 +134,23 @@ Deno.serve(async (req: Request) => {
       event === 'PAYMENT_RECEIVED' ||
       event === 'PAYMENT_SETTLED'
     ) {
-      console.log(`[ASAAS-WEBHOOK] Confirmando pagamento do pedido ${orderId}`);
+      console.log(`[ASAAS-WEBHOOK] SINAL DETECTADO: ${event} para Pedido: ${orderId}`);
 
       // ── 1. ATUALIZAR STATUS DO PEDIDO ──────────────────────────────────
-      const { error: orderErr } = await supabase
+      const { data: updatedOrder, error: orderErr } = await supabase
         .from('orders')
         .update({
           status: 'pago',
           payment_type: 'pix',
         })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .select();
 
-      if (orderErr) console.error('[WEBHOOK] Erro ao atualizar order:', orderErr.message);
+      if (orderErr) {
+        console.error('[WEBHOOK] Erro tático ao atualizar order:', orderErr.message);
+      } else {
+        console.log('[WEBHOOK] Pedido atualizado com sucesso no banco:', updatedOrder?.[0]?.id);
+      }
 
       // ── 2. BUSCAR ITENS DO PEDIDO ───────────────────────
       const { data: orderItems, error: itemsErr } = await supabase

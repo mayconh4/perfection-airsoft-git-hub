@@ -18,7 +18,47 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const body = await req.json();
-    const { orderId, total, items, customerData, isGuest } = body;
+    const { action, asaasId, orderId, total, items, customerData, isGuest } = body;
+
+    // ─────────────────────────────────────────────────────────────────────
+    // 0. VERIFICAÇÃO MANUAL DE STATUS (Para Localhost/Fallback)
+    // ─────────────────────────────────────────────────────────────────────
+    if (action === 'CHECK_STATUS' && asaasId) {
+      console.log(`[ASAAS-CHECK] Verificando status do pagamento: ${asaasId}`);
+      
+      const res = await fetch(`${ASAAS_API_URL}/payments/${asaasId}`, {
+        method: 'GET',
+        headers: { 'access_token': ASAAS_API_KEY },
+      });
+      const payment = await res.json();
+
+      if (!res.ok) throw new Error(`Status Check: ${payment.errors?.[0]?.description}`);
+
+      console.log(`[ASAAS-CHECK] Status no Asaas: ${payment.status}`);
+
+      const isPaid = ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'].includes(payment.status);
+
+      if (isPaid) {
+        // Buscar o orderId vinculado a este pagamento no Asaas (externalReference)
+        const finalOrderId = payment.externalReference;
+        
+        // Atualizar status no banco
+        const { error: updErr } = await supabaseAdmin
+          .from('orders')
+          .update({ status: 'pago' })
+          .eq('id', finalOrderId);
+
+        if (updErr) throw new Error(`Erro ao atualizar pedido para PAGO: ${updErr.message}`);
+        
+        return new Response(JSON.stringify({ status: 'pago', orderId: finalOrderId }), { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
+      }
+
+      return new Response(JSON.stringify({ status: payment.status }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
 
     console.log(`[ASAAS-PAYMENT] Pedido: ${orderId} | Total: R$${total}`);
 

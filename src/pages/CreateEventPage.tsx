@@ -27,12 +27,14 @@ export default function CreateEventPage() {
   });
 
   useEffect(() => {
-    checkVerificationStatus();
-    loadMaps();
-    if (id) {
-      loadEventData();
+    if (user) {
+      checkVerificationStatus();
+      loadMaps();
+      if (id) {
+        loadEventData();
+      }
     }
-  }, [id, user]);
+  }, [id, user, navigate]);
 
   const checkVerificationStatus = async () => {
     if (!user) return;
@@ -109,7 +111,7 @@ export default function CreateEventPage() {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-      const filePath = `events/${user?.id}/${fileName}`;
+      const filePath = `${user?.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('events')
@@ -181,7 +183,33 @@ export default function CreateEventPage() {
     <div className="min-h-screen pb-20 bg-background-dark pt-12">
       <SEO title="Configuração de Missão | Perfection Airsoft" />
 
-      <div className="max-w-3xl mx-auto px-6">
+      {!user ? (
+        <div className="max-w-3xl mx-auto px-6 py-20">
+          <div className="bg-primary/5 border border-primary/20 p-12 flex flex-col items-center text-center gap-6 relative overflow-hidden group">
+            {/* Linha de scan tático */}
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent shadow-[0_0_15px_rgba(255,193,7,0.5)] animate-pulse"></div>
+            
+            <div className="size-20 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20 mb-2">
+              <span className="material-symbols-outlined text-primary text-5xl animate-pulse">shield_person</span>
+            </div>
+
+            <div>
+              <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase mb-2">IDENTIDADE NÃO VERIFICADA</h2>
+              <p className="text-slate-500 text-[10px] font-mono uppercase tracking-[0.2em] max-w-md mx-auto leading-relaxed">
+                PARA ACESSAR O PROTOCOLO DE CONFIGURAÇÃO DE MISSÕES, VOCÊ PRECISA ESTAR NO SISTEMA.
+              </p>
+            </div>
+
+            <Link 
+              to="/login?redirect=/criar-evento"
+              className="bg-primary text-background-dark font-black py-4 px-12 text-[11px] uppercase tracking-[0.3em] hover:bg-white transition-all shadow-[0_0_30px_rgba(255,193,7,0.2)] hover:scale-105 active:scale-95 mt-4"
+            >
+              REGISTRE-SE PARA COMANDAR
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-3xl mx-auto px-6">
         {/* Header HUD */}
         <div className="mb-12 border-l-4 border-primary pl-8 py-4 bg-surface/10">
           <span className="text-primary font-black uppercase tracking-[0.4em] text-[10px] block mb-2">
@@ -389,7 +417,8 @@ export default function CreateEventPage() {
             </button>
           </div>
         </form>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

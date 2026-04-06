@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export function LoginPage() {
@@ -13,6 +13,25 @@ export function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const { signIn, signUp, resendConfirmation, resetPassword, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Fluxo de Cadastro Assistido Pós-Pagamento
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const mode = params.get('mode');
+    const uEmail = params.get('email');
+    const uName = params.get('name');
+    const uPaid = params.get('paid');
+
+    if (mode === 'signup') {
+      setIsLogin(false);
+      if (uEmail) setEmail(uEmail);
+      if (uName) setName(uName);
+      if (uPaid === 'true') {
+        setMessage('🛡️ PAGAMENTO CONFIRMADO! Defina sua senha de operador para liberar o acesso imediato aos seus tickets.');
+      }
+    }
+  }, [location]);
 
   if (user) {
     const params = new URLSearchParams(window.location.search);
@@ -27,7 +46,10 @@ export function LoginPage() {
       return;
     }
     setLoading(true);
-    const { error } = await resendConfirmation(email);
+    const params = new URLSearchParams(location.search);
+    const redirectTo = params.get('redirect') || undefined;
+    
+    const { error } = await resendConfirmation(email, redirectTo);
     if (error) setMessage(error.message);
     else setMessage('E-mail de confirmação reenviado! Verifique sua caixa de entrada e seu SPAM.');
     setLoading(false);
@@ -65,7 +87,9 @@ export function LoginPage() {
         navigate(redirectTo);
       }
     } else {
-      const { error } = await signUp(email, password, name);
+      const params = new URLSearchParams(location.search);
+      const redirectTo = params.get('redirect') || undefined;
+      const { error } = await signUp(email, password, name, redirectTo);
       if (error) { setMessage(error.message); }
       else { setMessage('🛡️ OPERADOR EM ASCENSÃO! Verifique seu e-mail e a sua caixa de SPAM.'); }
     }

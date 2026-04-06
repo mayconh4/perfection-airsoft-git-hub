@@ -38,9 +38,10 @@ export function CheckoutPage() {
   // Estados
   const [step, setStep] = useState(0); 
   const [paymentMethod, setPaymentMethod] = useState('pix');
-  const [paymentData, setPaymentData] = useState<{ qr_code?: string; qr_code_base64?: string; checkout_url?: string; order_id?: string } | null>(null);
+  const [paymentData, setPaymentData] = useState<{ qr_code?: string; qr_code_base64?: string; checkout_url?: string; order_id?: string; asaas_id?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false); // controle local do botão
+  const [validatingStatus, setValidatingStatus] = useState(false);
   const [form, setForm] = useState({
     name: '', cpf: '', email: user?.email || '', phone: '',
     street: '', number: '', complement: '', district: '', city: '', state: '', cep: '',
@@ -260,11 +261,51 @@ export function CheckoutPage() {
     }
   };
 
-  // Monitoramento Realtime do Status de Pagamento
+  // Função para forçar a verificação do pagamento (útil para localhost onde não há webhook)
+  const handleVerifyPayment = async () => {
+    if (!paymentData?.asaas_id || validatingStatus) return;
+    
+    setValidatingStatus(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('https://seewdqetyolfmqsiyban.supabase.co/functions/v1/asaas-payment', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          action: 'CHECK_STATUS',
+          asaasId: paymentData.asaas_id
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.status === 'pago') {
+        const orderId = data.orderId || paymentData.order_id;
+        clearCart();
+        // Redirecionamento Assistido: Pagar -> Criar Conta -> Ver Sucesso
+        navigate(`/login?mode=signup&paid=true&email=${encodeURIComponent(form.email)}&name=${encodeURIComponent(form.name)}&redirect=${encodeURIComponent('/sucesso/' + orderId)}`);
+      } else {
+        setError(`STATUS: ${data.status.toUpperCase()}. O pagamento ainda não foi detectado pelo sistema do Asaas.`);
+      }
+    } catch (err: any) {
+      console.error('Erro ao verificar pagamento:', err);
+      setError('Falha na comunicação com o servidor de validação.');
+    } finally {
+      setValidatingStatus(false);
+    }
+  };
+
+  // Monitoramento Híbrido do Status de Pagamento (Realtime + Polling)
   useEffect(() => {
     if (step === 3 && paymentData?.order_id) {
-      console.log('[REALTIME] Iniciando escuta tática para pedido:', paymentData.order_id);
+      console.log('[SISTEMA TÁTICO] Iniciando monitoramento híbrido para pedido:', paymentData.order_id);
       
+      // 1. CANAL REALTIME (Instantâneo)
       const channel = supabase
         .channel(`order_status_${paymentData.order_id}`)
         .on(
@@ -285,11 +326,42 @@ export function CheckoutPage() {
         )
         .subscribe();
 
+      // 2. RADAR DE BACKUP (Polling agressivo a cada 3 segundos)
+      let pollCount = 0;
+      const pollInterval = setInterval(async () => {
+        pollCount++;
+        try {
+          const { data, error } = await supabase
+            .from('orders')
+            .select('status')
+            .eq('id', paymentData.order_id)
+            .single();
+          
+          if (!error && data?.status === 'pago') {
+            console.log('[POLLING] Pagamento detectado via radar de backup!');
+            clearInterval(pollInterval);
+            clearCart();
+            navigate(`/sucesso/${paymentData.order_id}`);
+            return;
+          }
+
+          // [AUTOMAÇÃO TÁTICA] Se passarem 9 segundos (3 ciclos) e ainda estiver pendente, 
+          // o próprio sistema tenta uma verificação forçada via API.
+          if (pollCount % 3 === 0 && !validatingStatus) {
+             console.log('[POLLING] Forçando verificação via API (CHECK_STATUS)...');
+             handleVerifyPayment();
+          }
+        } catch (err) {
+          console.error('[POLLING] Falha no radar de backup:', err);
+        }
+      }, 3000);
+
       return () => {
         supabase.removeChannel(channel);
+        clearInterval(pollInterval);
       };
     }
-  }, [step, paymentData, navigate, clearCart]);
+  }, [step, paymentData, navigate, clearCart, validatingStatus]); // Adicionada dependência de validatingStatus
 
   if (items.length === 0 && step !== 3) return (
     <div className="px-4 sm:px-6 lg:px-8 py-20 text-center">
@@ -462,7 +534,8 @@ export function CheckoutPage() {
 
                 <div className="space-y-4">
                   <p className="text-[10px] text-white/40 uppercase tracking-widest italic font-bold">Após pagar, seus itens aparecerão no seu painel de operador.</p>
-                  <button onClick={() => navigate('/dashboard')} className="px-10 py-5 border-2 border-primary text-primary font-black uppercase tracking-[0.4em] text-[10px] hover:bg-primary hover:text-black transition-all rounded-full outline-offset-4">
+                  
+                  <button onClick={() => navigate('/dashboard')} className="w-full px-10 py-5 border-2 border-primary text-primary font-black uppercase tracking-[0.4em] text-[10px] hover:bg-primary hover:text-black transition-all rounded outline-offset-4">
                     Acessar Meu Painel →
                   </button>
                 </div>

@@ -7,9 +7,9 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, name: string, redirectTo?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
-  resendConfirmation: (email: string) => Promise<{ error: Error | null }>;
+  resendConfirmation: (email: string, redirectTo?: string) => Promise<{ error: Error | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   isAdmin: boolean;
   isVerified: boolean;
@@ -116,15 +116,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (email: string, password: string, name: string, redirectTo?: string) => {
     // Default persistent for new signups
     localStorage.setItem('auth_persistent', 'true');
     
+    // Construir URL de redirecionamento dinâmica com o próximo destino (passaporte)
+    const redirectUrl = new URL(`${window.location.origin}/auth/callback`);
+    if (redirectTo) {
+        redirectUrl.searchParams.set('next', redirectTo);
+    }
+
     const { error } = await supabase.auth.signUp({
       email, password,
       options: { 
         data: { full_name: name },
-        emailRedirectTo: `${window.location.origin}/auth/callback`
+        emailRedirectTo: redirectUrl.toString()
       }
     });
     return { error: error as Error | null };
@@ -135,12 +141,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const resendConfirmation = async (email: string) => {
+  const resendConfirmation = async (email: string, redirectTo?: string) => {
+    const redirectUrl = new URL(`${window.location.origin}/auth/callback`);
+    if (redirectTo) {
+        redirectUrl.searchParams.set('next', redirectTo);
+    }
+
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`
+        emailRedirectTo: redirectUrl.toString()
       }
     });
     return { error: error as Error | null };

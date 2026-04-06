@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, Suspense, lazy } from 'react';
-import { useProducts, useCategories } from '../hooks/useProducts';
+import { Link } from 'react-router-dom';
+import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../types/database';
@@ -56,6 +57,15 @@ export function CreateClassPage() {
   const [activeSlot, setActiveSlot] = useState<SlotType>('base');
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  const isAdmin = user?.email === 'admin@perfectionairsoft.com.br';
+
+  // PROTEÇÃO TÁTICA: Status de Autenticação
+  useEffect(() => {
+    if (user && !isAdmin && viewMode !== 'initial') {
+       // Operação restrita detectada
+    }
+  }, [user, isAdmin, viewMode]);
+
   // Inicializar com Assault selecionado por padrão se abrir a armaria
   useEffect(() => {
     if (viewMode === 'armaria' && !selectedType) {
@@ -71,7 +81,6 @@ export function CreateClassPage() {
     };
   });
 
-  const isAdmin = user?.email === 'admin@perfectionairsoft.com.br';
 
   useEffect(() => {
     localStorage.setItem('tactical_loadout_v3', JSON.stringify(loadout));
@@ -149,18 +158,73 @@ export function CreateClassPage() {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center p-10 overflow-hidden relative">
+        <SEO title="Acesso Negado | Tactical Ops" />
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541888941255-2761956e20dd?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-5 grayscale"></div>
+        
+        <div className="max-w-3xl w-full relative z-10">
+          <div className="bg-primary/5 border border-primary/20 p-12 flex flex-col items-center text-center gap-8 relative overflow-hidden group">
+            {/* Linha de scan tático */}
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent shadow-[0_0_15px_rgba(255,193,7,0.5)] animate-pulse"></div>
+            
+            <div className="size-24 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20 mb-2">
+              <span className="material-symbols-outlined text-primary text-6xl animate-pulse">shield_person</span>
+            </div>
+
+            <div>
+              <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase mb-4">IDENTIDADE NÃO VERIFICADA</h1>
+              <p className="text-slate-500 text-xs font-mono uppercase tracking-[0.3em] max-w-md mx-auto leading-relaxed">
+                PARA ACESSAR O ARSENAL DE ELITE E O PROTOCOLO GUNSMITH, VOCÊ PRECISA ESTAR NO SISTEMA.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
+              <Link 
+                to="/login?redirect=/criar-classe"
+                className="bg-primary text-background-dark font-black py-5 px-12 text-[11px] uppercase tracking-[0.3em] hover:bg-white transition-all shadow-[0_0_30px_rgba(255,193,7,0.2)] hover:scale-105 active:scale-95"
+              >
+                REGISTRE-SE PARA COMANDAR
+              </Link>
+              <Link 
+                to="/"
+                className="bg-white/5 border border-white/10 text-white font-black py-5 px-12 text-[11px] uppercase tracking-[0.3em] hover:bg-white/10 transition-all"
+              >
+                ABORTAR MISSÃO
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-10 select-none overflow-hidden relative">
-         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541888941255-2761956e20dd?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-5 grayscale"></div>
-         <div className="relative z-10 flex flex-col items-center gap-8 max-w-lg text-center animate-pulse">
-            <span className="material-symbols-outlined text-[120px] text-red-600">lock_open</span>
-            <div>
-               <h1 className="text-4xl font-black uppercase italic tracking-tighter mb-4">ACESSO BLOQUEADO</h1>
-               <p className="text-sm font-black tracking-widest text-white/40 uppercase leading-relaxed">Permissão negada para o e-mail: <span className="text-white">{user?.email || 'Visitante'}</span></p>
-            </div>
-            <a href="/" className="px-12 py-4 bg-white/5 border border-white/10 hover:bg-white/10 text-[10px] font-black uppercase tracking-[0.5em] transition-all">Voltar para o HQ</a>
-         </div>
+      <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center p-10 overflow-hidden relative">
+        <SEO title="Permissão Negada | Tactical Ops" />
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541888941255-2761956e20dd?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-5 grayscale"></div>
+        
+        <div className="max-w-2xl w-full relative z-10 text-center space-y-8">
+          <div className="size-32 mx-auto bg-red-500/10 rounded-full flex items-center justify-center border border-red-500/20">
+            <span className="material-symbols-outlined text-red-600 text-7xl">lock_person</span>
+          </div>
+          
+          <div>
+            <h1 className="text-5xl font-black uppercase italic tracking-tighter mb-4 text-white">ACESSO RESTRITO</h1>
+            <p className="text-sm font-black tracking-widest text-white/40 uppercase leading-relaxed max-w-md mx-auto">
+              OPERADOR <span className="text-white">{user?.email}</span>,<br/> VOCÊ NÃO POSSUI CREDENCIAIS DE NÍVEL <span className="text-red-500">ADMIN</span> PARA O ARSENAL HUB.
+            </p>
+          </div>
+
+          <Link 
+            to="/" 
+            className="inline-block px-12 py-5 bg-white/5 border border-white/10 hover:bg-white/10 text-[10px] font-black uppercase tracking-[0.5em] transition-all"
+          >
+            VOLTAR PARA O QG
+          </Link>
+        </div>
       </div>
     );
   }
@@ -261,7 +325,7 @@ export function CreateClassPage() {
                                   className={`w-full flex items-center gap-4 p-4 border-b border-white/5 transition-all text-left group ${loadout[activeSlot] === product ? 'bg-primary/10 border-l-4 border-l-primary' : 'hover:bg-white/5'}`}
                                >
                                   <div className="size-10 bg-black/60 flex items-center justify-center overflow-hidden border border-white/10 group-hover:border-primary/50 transition-colors">
-                                     <img src={product.image_url} alt="" className="w-full h-full object-contain p-1" />
+                                     <img src={product.image_url} alt={product.name || ''} className="w-full h-full object-contain p-1" />
                                   </div>
                                   <span className={`text-[11px] font-black uppercase tracking-tight group-hover:text-primary transition-colors ${loadout[activeSlot] === product ? 'text-primary' : 'text-white/60'}`}>
                                      {product.name}

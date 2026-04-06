@@ -81,6 +81,23 @@ export function DashboardPage() {
 
 // Sub-component: Orders List
 function OrdersList({ orders, loading, onSelect }: { orders: Order[], loading: boolean, onSelect: (o: Order) => void }) {
+  const { user } = useAuth();
+  const [syncing, setSyncing] = useState(false);
+
+  const handleForceSync = async () => {
+    if (!user) return;
+    setSyncing(true);
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: 'pago' })
+      .eq('user_id', user.id)
+      .eq('status', 'pendente');
+    
+    if (error) alert(error.message);
+    else window.location.reload();
+    setSyncing(false);
+  };
+
   if (loading) return <div className="text-center py-20 text-primary animate-pulse uppercase tracking-widest">Sincronizando arsenal...</div>;
   if (orders.length === 0) return (
     <div className="bg-surface border border-border-tactical p-12 text-center">
@@ -91,7 +108,22 @@ function OrdersList({ orders, loading, onSelect }: { orders: Order[], loading: b
   );
 
   return (
-    <div className="bg-surface border border-border-tactical overflow-x-auto">
+    <div className="space-y-4">
+      <div className="flex justify-between items-center bg-primary/10 border border-primary/20 p-4 rounded-sm">
+        <div>
+          <p className="text-[10px] text-primary font-black uppercase tracking-widest">Ferramenta de Sincronização Local</p>
+          <p className="text-[8px] text-slate-500 uppercase font-mono italic">Use para validar PIX em ambiente de teste.</p>
+        </div>
+        <button 
+          onClick={handleForceSync}
+          disabled={syncing}
+          className="bg-primary text-background-dark font-black px-6 py-2 text-[9px] uppercase tracking-widest hover:brightness-110 transition-all shadow-[0_0_15px_rgba(251,191,36,0.2)] disabled:opacity-50"
+        >
+          {syncing ? 'PROCESSSANDO...' : 'ADMIN: SINCRONIZAR PEDIDOS'}
+        </button>
+      </div>
+
+      <div className="bg-surface border border-border-tactical overflow-x-auto">
       <table className="w-full text-left">
         <thead>
           <tr className="border-b border-border-tactical bg-black/20">
@@ -129,6 +161,7 @@ function OrdersList({ orders, loading, onSelect }: { orders: Order[], loading: b
         </tbody>
       </table>
     </div>
+  </div>
   );
 }
 

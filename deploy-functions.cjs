@@ -6,7 +6,13 @@ const fs = require('fs');
 const path = require('path');
 
 const PROJECT_REF = 'seewdqetyolfmqsiyban';
-const FUNCTIONS = ['mercadopago-payment', 'mercadopago-webhook', 'asaas-create-subaccount'];
+const FUNCTIONS = [
+    'mercadopago-payment', 
+    'mercadopago-webhook', 
+    'asaas-create-subaccount',
+    'asaas-payment',
+    'asaas-webhook'
+];
 
 // Lê o token
 let TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
