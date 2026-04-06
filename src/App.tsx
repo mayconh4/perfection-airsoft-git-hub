@@ -39,6 +39,7 @@ import { AdminProducts } from './pages/admin/AdminProducts';
 import { AdminOrders } from './pages/admin/AdminOrders';
 import { AdminMessages } from './pages/admin/AdminMessages';
 import AdminModeration from './pages/AdminModeration';
+import FinanceDashboard from './pages/FinanceDashboard';
 
 import { PricingProvider } from './context/PricingContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -82,6 +83,7 @@ function App() {
                   <Route path="/drop/:idOrSlug" element={<RaffleDetailPage />} />
                   <Route path="/seguranca-comunidade" element={<SecurityNoticePage />} />
                   <Route path="/organizador" element={<OrganizerDashboard />} />
+                  <Route path="/organizador/financeiro" element={<FinanceDashboard />} />
                   <Route path="/painel-de-elite" element={<OrganizerDashboard />} />
                   <Route path="/dashboard-demo" element={<DashboardDemo />} />
                   <Route path="/organizador/eventos/:id" element={<CreateEventPage />} />

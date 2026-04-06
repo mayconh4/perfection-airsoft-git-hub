@@ -23,7 +23,6 @@ export default function OrganizerDashboard() {
   const [activeTab, setActiveTab] = useState<'missions' | 'drops' | 'logistics' | 'reports'>('missions');
   const [winners, setWinners] = useState<any[]>([]);
   const [updatingLogisticsId, setUpdatingLogisticsId] = useState<string | null>(null);
-  const [activeRaffle, setActiveRaffle] = useState<any>(null); // Contexto de edição/intel
   const [selectedEventParticipants, setSelectedEventParticipants] = useState<any[]>([]);
   const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
@@ -37,7 +36,6 @@ export default function OrganizerDashboard() {
     if (user) {
       fetchDashboardData();
       
-      // Suporte a foco em evento específico via URL (?event=ID)
       const urlParams = new URLSearchParams(window.location.search);
       const focusEventId = urlParams.get('event');
       if (focusEventId) {
@@ -56,14 +54,7 @@ export default function OrganizerDashboard() {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      // 1. Buscar Saldo Real da nova tabela user_balances
-      const { data: balanceData } = await supabase
-        .from('user_balances')
-        .select('available_balance, pending_balance, total_earned')
-        .eq('user_id', user?.id)
-        .single();
-
-      // 2. Buscar todos os eventos do organizador
+      // 1. Buscar todos os eventos do organizador
       const { data: eventsData, error: eventsError } = await supabase
         .from('events')
         .select('*')
@@ -72,7 +63,7 @@ export default function OrganizerDashboard() {
 
       if (eventsError) throw eventsError;
 
-      // 2.2 Buscar todas as rifas/drops do organizador
+      // 2. Buscar todas as rifas/drops do organizador
       const { data: rafflesData } = await supabase
         .from('raffles')
         .select('*')
@@ -95,53 +86,26 @@ export default function OrganizerDashboard() {
 
       setEvents(allOps);
 
-      let totalSold = 0;
-      if (allOps.length > 0) {
-        totalSold = allOps.reduce((sum, e) => sum + (e.sold_count || 0), 0);
-      }
+      // Calcular estatísticas operacionais
+      const totalSold = allOps.reduce((sum, e) => sum + (e.sold_count || 0), 0);
 
-      // 2.5 Buscar Dados de Confiança e Role do Perfil (PRIORIDADE ADMIN)
+      // 3. Buscar Dados de Confiança
       const { data: profile } = await supabase
         .from('profiles')
-        .select('trust_level, completed_drops, role, full_name, role_request')
+        .select('trust_level, completed_drops')
         .eq('id', user?.id)
         .single();
 
-      // Verificação de parâmetro de edição administrativa
-      const urlParams = new URLSearchParams(window.location.search);
-      const editId = urlParams.get('edit');
-
-      let statsToSet = {
+      setStats({
         ticketsSold: totalSold,
-        revenue: balanceData?.total_earned ? Number(balanceData.total_earned) : 0,
-        netRevenue: balanceData?.available_balance ? Number(balanceData.available_balance) : 0,
-        pendingBalance: balanceData?.pending_balance ? Number(balanceData.pending_balance) : 0,
         trustLevel: profile?.trust_level || 0,
-        completedDrops: profile?.completed_drops || 0
-      };
+        completedDrops: profile?.completed_drops || 0,
+        revenue: 0,
+        netRevenue: 0,
+        pendingBalance: 0
+      });
 
-      if (editId) {
-        const { data: editRaffle } = await supabase
-          .from('raffles')
-          .select('*, profiles(full_name, phone)')
-          .eq('id', editId)
-          .single();
-
-        if (editRaffle) {
-          setActiveRaffle(editRaffle);
-          statsToSet = {
-            ...statsToSet,
-            ticketsSold: editRaffle.sold_tickets,
-            revenue: editRaffle.sold_tickets * editRaffle.ticket_price,
-            netRevenue: editRaffle.sold_tickets * editRaffle.ticket_price * 0.93,
-            pendingBalance: editRaffle.total_tickets - editRaffle.sold_tickets,
-          };
-        }
-      }
-
-      setStats(statsToSet);
-
-      // 3. Buscar Ganhadores (Logística)
+      // 4. Buscar Ganhadores (Logística)
       const { data: winnersData } = await supabase
         .from('raffle_winners')
         .select('*, raffles(title, creator_id)')
@@ -160,7 +124,7 @@ export default function OrganizerDashboard() {
     if (!user) return;
 
     const channel = supabase
-      .channel('dashboard-updates')
+      .channel('dashboard-updates-v2')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -191,45 +155,6 @@ export default function OrganizerDashboard() {
       console.error('Erro ao buscar participantes:', err.message);
     } finally {
       setLoadingParticipants(false);
-    }
-  };
-
-  const handleRequestPayout = async () => {
-    if (stats.netRevenue <= 0) {
-      alert('SALDO INSUFICIENTE PARA RESGATE.');
-      return;
-    }
-
-    if (!confirm('DESEJA SOLICITAR O RESGATE TOTAL DO SEU SALDO PARA SUA CONTA BANCÁRIA CADASTRADA?')) {
-      return;
-    }
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/asaas-request-payout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({ userId: user?.id })
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Falha ao processar saque.');
-      }
-
-      alert(`MISSÃO CUMPRIDA! Resgate de R$ ${result.value.toFixed(2)} processado com sucesso.`);
-      fetchDashboardData();
-    } catch (err: any) {
-      console.error('Erro no Saque:', err.message);
-      alert(`ERRO NA OPERAÇÃO: ${err.message}`);
-    } finally {
-      // Payout process completed
     }
   };
 
@@ -269,7 +194,6 @@ export default function OrganizerDashboard() {
       <div className="scanline"></div>
       <SEO title="Painel do Organizador | Perfection Airsoft" />
 
-
       {user && (
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
@@ -283,6 +207,13 @@ export default function OrganizerDashboard() {
               </h1>
             </div>
             <div className="flex flex-wrap gap-4">
+              <Link
+                to="/organizador/financeiro"
+                className="bg-primary/20 border border-primary text-primary font-black py-4 px-8 text-[10px] uppercase tracking-[0.3em] hover:bg-primary hover:text-black transition-all text-center flex items-center gap-2 shadow-[0_0_15px_rgba(251,191,36,0.1)] group"
+              >
+                <span className="material-symbols-outlined text-sm group-hover:rotate-12 transition-transform">payments</span>
+                Central Financeira
+              </Link>
               <Link
                 to="/drop/criar"
                 className="bg-primary text-background-dark font-black py-4 px-8 text-[10px] uppercase tracking-[0.3em] hover:bg-white transition-all text-center flex items-center gap-2"
@@ -335,81 +266,35 @@ export default function OrganizerDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
             <div className="bg-surface/30 border border-white/5 p-8 group hover:bg-white/5 transition-colors">
-              <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Operações Totais</span>
+              <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Operações Monitoradas</span>
               <span className="text-4xl font-black text-white">{events.length}</span>
             </div>
-            <div className={`border p-8 border-l-4 transition-all duration-500 bg-primary/5 border-primary border-white/10`}>
-              <span className={`text-[10px] font-black uppercase tracking-widest block mb-1 font-mono italic text-primary`}>
-                {activeRaffle ? 'Telemetria: Receita Bruta' : 'Saldo Disponível'}
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className={`text-4xl font-black text-primary`}>
-                  R$ {activeRaffle 
-                    ? (activeRaffle.sold_tickets * activeRaffle.ticket_price).toFixed(2) 
-                    : stats.netRevenue.toFixed(2)}
-                </span>
-              </div>
-              <p className="text-[7px] text-slate-600 uppercase mt-2 font-mono">Taxa: 7% + R$ 0,99 PIX</p>
-            </div>
-            <div className="bg-surface/30 border border-white/5 p-8">
-              <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest block mb-1">
-                {activeRaffle ? 'Telemetria: Tickets Ativos' : 'Saldo em Garantia'}
-              </span>
-              <span className="text-4xl font-black text-white/60">
-                {activeRaffle ? activeRaffle.sold_tickets : `R$ ${stats.pendingBalance.toFixed(2)}`}
-              </span>
-            </div>
-            <div className="bg-surface/30 border border-white/5 p-8">
-              <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">
-                {activeRaffle ? 'Telemetria: Tickets Restantes' : 'Total Movimentado'}
-              </span>
-              <span className="text-4xl font-black text-white">
-                {activeRaffle ? (activeRaffle.total_tickets - activeRaffle.sold_tickets) : `R$ ${stats.revenue.toFixed(2)}`}
-              </span>
+            <div className="bg-surface/30 border border-white/5 p-8 group hover:bg-white/5 transition-colors">
+              <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Engajamento Total</span>
+              <span className="text-4xl font-black text-white">{stats.ticketsSold}</span>
+              <p className="text-[8px] text-slate-600 font-mono uppercase mt-2">Tickets / Inscrições Processadas</p>
             </div>
           </div>
 
           <div className="flex items-center gap-8 border-b border-white/5 mb-12">
-            <button
-              onClick={() => setActiveTab('missions')}
-              className={`pb-4 text-[10px] uppercase font-black tracking-[0.3em] transition-all relative ${activeTab === 'missions' ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
-            >
-              Operações Ativas
-              {activeTab === 'missions' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></span>}
-            </button>
-            <button
-              onClick={() => setActiveTab('drops')}
-              className={`pb-4 text-[10px] uppercase font-black tracking-[0.3em] transition-all relative ${activeTab === 'drops' ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
-            >
-              Drops / Rifas
-              {activeTab === 'drops' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></span>}
-            </button>
-            <button
-              onClick={() => setActiveTab('logistics')}
-              className={`pb-4 text-[10px] uppercase font-black tracking-[0.3em] transition-all relative ${activeTab === 'logistics' ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
-            >
-              Logística
-              {activeTab === 'logistics' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></span>}
-            </button>
-            <button
-              onClick={() => setActiveTab('reports')}
-              className={`pb-4 text-[10px] uppercase font-black tracking-[0.3em] transition-all relative ${activeTab === 'reports' ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
-            >
-              Relatórios
-              {activeTab === 'reports' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></span>}
-            </button>
+            {['missions', 'drops', 'logistics', 'reports'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab as any)}
+                className={`pb-4 text-[10px] uppercase font-black tracking-[0.3em] transition-all relative ${activeTab === tab ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
+              >
+                {tab === 'missions' ? 'Operações Ativas' : tab === 'drops' ? 'Drops / Rifas' : tab === 'logistics' ? 'Saque/ entrega' : 'Relatórios'}
+                {activeTab === tab && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></span>}
+              </button>
+            ))}
           </div>
 
           <div className="min-h-[400px]">
             {activeTab === 'missions' && (
-              <div className="space-y-6 max-w-4xl">
-                {/* Quick Create Action */}
-                <Link 
-                  to="/eventos/criar"
-                  className="w-full flex items-center justify-between p-6 border border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all group"
-                >
+              <div className="space-y-6">
+                <Link to="/eventos/criar" className="w-full flex items-center justify-between p-6 border border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all group">
                   <div className="flex items-center gap-4">
                     <div className="size-12 bg-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-all">
                       <span className="material-symbols-outlined">add_circle</span>
@@ -423,31 +308,18 @@ export default function OrganizerDashboard() {
                 </Link>
 
                 <div className="space-y-4">
-                {events.filter(e => e.type === 'mission').length > 0 ? (
-                  events.filter(e => e.type === 'mission').map(event => (
-                    <div 
-                      key={event.id} 
-                      id={`event-${event.id}`}
-                      className="bg-surface/20 border border-white/10 p-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-primary/30 transition-all"
-                    >
+                  {events.filter(e => e.type === 'mission').map(event => (
+                    <div key={event.id} className="bg-surface/20 border border-white/10 p-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-primary/30 transition-all">
                       <div className="flex gap-6 items-center flex-1">
                         <div className="size-16 bg-white/5 flex items-center justify-center relative overflow-hidden">
-                          {event.image_url ? (
-                            <img src={event.image_url} alt={event.title} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="material-symbols-outlined text-white/10 text-3xl">military_tech</span>
-                          )}
+                          {event.image_url ? <img src={event.image_url} alt={event.title} className="w-full h-full object-cover" /> : <span className="material-symbols-outlined text-white/10 text-3xl">military_tech</span>}
                         </div>
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="text-sm font-black text-white uppercase tracking-widest">{event.title}</h4>
-                            <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-white/10 text-white/50">
-                              MISSION
-                            </span>
+                            <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-white/10 text-white/50">MISSION</span>
                           </div>
-                          <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">
-                            {new Date(event.event_date).toLocaleDateString()} • {event.location || 'ONLINE'}
-                          </p>
+                          <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">{new Date(event.event_date).toLocaleDateString()} • {event.location || 'ONLINE'}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-8 text-center md:text-right w-full md:w-auto">
@@ -456,51 +328,22 @@ export default function OrganizerDashboard() {
                           <span className="text-sm font-black text-white">{event.sold_count} / {event.capacity}</span>
                         </div>
                         <div className="flex gap-2">
-                          <button
-                            onClick={() => fetchParticipants(event.id)}
-                            className="p-3 bg-white/5 border border-white/10 text-white/50 hover:text-primary transition-all"
-                            title="Ver Operadores"
-                          >
-                            <span className="material-symbols-outlined text-sm">groups</span>
-                          </button>
-                          <Link
-                            to={`/eventos/${event.id}`}
-                            className="p-3 bg-white/5 border border-white/10 text-white/50 hover:text-primary transition-all"
-                            title="Ver Página"
-                          >
-                            <span className="material-symbols-outlined text-sm">visibility</span>
-                          </Link>
-                          <Link
-                            title="Editar Detalhes da Missão"
-                            to={`/organizador/eventos/${event.id}`}
-                            className="p-3 bg-white/5 border border-white/10 text-white/40 hover:text-primary transition-all"
-                          >
-                            <span className="material-symbols-outlined text-sm">edit_note</span>
-                          </Link>
+                          <button onClick={() => fetchParticipants(event.id)} className="p-3 bg-white/5 border border-white/10 text-white/50 hover:text-primary transition-all"><span className="material-symbols-outlined text-sm">groups</span></button>
+                          <Link to={`/eventos/${event.id}`} className="p-3 bg-white/5 border border-white/10 text-white/50 hover:text-primary transition-all"><span className="material-symbols-outlined text-sm">visibility</span></Link>
+                          <Link to={`/organizador/eventos/${event.id}`} className="p-3 bg-white/5 border border-white/10 text-white/40 hover:text-primary transition-all"><span className="material-symbols-outlined text-sm">edit_note</span></Link>
                         </div>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-20 border border-dashed border-white/5 bg-surface/10">
-                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Nenhuma missão em andamento.</p>
-                  </div>
-                )}
+                  ))}
                 </div>
               </div>
             )}
 
             {activeTab === 'drops' && (
-              <div className="space-y-6 max-w-4xl">
-                {/* Quick Create Action */}
-                <Link 
-                  to="/drop/criar"
-                  className="w-full flex items-center justify-between p-6 border border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all group"
-                >
+              <div className="space-y-6">
+                <Link to="/drop/criar" className="w-full flex items-center justify-between p-6 border border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all group">
                   <div className="flex items-center gap-4">
-                    <div className="size-12 bg-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-all">
-                      <span className="material-symbols-outlined">rocket</span>
-                    </div>
+                    <div className="size-12 bg-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-all"><span className="material-symbols-outlined">rocket</span></div>
                     <div>
                       <h4 className="text-sm font-black text-white uppercase tracking-widest">Lançar Novo Drop (Rifa)</h4>
                       <p className="text-[10px] text-slate-500 font-mono uppercase">Configurar prêmio, cotas, valores e regras.</p>
@@ -508,29 +351,19 @@ export default function OrganizerDashboard() {
                   </div>
                   <span className="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
                 </Link>
-
                 <div className="space-y-4">
-                {events.filter(e => e.type === 'drop').length > 0 ? (
-                  events.filter(e => e.type === 'drop').map(event => (
+                  {events.filter(e => e.type === 'drop').map(event => (
                     <div key={event.id} className="bg-surface/20 border border-white/10 p-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-primary/30 transition-all">
                       <div className="flex gap-6 items-center flex-1">
                         <div className="size-16 bg-white/5 flex items-center justify-center relative overflow-hidden">
-                          {event.image_url ? (
-                            <img src={event.image_url} alt={event.title} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="material-symbols-outlined text-white/10 text-3xl">local_mall</span>
-                          )}
+                          {event.image_url ? <img src={event.image_url} alt={event.title} className="w-full h-full object-cover" /> : <span className="material-symbols-outlined text-white/10 text-3xl">local_mall</span>}
                         </div>
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="text-sm font-black text-white uppercase tracking-widest">{event.title}</h4>
-                            <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-primary text-black">
-                              DROP
-                            </span>
+                            <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-primary text-black">DROP</span>
                           </div>
-                          <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">
-                            Criado em: {new Date(event.event_date).toLocaleDateString()}
-                          </p>
+                          <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">Criado em: {new Date(event.event_date).toLocaleDateString()}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-8 text-center md:text-right w-full md:w-auto">
@@ -539,42 +372,22 @@ export default function OrganizerDashboard() {
                           <span className="text-sm font-black text-white">{event.sold_count} / {event.capacity}</span>
                         </div>
                         <div className="flex gap-2">
-                          <Link
-                            to={`/drop/${event.slug || event.id}`}
-                            className="p-3 bg-white/5 border border-white/10 text-white/50 hover:text-primary transition-all"
-                            title="Ver Drop"
-                          >
-                            <span className="material-symbols-outlined text-sm">visibility</span>
-                          </Link>
-                          <Link
-                            to={`/organizador?edit=${event.id}`}
-                            className="p-3 bg-white/5 border border-white/10 text-white/50 hover:text-primary transition-all"
-                            title="Editar Drop"
-                          >
-                            <span className="material-symbols-outlined text-sm">settings</span>
-                          </Link>
+                          <Link to={`/drop/${event.slug || event.id}`} className="p-3 bg-white/5 border border-white/10 text-white/50 hover:text-primary transition-all"><span className="material-symbols-outlined text-sm">visibility</span></Link>
                         </div>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="py-20 text-center border-2 border-dashed border-white/5 text-slate-600 uppercase font-black tracking-widest text-[10px]">
-                    Nenhum drop ativo encontrado.
-                  </div>
-                )}
+                  ))}
                 </div>
               </div>
             )}
 
             {activeTab === 'logistics' && (
-              <div className="max-w-4xl mx-auto space-y-12">
-                {/* Gestão de Prêmios (Apenas para Rifas) */}
+              <div className="space-y-8">
                 <div className="bg-surface/20 border border-white/5 p-8">
                   <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6 flex items-center gap-3">
                     <span className="material-symbols-outlined text-primary">local_shipping</span>
-                    Logística de Entrega (Prêmios)
+                    Saque/ entrega
                   </h3>
-
                   {winners.length > 0 ? (
                     <div className="grid gap-4">
                       {winners.map((winner) => (
@@ -584,7 +397,6 @@ export default function OrganizerDashboard() {
                             <h4 className="text-sm font-bold text-white uppercase">{winner.winner_name}</h4>
                             <p className="text-[10px] text-slate-500 font-mono mt-1">GANHADOR EM: {new Date(winner.created_at).toLocaleDateString()}</p>
                           </div>
-
                           <div className="flex-1 max-w-xs">
                             {winner.delivery_status === 'shipped' ? (
                               <div className="bg-green-500/10 border border-green-500/20 p-3 flex items-center justify-between">
@@ -593,173 +405,73 @@ export default function OrganizerDashboard() {
                               </div>
                             ) : (
                               <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  placeholder="CÓD. RASTREIO"
-                                  className="flex-1 bg-white/5 border border-white/10 px-3 py-2 text-[10px] text-white focus:border-primary outline-none"
-                                  id={`tracking-${winner.id}`}
-                                />
-                                <button
-                                  onClick={() => {
-                                    const code = (document.getElementById(`tracking-${winner.id}`) as HTMLInputElement)?.value;
-                                    handleUpdateTracking(winner.id, code);
-                                  }}
-                                  disabled={updatingLogisticsId === winner.id}
-                                  className="bg-primary text-black px-4 py-2 text-[9px] font-black uppercase hover:bg-white transition-all disabled:opacity-50"
-                                >
-                                  {updatingLogisticsId === winner.id ? '...' : 'ENVIAR'}
-                                </button>
+                                <input type="text" placeholder="CÓD. RASTREIO" className="flex-1 bg-white/5 border border-white/10 px-3 py-2 text-[10px] text-white focus:border-primary outline-none" id={`tracking-${winner.id}`} />
+                                <button onClick={() => { const code = (document.getElementById(`tracking-${winner.id}`) as HTMLInputElement)?.value; handleUpdateTracking(winner.id, code); }} disabled={updatingLogisticsId === winner.id} className="bg-primary text-black px-4 py-2 text-[9px] font-black uppercase transition-all disabled:opacity-50">{updatingLogisticsId === winner.id ? '...' : 'ENVIAR'}</button>
                               </div>
                             )}
                           </div>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <div className="py-12 text-center border border-dashed border-white/5">
-                      <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest italic">Nenhuma entrega pendente centralizada neste QG.</p>
-                    </div>
-                  )}
+                  ) : <p className="text-[10px] text-slate-600 font-black text-center py-12 border border-dashed border-white/5 uppercase">Nenhuma entrega pendente.</p>}
                 </div>
-
-                <div className="grid md:grid-cols-2 gap-8">
-                  <OperatorKYCForm />
-                  <div className="bg-primary/5 border border-primary/20 p-8 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2 font-mono">Resgate de Operações</h3>
-                      <p className="text-[9px] text-slate-500 uppercase tracking-widest mb-6 leading-relaxed">
-                        O saldo disponível pode ser sacado via PIX instantâneo para a conta vinculada ao seu CPF/CNPJ.
-                      </p>
-                    </div>
-                      <button
-                        onClick={handleRequestPayout}
-                        className="w-full bg-primary hover:bg-white text-background-dark font-black py-4 text-[9px] uppercase tracking-[.3em] transition-all"
-                      >
-                        SOLICITAR RESGATE PIX
-                      </button>
-                  </div>
-                </div>
+                <OperatorKYCForm />
               </div>
             )}
 
             {activeTab === 'reports' && (
-              <div className="max-w-2xl mx-auto border border-white/5 p-12 bg-surface/20 text-center">
-                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Módulo de Relatórios em Fase de Calibração</p>
+              <div className="max-w-2xl mx-auto border border-white/5 p-12 bg-surface/20 text-center uppercase font-black text-[10px] text-slate-500 tracking-[0.3em]">
+                Módulo de Relatórios em Fase de Calibração
               </div>
             )}
           </div>
         </div>
       )}
 
+      {/* Participants Modal (Simplified Copy) */}
       {isParticipantsModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-12">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setIsParticipantsModalOpen(false)}></div>
           <div className="relative w-full max-w-4xl bg-surface/90 border border-primary/30 p-8 pt-12 shadow-[0_0_50px_rgba(251,191,36,0.1)] overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-primary"></div>
-            <button
-              onClick={() => setIsParticipantsModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
-            >
-              <span className="material-symbols-outlined">close</span>
-            </button>
-            <div className="flex items-center justify-between gap-4 mb-8">
-              <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">
-                LISTA DE <span className="text-primary">OPERADORES</span> INSCRITOS
-              </h3>
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={() => {
-                    const ev = selectedEventParticipants[0]?.events;
-                    if (!ev) return;
-                    const eventTitle = ev.title || 'Missão';
-                    const token = ev.checkin_token;
-                    const url = `${window.location.origin}/qg/${selectedEventParticipants[0].event_id}?token=${token}`;
-                    
-                    // Gerar lista resumida de operadores
-                    const participantsSummary = selectedEventParticipants
-                      .map(p => `• ${(p.buyer_name || 'Operador').toUpperCase()} (PAGO ✅)`)
-                      .slice(0, 40)
-                      .join('\n');
-
-                    const footer = selectedEventParticipants.length > 40 ? `\n... (+${selectedEventParticipants.length - 40} outros)` : '';
-                    
-                    const msg = encodeURIComponent(`*OPERACIONAL: LISTA DE CHECK-IN*\n\nMissão: *${eventTitle}*\n\n*OPERADORES CONFIRMADOS:*\n${participantsSummary}${footer}\n\nAcesse o link abaixo para validar no sistema:\n${url}`);
-                    window.open(`https://wa.me/?text=${msg}`, '_blank');
-                  }}
-                  className="bg-green-600 hover:bg-green-500 text-white font-black px-6 py-2 text-[9px] uppercase tracking-widest transition-all flex items-center gap-2 group"
-                >
-                  <span className="material-symbols-outlined text-sm group-hover:scale-110 transition-transform">share</span>
-                  ENVIAR POR WHATSAPP
-                </button>
-                <button 
-                  onClick={() => window.print()}
-                  className="bg-white/10 hover:bg-white text-white hover:text-black font-black px-6 py-2 text-[9px] uppercase tracking-widest transition-all flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-sm">print</span>
-                  IMPRIMIR LISTA
-                </button>
-              </div>
-            </div>
-
-            {loadingParticipants ? (
-              <div className="py-20 flex justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary" />
-              </div>
-            ) : selectedEventParticipants.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr>
-                      <th className="pb-4 px-4 font-mono text-left">ID</th>
-                      <th className="pb-4 px-4 text-left">Operador</th>
-                      <th className="pb-4 px-4 text-left">Status</th>
-                      <th className="pb-4 px-4 text-left">Check-in</th>
-                      <th className="pb-4 px-4 print:hidden text-left">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {selectedEventParticipants.map((p, idx) => (
-                      <tr key={p.id} className="text-[11px] hover:bg-white/5 transition-colors group">
-                        <td className="py-4 px-4 font-mono text-slate-500">#{idx + 1}</td>
-                        <td className="py-4 px-4">
-                          <div className="font-black uppercase text-white">{p.buyer_name || 'Desconhecido'}</div>
-                          <div className="text-[9px] text-slate-500 font-mono lowercase">{p.buyer_email}</div>
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${p.status === 'confirmed' ? 'bg-primary/20 text-primary' : 'bg-green-500/20 text-green-500'}`}>
-                            {p.status === 'confirmed' ? 'PAGO' : 'USADO'}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-slate-500 font-mono italic">
-                          {p.checked_in_at ? new Date(p.checked_in_at).toLocaleTimeString() : 'PENDENTE'}
-                        </td>
-                        <td className="py-4 px-4 print:hidden">
-                           <div className="flex items-center gap-2">
-                             {p.buyer_phone && (
-                                <button
-                                  onClick={() => {
-                                    const eventTitle = selectedEventParticipants[0]?.events?.title || 'Airsoft';
-                                    const msg = encodeURIComponent(`Olá ${p.buyer_name}, confirmamos sua inscrição na missão ${eventTitle}. O seu ID de Operador é #${p.qr_uuid.slice(0, 8).toUpperCase()}. Nos vemos no LZ!`);
-                                    window.open(`https://wa.me/${p.buyer_phone.replace(/\D/g, '')}?text=${msg}`, '_blank');
-                                  }}
-                                  className="size-8 bg-green-500/10 border border-green-500/20 text-green-500 hover:bg-green-500 hover:text-black transition-all flex items-center justify-center rounded-sm"
-                                  title="Enviar Briefing via WhatsApp"
-                                >
-                                  <span className="material-symbols-outlined text-sm font-black">chat</span>
-                                </button>
-                             )}
-                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="py-20 text-center border border-dashed border-white/5">
-                <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest">Nenhuma inscrição confirmada.</p>
-              </div>
-            )}
+             <div className="absolute top-0 left-0 w-full h-1 bg-primary"></div>
+             <button onClick={() => setIsParticipantsModalOpen(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"><span className="material-symbols-outlined">close</span></button>
+             <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-8 shadow-sm">LISTA DE <span className="text-primary">OPERADORES</span></h3>
+             
+             {loadingParticipants ? (
+               <div className="py-20 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary" /></div>
+             ) : (
+               <div className="overflow-x-auto">
+                 <table className="w-full border-collapse">
+                   <thead>
+                     <tr className="border-b border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-left">
+                       <th className="pb-4 px-4">Operador</th>
+                       <th className="pb-4 px-4">Status</th>
+                       <th className="pb-4 px-4">Ações</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-white/5">
+                     {selectedEventParticipants.map(p => (
+                       <tr key={p.id} className="text-[11px] hover:bg-white/5 transition-colors group">
+                         <td className="py-4 px-4">
+                           <div className="font-black uppercase text-white">{p.buyer_name}</div>
+                           <div className="text-[9px] text-slate-500 font-mono">{p.buyer_email}</div>
+                         </td>
+                         <td className="py-4 px-4">
+                            <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase bg-primary/20 text-primary">CONFIRMADO</span>
+                         </td>
+                         <td className="py-4 px-4">
+                            {p.buyer_phone && (
+                              <button onClick={() => window.open(`https://wa.me/${p.buyer_phone.replace(/\D/g, '')}`, '_blank')} className="size-8 bg-green-500/10 text-green-500 flex items-center justify-center hover:bg-green-500 hover:text-black transition-all">
+                                <span className="material-symbols-outlined text-sm">chat</span>
+                              </button>
+                            )}
+                         </td>
+                       </tr>
+                     ))}
+                   </tbody>
+                 </table>
+               </div>
+             )}
           </div>
         </div>
       )}
