@@ -13,6 +13,7 @@ export function OrderSuccessPage() {
   const [password, setPassword] = useState('');
   const [regLoading, setRegLoading] = useState(false);
   const [regSuccess, setRegSuccess] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,6 +24,12 @@ export function OrderSuccessPage() {
 
     const fetchOrder = async () => {
       setLoading(true);
+      
+      // 1. Buscar usuário atual para decidir se mostra o banner de registro
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+
+      // 2. Buscar dados do pedido
       const { data, error } = await supabase
         .from('orders')
         .select('*, items:order_items(*)')
@@ -125,7 +132,7 @@ export function OrderSuccessPage() {
         <p className="text-slate-400 uppercase tracking-widest text-xs font-bold">Relatório tático gerado com sucesso</p>
       </div>
 
-      {isGuestOrder && !regSuccess && (
+      {isGuestOrder && !currentUser && !regSuccess && (
         <div className="bg-primary/10 border border-primary/30 p-8 mb-8 rounded-lg shadow-[0_0_30px_rgba(255,193,7,0.1)] backdrop-blur-md">
           <div className="flex items-center gap-4 mb-6">
             <div className="bg-primary text-black p-3 rounded-full">
