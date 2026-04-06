@@ -192,6 +192,15 @@ export default function OrganizerDashboard() {
   return (
     <div className="min-h-screen bg-background-dark pb-20 pt-12 relative overflow-hidden crt-overlay">
       <div className="scanline"></div>
+      <style>{`
+        @keyframes scan {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        .animate-scanner {
+          animation: scan 3s linear infinite;
+        }
+      `}</style>
       <SEO title="Painel do Organizador | Perfection Airsoft" />
 
       {user && (
@@ -425,6 +434,10 @@ export default function OrganizerDashboard() {
                 {/* STATUS DE PATENTE */}
                 <div className="bg-surface/30 border border-white/10 p-10 relative overflow-hidden">
                   <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
+                    <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+                      <div className="absolute top-0 left-0 h-[2px] w-full bg-gradient-to-r from-transparent via-primary/30 to-transparent animate-scanner" />
+                    </div>
+                    
                     <div className="size-24 rounded-full border-4 border-primary/20 flex items-center justify-center relative">
                       <div className={`size-16 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(251,191,36,0.3)] ${stats.trustLevel >= 3 ? 'bg-primary text-black' : 'bg-slate-800 text-slate-500'}`}>
                         <span className="material-symbols-outlined text-3xl font-black">
