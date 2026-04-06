@@ -32,7 +32,6 @@ export default function EventDetailPage() {
   const [adding, setAdding] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const [copying, setCopying] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -58,13 +57,6 @@ export default function EventDetailPage() {
     }
   };
 
-  const copyOperatorLink = () => {
-    if (!event) return;
-    const url = `${window.location.origin}/eventos/${event.id}/checkin?token=${event.checkin_token}`;
-    navigator.clipboard.writeText(url);
-    setCopying(true);
-    setTimeout(() => setCopying(false), 2000);
-  };
 
   const handleBuyTicket = async () => {
     if (!event) return;
@@ -271,52 +263,6 @@ export default function EventDetailPage() {
           {/* ── Checkout Card ── */}
           <div className="lg:col-span-1 space-y-8">
             
-            {user?.id === event.organizer_id && (
-              <div className="bg-primary/5 border-2 border-primary/30 p-8 shadow-[0_0_50px_rgba(251,191,36,0.1)] relative overflow-hidden group">
-                {/* Decorative Elements */}
-                <div className="absolute top-0 right-0 p-2 text-[7px] font-mono text-primary/40 uppercase tracking-widest">
-                  Secure_Terminal_v1.0
-                </div>
-                <div className="absolute -right-4 -bottom-4 size-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-all"></div>
-                
-                <h3 className="text-lg font-black text-white uppercase tracking-[0.2em] mb-6 flex items-center gap-3 italic">
-                  <span className="size-2 bg-primary animate-pulse"></span>
-                  SETOR DE COMANDO
-                </h3>
-
-                <div className="space-y-4 relative z-10">
-                  <Link
-                    to={`/eventos/${event.id}/checkin`}
-                    className="w-full bg-primary text-black font-black py-4 text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-white transition-all shadow-lg"
-                  >
-                    <span className="material-symbols-outlined">qr_code_scanner</span>
-                    INICIAR SCANNER TÁTICO
-                  </Link>
-
-                  <button
-                    onClick={copyOperatorLink}
-                    className="w-full bg-white/5 border border-white/10 text-white font-black py-4 text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-white/10 transition-all group/btn"
-                  >
-                    <span className="material-symbols-outlined text-primary group-hover/btn:rotate-12 transition-transform">
-                      {copying ? 'check_circle' : 'share'}
-                    </span>
-                    {copying ? 'TOKEN COPIADO!' : 'COMPARTILHAR COM OPERADOR'}
-                  </button>
-
-                  <Link
-                    to={`/organizador/eventos/${event.id}`}
-                    className="w-full border border-primary/50 text-primary font-black py-4 text-[10px] uppercase tracking-[.3em] flex items-center justify-center gap-3 hover:bg-primary hover:text-black transition-all"
-                  >
-                    <span className="material-symbols-outlined">edit_note</span>
-                    EDITAR BRIEFING DA MISSÃO
-                  </Link>
-
-                  <p className="text-[8px] text-slate-500 font-mono uppercase leading-tight mt-2 text-center">
-                    Link gera acesso direto ao terminal de validação <br/> para operadores de campo autorizados.
-                  </p>
-                </div>
-              </div>
-            )}
 
             <div className="sticky top-24 bg-surface/80 border border-white/10 p-8 shadow-2xl">
               <h3 className="text-lg font-black text-white uppercase tracking-widest mb-8 text-center underline decoration-primary decoration-4 underline-offset-8">
