@@ -465,8 +465,8 @@ export function Layout({ children }: LayoutProps) {
 
       <footer className="bg-background-dark border-t border-white/5 mt-auto pb-8">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-16">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
-            <div className="space-y-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+            <div className="col-span-2 lg:col-span-1 space-y-6">
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-primary text-3xl">target</span>
                 <h2 className="text-xl font-black tracking-tighter text-white uppercase italic">PERFECTION <span className="text-primary">AIRSOFT</span></h2>
@@ -481,7 +481,7 @@ export function Layout({ children }: LayoutProps) {
               </div>
             </div>
 
-            <div>
+            <div className="col-span-1">
               <h3 className="text-xs font-bold tracking-[0.3em] text-white uppercase mb-6">Gear Hub</h3>
               <ul className="space-y-4">
                 <li><Link to="/marcas" className="text-[10px] text-white/50 hover:text-white uppercase tracking-widest transition-colors font-bold">Marcas</Link></li>
@@ -491,7 +491,7 @@ export function Layout({ children }: LayoutProps) {
               </ul>
             </div>
 
-            <div>
+            <div className="col-span-1">
               <h3 className="text-xs font-bold tracking-[0.3em] text-white uppercase mb-6">Suporte HQ</h3>
               <ul className="space-y-4">
                 <li><Link to="/contato" className="text-[10px] text-white/50 hover:text-white uppercase tracking-widest transition-colors font-bold">SAC / Rádio</Link></li>
@@ -503,7 +503,7 @@ export function Layout({ children }: LayoutProps) {
               </ul>
             </div>
 
-            <div>
+            <div className="col-span-2 lg:col-span-1">
               <h3 className="text-xs font-bold tracking-[0.3em] text-white uppercase mb-6">Quartel General</h3>
               <div className="bg-surface border border-white/5 p-4 space-y-4">
                 <div className="flex gap-3">
