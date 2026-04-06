@@ -11,6 +11,7 @@ interface FinanceStats {
   totalEarned: number;
   trustLevel: number;
   completedDrops: number;
+  isProfileComplete: boolean;
 }
 
 export default function FinanceDashboard() {
@@ -22,7 +23,8 @@ export default function FinanceDashboard() {
     pending: 0, 
     totalEarned: 0, 
     trustLevel: 0, 
-    completedDrops: 0
+    completedDrops: 0,
+    isProfileComplete: false
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [isKYCModalOpen, setIsKYCModalOpen] = useState(false);
@@ -52,16 +54,19 @@ export default function FinanceDashboard() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('trust_level, completed_drops')
+        .select('trust_level, completed_drops, full_name, cpf_cnpj, phone, birth_date, asaas_customer_id')
         .eq('id', user?.id)
         .single();
+
+      const isComplete = !!(profile?.full_name && profile?.cpf_cnpj && profile?.phone && profile?.birth_date);
 
       setStats({
         available: balanceData?.available_balance ? Number(balanceData.available_balance) : 0,
         pending: balanceData?.pending_balance ? Number(balanceData.pending_balance) : 0,
         totalEarned: balanceData?.total_earned ? Number(balanceData.total_earned) : 0,
         trustLevel: profile?.trust_level || 0,
-        completedDrops: profile?.completed_drops || 0
+        completedDrops: profile?.completed_drops || 0,
+        isProfileComplete: isComplete || !!profile?.asaas_customer_id
       });
 
       const { data: orders } = await supabase
@@ -81,8 +86,8 @@ export default function FinanceDashboard() {
   };
 
   const handleRequestPayout = async () => {
-    // 1º EXIGIR PROTOCOLO DE VERIFICAÇÃO SE NÃO ESTIVER VERIFICADO (Trust Level <= 0)
-    if (stats.trustLevel <= 0) {
+    // 1º EXIGIR PROTOCOLO DE VERIFICAÇÃO APENAS SE O PERFIL ESTIVER INCOMPLETO
+    if (!stats.isProfileComplete && stats.trustLevel <= 0) {
       setIsKYCModalOpen(true);
       return;
     }
