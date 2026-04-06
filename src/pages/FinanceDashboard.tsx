@@ -25,6 +25,7 @@ export default function FinanceDashboard() {
     completedDrops: 0 
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [isKYCModalOpen, setIsKYCModalOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -79,6 +80,12 @@ export default function FinanceDashboard() {
   const handleRequestPayout = async () => {
     if (stats.available <= 0) {
       alert('SALDO INSUFICIENTE PARA RESGATE.');
+      return;
+    }
+
+    // EXIGIR PROTOCOLO DE VERIFICAÇÃO SE NÃO ESTIVER VERIFICADO (Trust Level <= 0)
+    if (stats.trustLevel <= 0) {
+      setIsKYCModalOpen(true);
       return;
     }
 
@@ -175,7 +182,7 @@ export default function FinanceDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+        <div className="grid grid-cols-1 gap-12 items-start max-w-4xl mx-auto">
           <div className="bg-surface/10 border border-white/5 p-8">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
@@ -211,12 +218,31 @@ export default function FinanceDashboard() {
               )}
             </div>
           </div>
-
-          <div className="bg-black/20 p-2">
-             <OperatorKYCForm />
-          </div>
         </div>
       </div>
+
+      {/* MODAL TÁTICO: PROTOCOLO DE VERIFICAÇÃO */}
+      {isKYCModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
+          <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setIsKYCModalOpen(false)}></div>
+          <div className="relative w-full max-w-3xl bg-background-dark border border-primary/30 shadow-[0_0_50px_rgba(251,191,36,0.1)] overflow-y-auto max-h-[90vh]">
+            <div className="absolute top-0 left-0 w-full h-1 bg-primary"></div>
+            <button 
+              onClick={() => setIsKYCModalOpen(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors z-50"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <div className="p-2">
+              <OperatorKYCForm onComplete={() => {
+                setIsKYCModalOpen(false);
+                fetchFinanceData();
+                alert('PROTOCOLO CONCLUÍDO! AGORA VOCÊ PODE SOLICITAR SEU RESGATE.');
+              }} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
