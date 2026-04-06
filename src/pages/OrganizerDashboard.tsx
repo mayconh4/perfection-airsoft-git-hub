@@ -11,6 +11,7 @@ interface EventStats {
   pendingBalance: number;
   trustLevel: number;
   completedDrops: number;
+  successfulShipments: number;
 }
 
 export default function OrganizerDashboard() {
@@ -18,7 +19,7 @@ export default function OrganizerDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<any[]>([]);
-  const [stats, setStats] = useState<EventStats>({ ticketsSold: 0, revenue: 0, netRevenue: 0, pendingBalance: 0, trustLevel: 0, completedDrops: 0 });
+  const [stats, setStats] = useState<EventStats>({ ticketsSold: 0, revenue: 0, netRevenue: 0, pendingBalance: 0, trustLevel: 0, completedDrops: 0, successfulShipments: 0 });
   const [activeTab, setActiveTab] = useState<'missions' | 'drops' | 'logistics' | 'reports'>('missions');
   const [winners, setWinners] = useState<any[]>([]);
   const [updatingLogisticsId, setUpdatingLogisticsId] = useState<string | null>(null);
@@ -95,22 +96,22 @@ export default function OrganizerDashboard() {
         .eq('id', user?.id)
         .single();
 
-      setStats({
-        ticketsSold: totalSold,
-        trustLevel: profile?.trust_level || 0,
-        completedDrops: profile?.completed_drops || 0,
-        revenue: 0,
-        netRevenue: 0,
-        pendingBalance: 0
-      });
-
-      // 4. Buscar Ganhadores (Logística)
       const { data: winnersData } = await supabase
         .from('raffle_winners')
         .select('*, raffles(title, creator_id)')
         .order('created_at', { ascending: false });
 
       setWinners(winnersData || []);
+
+      setStats({
+        ticketsSold: totalSold,
+        trustLevel: profile?.trust_level || 0,
+        completedDrops: profile?.completed_drops || 0,
+        successfulShipments: (winnersData || []).filter((w: any) => w.delivery_status === 'shipped').length,
+        revenue: 0,
+        netRevenue: 0,
+        pendingBalance: 0
+      });
 
     } catch (err: any) {
       console.error('Erro no Dashboard:', err.message);
@@ -420,8 +421,107 @@ export default function OrganizerDashboard() {
             )}
 
             {activeTab === 'reports' && (
-              <div className="max-w-2xl mx-auto border border-white/5 p-12 bg-surface/20 text-center uppercase font-black text-[10px] text-slate-500 tracking-[0.3em]">
-                Módulo de Relatórios em Fase de Calibração
+              <div className="space-y-12 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* STATUS DE PATENTE */}
+                <div className="bg-surface/30 border border-white/10 p-10 relative overflow-hidden">
+                  <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
+                    <div className="size-24 rounded-full border-4 border-primary/20 flex items-center justify-center relative">
+                      <div className={`size-16 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(251,191,36,0.3)] ${stats.trustLevel >= 3 ? 'bg-primary text-black' : 'bg-slate-800 text-slate-500'}`}>
+                        <span className="material-symbols-outlined text-3xl font-black">
+                          {stats.trustLevel >= 3 ? 'military_tech' : 'person'}
+                        </span>
+                      </div>
+                      {/* Aura de Patente */}
+                      {stats.trustLevel >= 3 && <div className="absolute inset-0 rounded-full animate-ping bg-primary/20" />}
+                    </div>
+                    
+                    <div className="flex-1 text-center md:text-left">
+                      <div className="flex items-center gap-3 justify-center md:justify-start mb-2">
+                        <span className={`text-[10px] font-black uppercase tracking-[0.4em] px-3 py-1 border ${stats.trustLevel >= 5 ? 'border-yellow-500 text-yellow-500' : stats.trustLevel >= 3 ? 'border-primary text-primary' : 'border-slate-500 text-slate-500'}`}>
+                          {stats.trustLevel >= 5 ? 'OPERADOR ELITE' : stats.trustLevel >= 3 ? 'SPETSNAZ' : 'RECRUTA'}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono">ID: {user?.id.slice(0, 8)}</span>
+                      </div>
+                      <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-4">
+                        PROXIMA META: <span className="text-primary">{stats.trustLevel >= 3 ? 'SAQUE IMEDIATO' : 'CONFIABILIDADE OPERACIONAL'}</span>
+                      </h3>
+                      
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-[9px] font-black text-slate-500 uppercase">
+                          <span>Envios com Sucesso</span>
+                          <span>{stats.successfulShipments} / 3</span>
+                        </div>
+                        <div className="h-2 w-full bg-white/5 overflow-hidden">
+                          <div 
+                            className="h-full bg-primary transition-all duration-1000 ease-out"
+                            style={{ width: `${Math.min((stats.successfulShipments / 3) * 100, 100)}%` }}
+                          />
+                        </div>
+                        <p className="text-[10px] text-slate-600 font-medium leading-relaxed italic mt-2">
+                          * 3 envios confirmados garantem a promoção para SPETSNAZ e agilizam seus resgates.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* PIPELINE TÁTICO DE DROPS */}
+                <div>
+                  <div className="flex items-center gap-3 mb-8">
+                    <span className="material-symbols-outlined text-primary">analytics</span>
+                    <h4 className="text-sm font-black text-white uppercase tracking-[0.3em]">Fluxo Operacional (Drops)</h4>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    {[
+                      { label: 'Venda de Ticket', icon: 'confirmation_number', done: stats.ticketsSold > 0, desc: 'Engajamento da base' },
+                      { label: 'Sorteio', icon: 'casino', done: stats.completedDrops > 0, desc: 'Randomização tática' },
+                      { label: 'Ganhador Escolhido', icon: 'military_tech', done: winners.length > 0, desc: 'Seleção do operador' },
+                      { label: 'Envio Equipamento', icon: 'local_shipping', done: stats.successfulShipments > 0, desc: 'Entrega confirmada' },
+                      { label: 'Saque', icon: 'payments', done: false, desc: 'Resgate de provisões' }
+                    ].map((step, idx) => (
+                      <div key={idx} className={`p-6 border transition-all ${step.done ? 'bg-primary/5 border-primary/30 shadow-[0_0_20px_rgba(251,191,36,0.05)]' : 'bg-surface/10 border-white/5 opacity-40'}`}>
+                        <div className="flex flex-col items-center text-center">
+                          <span className={`material-symbols-outlined text-2xl mb-4 ${step.done ? 'text-primary' : 'text-slate-700'}`}>
+                            {step.icon}
+                          </span>
+                          <div className={`text-[9px] font-black uppercase tracking-widest mb-1 ${step.done ? 'text-white' : 'text-slate-600'}`}>
+                            {step.label}
+                          </div>
+                          <p className="text-[8px] text-slate-500 font-mono uppercase italic">{step.desc}</p>
+                          {step.done && (
+                            <div className="mt-4 flex items-center gap-1 text-[8px] font-black text-primary animate-pulse">
+                              <span className="material-symbols-outlined text-[12px]">check</span>
+                              CONCLUÍDO
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* VISÃO DE EVENTOS */}
+                <div className="bg-surface/20 border border-white/5 p-8">
+                   <div className="flex items-center gap-3 mb-6">
+                    <span className="material-symbols-outlined text-primary">event_available</span>
+                    <h4 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Metas de Eventos Presenciais</h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="border border-white/5 p-6 bg-black/20">
+                      <span className="text-[8px] text-slate-500 uppercase font-black block mb-1">Check-ins Realizados</span>
+                      <span className="text-2xl font-black text-white">0</span>
+                    </div>
+                    <div className="border border-white/5 p-6 bg-black/20">
+                      <span className="text-[8px] text-slate-500 uppercase font-black block mb-1">Operadores Validados</span>
+                      <span className="text-2xl font-black text-white">0</span>
+                    </div>
+                    <div className="border border-white/5 p-6 bg-black/20">
+                      <span className="text-[8px] text-slate-500 uppercase font-black block mb-1">Meta: Saque Imediato</span>
+                      <span className="text-2xl font-black text-slate-700 uppercase italic">Aguardando...</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
