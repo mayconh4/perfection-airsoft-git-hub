@@ -126,18 +126,27 @@ function EventCard({ event }: { event: Event }) {
             </button>
           ) : (
             <div className="flex-1 flex gap-2">
+              <Link 
+                to={`/eventos/${event.id}`}
+                className="bg-white/5 border border-white/10 text-white/50 hover:text-primary hover:border-primary/40 p-3 flex items-center justify-center transition-all"
+                title="Ver briefing da missão"
+              >
+                <span className="material-symbols-outlined text-sm text-[16px]">visibility</span>
+              </Link>
+              
               {user?.id === event.organizer_id && (
                 <Link 
                   to={`/organizador?event=${event.id}`}
                   className="bg-white/5 border border-white/10 text-white/50 hover:text-primary hover:border-primary/40 p-3 flex items-center justify-center transition-all group/edit"
                   title="Gerenciar Missão"
                 >
-                  <span className="material-symbols-outlined text-sm group-hover/edit:rotate-45 transition-transform">settings</span>
+                  <span className="material-symbols-outlined text-sm text-[16px] group-hover/edit:rotate-45 transition-transform">settings</span>
                 </Link>
               )}
+              
               <Link 
                 to={`/eventos/${event.id}`}
-                className="flex-1 bg-primary text-background-dark font-black py-3 text-[9px] uppercase tracking-widest hover:bg-white transition-all text-center"
+                className="flex-1 bg-primary text-background-dark font-black py-3 text-[9px] uppercase tracking-widest hover:bg-white transition-all text-center flex items-center justify-center gap-2"
               >
                 COMPRAR TICKET
               </Link>
