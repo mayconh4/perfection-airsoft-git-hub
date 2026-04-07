@@ -33,7 +33,7 @@ function getTimeUntil(dateStr: string) {
   return `Em ${days} dias`;
 }
 
-function EventCard({ event }: { event: Event }) {
+function EventCard({ event, rating }: { event: Event, rating?: { avg: number, count: number } }) {
   const { user } = useAuth();
   const availableSlots = event.capacity - event.sold_count;
   const occupancyPercent = (event.sold_count / event.capacity) * 100;
@@ -78,9 +78,26 @@ function EventCard({ event }: { event: Event }) {
 
       {/* Card Body */}
       <div className="flex flex-col flex-1 p-6 bg-surface/40">
-        <h3 className="text-sm font-black text-white uppercase tracking-widest mb-3 leading-tight group-hover:text-primary transition-colors line-clamp-1">
+        <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2 leading-tight group-hover:text-primary transition-colors line-clamp-1">
           {event.title}
         </h3>
+
+        {/* Tactical Reputation (Stars) */}
+        {(rating || event.status === 'closed') && (
+          <div className="flex items-center gap-2 mb-3 animate-in fade-in slide-in-from-left-2 duration-700">
+            <div className="flex">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span key={star} className={`material-symbols-outlined text-[14px] ${star <= Math.round((rating?.avg || 10) / 2) ? 'text-primary' : 'text-white/10'}`} style={{ fontVariationSettings: "'FILL' 1" }}>
+                  star
+                </span>
+              ))}
+            </div>
+            <div className="border border-primary/30 px-2 py-0.5 bg-primary/5 rounded-sm flex items-center gap-2">
+              <span className="text-[10px] font-black text-primary">{(rating?.avg || 10).toFixed(1)}</span>
+              <span className="text-[7px] text-primary/70 uppercase font-bold tracking-tighter">Missão de Elite</span>
+            </div>
+          </div>
+        )}
 
         <p className="text-[10px] text-slate-500 font-mono leading-relaxed mb-4 line-clamp-2 flex-1">
           {event.description}
@@ -160,6 +177,7 @@ function EventCard({ event }: { event: Event }) {
 
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
+  const [ratings, setRatings] = useState<Record<string, { avg: number; count: number }>>({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -178,6 +196,32 @@ export default function EventsPage() {
       
       if (!error && data) {
         setEvents(data);
+        // Buscar avaliações para os eventos carregados
+        const eventIds = data.map(e => e.id);
+        if (eventIds.length > 0) {
+          const { data: reviews } = await supabase
+            .from('event_reviews')
+            .select('event_id, rating')
+            .in('event_id', eventIds);
+          
+          if (reviews) {
+            const mapping = reviews.reduce((acc: any, review: any) => {
+              if (!acc[review.event_id]) acc[review.event_id] = { sum: 0, count: 0 };
+              acc[review.event_id].sum += review.rating;
+              acc[review.event_id].count += 1;
+              return acc;
+            }, {});
+
+            const finalMapping: any = {};
+            Object.keys(mapping).forEach(id => {
+              finalMapping[id] = {
+                avg: mapping[id].sum / mapping[id].count,
+                count: mapping[id].count
+              };
+            });
+            setRatings(finalMapping);
+          }
+        }
       }
     } catch {
       // Falha na conexão
@@ -232,7 +276,7 @@ export default function EventsPage() {
         ) : events.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {events.map(event => (
-              <EventCard key={event.id} event={event} />
+              <EventCard key={event.id} event={event} rating={ratings[event.id]} />
             ))}
           </div>
         ) : (
