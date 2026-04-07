@@ -191,19 +191,13 @@ export default function EventDetailPage() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map((star) => {
-                const isFilled = avgRating ? Math.round(avgRating) >= star : true;
+                const isFilled = avgRating ? Math.round(avgRating) >= star : false;
                 return (
                   <span key={star} className={`material-symbols-outlined text-primary text-lg select-none ${isFilled ? 'fill-1' : ''}`} style={{ fontVariationSettings: `'FILL' ${isFilled ? 1 : 0}` }}>
                     {isFilled ? 'star' : 'star_outline'}
                   </span>
                 );
               })}
-            </div>
-            <div className="flex items-center gap-2 bg-primary/10 px-3 py-1 border border-primary/20">
-              <span className="text-primary font-black text-xs tracking-tighter">{avgRating ? avgRating.toFixed(1) : '5.0'}</span>
-              <span className="text-[8px] text-primary/50 uppercase font-bold tracking-widest mt-0.5">
-                {reviewsCount > 0 ? `${reviewsCount} avaliações` : 'OPERAÇÃO DE ELITE'}
-              </span>
             </div>
           </div>
         </div>

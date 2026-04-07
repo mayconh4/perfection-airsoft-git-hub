@@ -476,7 +476,7 @@ export default function CreateEventPage() {
               disabled={loading || uploading}
               className="bg-primary text-background-dark font-black py-5 px-16 text-[11px] uppercase tracking-[0.4em] hover:bg-white transition-all shadow-[0_0_30px_rgba(255,193,7,0.2)] disabled:opacity-50"
             >
-              {loading ? 'PROCESSANDO...' : id ? 'ATUALIZAR DADOS DA MISSÃO' : 'CONFIRMAR DEPLOY DA MISSÃO'}
+              {loading ? 'PROCESSANDO...' : id ? 'ATUALIZAR DADOS DA MISSÃO' : 'CONFIRMAR MISSÃO'}
             </button>
           </div>
         </form>

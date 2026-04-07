@@ -83,18 +83,17 @@ function EventCard({ event, rating }: { event: Event, rating?: { avg: number, co
         </h3>
 
         {/* Tactical Reputation (Stars) */}
-        {(rating || new Date(event.event_date) < new Date()) && (
+        {rating && (
           <div className="flex items-center gap-2 mb-3 animate-in fade-in slide-in-from-left-2 duration-700">
             <div className="flex">
               {[1, 2, 3, 4, 5].map((star) => (
-                <span key={star} className={`material-symbols-outlined text-[14px] ${star <= Math.round((rating?.avg || 5) / 1)} ? 'text-primary' : 'text-white/10'}`} style={{ fontVariationSettings: "'FILL' 1" }}>
+                <span key={star} className={`material-symbols-outlined text-[14px] ${star <= Math.round(rating.avg) ? 'text-primary' : 'text-white/10'}`} style={{ fontVariationSettings: "'FILL' 1" }}>
                   star
                 </span>
               ))}
             </div>
             <div className="border border-primary/30 px-2 py-0.5 bg-primary/5 rounded-sm flex items-center gap-2">
-              <span className="text-[10px] font-black text-primary">{(rating?.avg || 5.0).toFixed(1)}</span>
-              <span className="text-[7px] text-primary/70 uppercase font-bold tracking-tighter">Missão de Elite</span>
+              <span className="text-[10px] font-black text-primary">{rating.avg.toFixed(1)}</span>
             </div>
           </div>
         )}
