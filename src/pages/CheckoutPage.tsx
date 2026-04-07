@@ -551,8 +551,16 @@ export function CheckoutPage() {
             <div className="space-y-4 mb-6 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
               {items.map(i => (
                 <div key={i.id} className="flex items-center gap-4 group">
-                  <div className="w-12 h-12 bg-white flex-shrink-0 p-1 border border-white/5 group-hover:border-primary/50 transition-colors">
-                    <img src={i.product?.image_url || ''} alt={i.product?.name} className="w-full h-full object-contain" />
+                  <div className="w-12 h-12 bg-white flex-shrink-0 p-1 border border-white/5 group-hover:border-primary/50 transition-colors flex items-center justify-center overflow-hidden">
+                    { (i.metadata?.event_image || i.product?.image_url) ? (
+                      <img 
+                        src={i.metadata?.event_image || i.product?.image_url || ''} 
+                        alt={i.product?.name} 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : (
+                      <span className="material-symbols-outlined text-slate-300">image_not_supported</span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-black uppercase tracking-tight truncate text-white/80">{i.product?.name}</p>
