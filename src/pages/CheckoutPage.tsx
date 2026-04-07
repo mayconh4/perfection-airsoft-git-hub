@@ -290,7 +290,7 @@ export function CheckoutPage() {
         // Redirecionamento Assistido: Pagar -> Criar Conta -> Ver Sucesso
         navigate(`/login?mode=signup&paid=true&email=${encodeURIComponent(form.email)}&name=${encodeURIComponent(form.name)}&redirect=${encodeURIComponent('/sucesso/' + orderId)}`);
       } else {
-        setError(`STATUS: ${data.status.toUpperCase()}. O pagamento ainda não foi detectado pelo sistema do Asaas.`);
+        setError('Aguarde o processamento... Se seu pedido não ficar ativo em 5 minutos, contate o suporte');
       }
     } catch (err: any) {
       console.error('Erro ao verificar pagamento:', err);
