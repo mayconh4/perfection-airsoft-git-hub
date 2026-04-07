@@ -41,6 +41,8 @@ import { AdminMessages } from './pages/admin/AdminMessages';
 import AdminModeration from './pages/AdminModeration';
 import FinanceDashboard from './pages/FinanceDashboard';
 import { CreateClassPage } from './pages/CreateClassPage';
+import BlogListingPage from './pages/BlogListingPage';
+import BlogDetailPage from './pages/BlogDetailPage';
 
 import { PricingProvider } from './context/PricingContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -90,6 +92,11 @@ function App() {
                   <Route path="/organizador/eventos/:id" element={<CreateEventPage />} />
                   <Route path="/auth/callback" element={<AuthCallbackPage />} />
                   <Route path="/create-class" element={<CreateClassPage />} />
+                  
+                  {/* Blog & Educational */}
+                  <Route path="/blog" element={<BlogListingPage />} />
+                  <Route path="/blog/modalidades/:slug" element={<BlogDetailPage />} />
+                  <Route path="/blog/modos/:slug" element={<BlogDetailPage />} />
 
                   {/* Admin Area */}
                   <Route path="/admin" element={<AdminLayout />}>

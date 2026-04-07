@@ -250,27 +250,48 @@ function OrderDetails({ order, onBack }: { order: Order, onBack: () => void }) {
 // Sub-component: Profile Form
 function ProfileForm({ user }: { user: any }) {
   const [profile, setProfile] = useState<any>(null);
+  const [completedMissions, setCompletedMissions] = useState(0);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      setProfile(data);
+    const fetchProfileData = async () => {
+      // Perfil
+      const { data: pData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      setProfile(pData);
+
+      // Missões concluídas (tickets com status 'used')
+      const { count } = await supabase
+        .from('tickets')
+        .select('*', { count: 'exact', head: true })
+        .eq('buyer_id', user.id)
+        .eq('status', 'used');
+      
+      setCompletedMissions(count || 0);
     };
-    fetchProfile();
+    fetchProfileData();
   }, [user.id]);
 
   return (
     <div className="bg-surface border border-border-tactical p-8 max-w-2xl relative overflow-hidden">
       {/* Status Badges */}
-      <div className="absolute top-0 right-0 flex">
-        {profile?.kyc_status === 'approved' && (
+      <div className="absolute top-0 right-0 flex flex-col items-end">
+        {profile?.status === 'Soldado verificado' ? (
           <div className="bg-green-500 text-black font-black text-[8px] px-3 py-1 uppercase tracking-widest flex items-center gap-1">
             <span className="material-symbols-outlined text-[10px]">verified</span>
-            Operador Verificado
+            Soldado Verificado
+          </div>
+        ) : (
+          <div className="bg-slate-700 text-white font-black text-[8px] px-3 py-1 uppercase tracking-widest flex items-center gap-1">
+            <span className="material-symbols-outlined text-[10px]">visibility</span>
+            Soldado em observação
+          </div>
+        )}
+        {profile?.status !== 'Soldado verificado' && (
+          <div className="bg-black/40 text-[7px] text-slate-500 px-2 py-1 font-mono uppercase tracking-tighter">
+            Progresso: {completedMissions}/3 Missões para Confiabilidade
           </div>
         )}
         {(profile?.role === 'organizer' || profile?.role === 'admin') && (
-          <div className="bg-primary text-black font-black text-[8px] px-3 py-1 uppercase tracking-widest flex items-center gap-1">
+          <div className="bg-primary text-black font-black text-[8px] px-3 py-1 uppercase tracking-widest flex items-center gap-1 mt-px">
             <span className="material-symbols-outlined text-[10px]">military_tech</span>
             Organizador {profile?.role === 'admin' ? 'QG' : 'Elite'}
           </div>

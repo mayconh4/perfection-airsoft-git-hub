@@ -4,6 +4,9 @@ import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { OperatorKYCForm } from '../components/OperatorKYCForm';
+import { MISSION_TYPES, GAME_MODES } from '../data/missionCatalog';
+import type { MissionContent } from '../data/missionCatalog';
+import { TacticalInfoPopup } from '../components/TacticalInfoPopup';
 
 export default function CreateEventPage() {
   const { user } = useAuth();
@@ -24,9 +27,12 @@ export default function CreateEventPage() {
     capacity: '50',
     image_url: '',
     status: 'draft' as 'draft' | 'published' | 'closed',
-    engagement_rules: [] as string[]
+    engagement_rules: [] as string[],
+    mission_type: '',
+    game_mode: ''
   });
   const [newRule, setNewRule] = useState('');
+  const [popupContent, setPopupContent] = useState<MissionContent | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -95,7 +101,9 @@ export default function CreateEventPage() {
           capacity: data.capacity.toString(),
           image_url: data.image_url || '',
           status: data.status,
-          engagement_rules: data.engagement_rules || []
+          engagement_rules: data.engagement_rules || [],
+          mission_type: data.mission_type || '',
+          game_mode: data.game_mode || ''
         });
       }
     } catch (err: any) {
@@ -159,7 +167,9 @@ export default function CreateEventPage() {
         capacity: parseInt(formData.capacity),
         image_url: formData.image_url,
         status: formData.status,
-        engagement_rules: formData.engagement_rules
+        engagement_rules: formData.engagement_rules,
+        mission_type: formData.mission_type,
+        game_mode: formData.game_mode
       };
 
       if (id) {
@@ -282,6 +292,71 @@ export default function CreateEventPage() {
                 value={formData.description}
                 onChange={e => setFormData({ ...formData, description: e.target.value })}
               />
+            </div>
+
+            {/* Classification: Type & Mode */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-white/5">
+              {/* Mission Type */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest italic">TIPO DE MISSÃO</label>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      const type = MISSION_TYPES.find(t => t.id === formData.mission_type);
+                      if (type) setPopupContent(type);
+                    }}
+                    disabled={!formData.mission_type}
+                    className="size-4 flex items-center justify-center bg-primary/20 text-primary rounded-full hover:bg-primary hover:text-black transition-all disabled:opacity-20 translate-y-[-2px]"
+                  >
+                    <span className="material-symbols-outlined text-[12px] font-bold">help</span>
+                  </button>
+                </div>
+                <select
+                  required
+                  className="w-full bg-black/40 border border-white/10 p-4 text-white font-mono text-sm focus:border-primary outline-none transition-all"
+                  value={formData.mission_type}
+                  onChange={e => setFormData({ ...formData, mission_type: e.target.value })}
+                >
+                  <option value="">SELECIONE A MODALIDADE</option>
+                  {MISSION_TYPES.map(type => (
+                    <option key={type.id} value={type.id}>
+                      {type.label} {type.subtitle ? `(${type.subtitle})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Game Mode */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest italic">MODO DE JOGO</label>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      const mode = GAME_MODES.find(m => m.id === formData.game_mode);
+                      if (mode) setPopupContent(mode);
+                    }}
+                    disabled={!formData.game_mode}
+                    className="size-4 flex items-center justify-center bg-primary/20 text-primary rounded-full hover:bg-primary hover:text-black transition-all disabled:opacity-20 translate-y-[-2px]"
+                  >
+                    <span className="material-symbols-outlined text-[12px] font-bold">help</span>
+                  </button>
+                </div>
+                <select
+                  required
+                  className="w-full bg-black/40 border border-white/10 p-4 text-white font-mono text-sm focus:border-primary outline-none transition-all"
+                  value={formData.game_mode}
+                  onChange={e => setFormData({ ...formData, game_mode: e.target.value })}
+                >
+                  <option value="">SELECIONE O MODO OPERACIONAL</option>
+                  {GAME_MODES.map(mode => (
+                    <option key={mode.id} value={mode.id}>
+                      {mode.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Location Selection */}
@@ -480,6 +555,11 @@ export default function CreateEventPage() {
             </button>
           </div>
         </form>
+
+        <TacticalInfoPopup 
+          content={popupContent} 
+          onClose={() => setPopupContent(null)} 
+        />
         </div>
       )}
     </div>

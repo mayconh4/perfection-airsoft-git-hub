@@ -74,14 +74,14 @@ export default function DashboardDemo() {
                             )}
                         </div>
                         <p className={`text-[10px] font-mono uppercase tracking-[0.2em] ${stats.trustLevel >= 3 ? 'text-primary' : 'text-slate-500'}`}>
-                            KILLSTREAK: {stats.reward}
+                            {stats.trustLevel >= 3 ? 'SOLDADO VERIFICADO' : 'STATUS PADRÃO: SOLDADO EM OBSERVAÇÃO'}
                         </p>
                     </div>
                 </div>
                 
                 <div className="flex-1 max-w-md w-full">
                     <div className="flex justify-between text-[9px] font-black uppercase tracking-widest mb-2">
-                        <span className="text-slate-500">Integridade da Cadeia de Suprimentos</span>
+                        <span className="text-slate-500">COMPLETE PARA GANHAR CONFIABILIDADE</span>
                         <span className="text-primary">{stats.completedDrops} / {stats.trustLevel < 3 ? '3' : '15'} ENTREGAS</span>
                     </div>
                     <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">

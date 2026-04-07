@@ -168,7 +168,7 @@ export default function FinanceDashboard() {
           </div>
           <div className="text-right">
              <div className="text-primary font-black uppercase tracking-[0.3em] text-[10px] mb-1">Status da Conta</div>
-             <div className="text-white font-mono text-[12px]">{stats.trustLevel >= 3 ? 'RANK ELITE • SAQUE INSTANTÂNEO' : `RANK ${stats.trustLevel} • CRÉDITO EM GARANTIA`}</div>
+             <div className="text-white font-mono text-[12px]">{stats.trustLevel >= 3 ? 'SOLDADO VERIFICADO' : `RANK ${stats.trustLevel} • SOLDADO EM OBSERVAÇÃO`}</div>
           </div>
         </div>
 
@@ -192,7 +192,7 @@ export default function FinanceDashboard() {
           </div>
 
           <div className="bg-surface/30 border border-white/10 p-10 hover:border-white/20 transition-colors">
-             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-2">Saldo em Garantia</span>
+             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-2">Soldado em observação</span>
              <span className="text-4xl font-black text-white/60 block mb-1">R$ {stats.pending.toFixed(2)}</span>
              <p className="text-[9px] text-slate-600 font-mono leading-relaxed mt-4 uppercase">
                Valores retidos por segurança conforme seu Rank operacional.

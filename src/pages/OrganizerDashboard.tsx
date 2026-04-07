@@ -323,13 +323,13 @@ export default function OrganizerDashboard() {
                     {stats.trustLevel >= 3 ? 'COMANDANTE DE ELITE' : 'OPERADOR VERIFICADO'}
                   </h3>
                   <p className={`text-[10px] font-mono uppercase tracking-[0.2em] ${stats.trustLevel >= 3 ? 'text-primary' : 'text-slate-500'}`}>
-                    {stats.trustLevel >= 3 ? 'KILLSTREAK: SAQUE INSTANTÂNEO ATIVADO' : 'STATUS PADRÃO: SALDO EM GARANTIA'}
+                    {stats.trustLevel >= 3 ? 'SOLDADO VERIFICADO' : 'STATUS PADRÃO: SOLDADO EM OBSERVAÇÃO'}
                   </p>
                 </div>
               </div>
               <div className="flex-1 max-w-md w-full">
                 <div className="flex justify-between text-[9px] font-black uppercase tracking-widest mb-2">
-                  <span className="text-slate-500 font-mono">SUPPLY CHAIN INTEGRITY</span>
+                  <span className="text-slate-500 font-mono italic uppercase">COMPLETE PARA GANHAR CONFIABILIDADE</span>
                   <span className="text-primary font-mono">{stats.completedDrops} / {stats.trustLevel < 3 ? '3' : '15'} ENTREGAS</span>
                 </div>
                 <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 shadow-inner">
@@ -626,7 +626,7 @@ export default function OrganizerDashboard() {
                     <div className="flex-1 text-center lg:text-left">
                        <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start mb-4">
                           <span className={`text-[9px] font-black uppercase tracking-[0.4em] px-4 py-1.5 border-2 ${stats.trustLevel >= 5 ? 'border-yellow-500 text-yellow-500 bg-yellow-500/5' : stats.trustLevel >= 3 ? 'border-primary text-primary bg-primary/5' : 'border-slate-800 text-slate-700 bg-slate-900/50'}`}>
-                             {stats.trustLevel >= 5 ? 'OPERADOR DE ELITE' : stats.trustLevel >= 3 ? 'OFICIAL TÁTICO' : 'RECRUTA EM AVALIAÇÃO'}
+                             {stats.trustLevel >= 5 ? 'OPERADOR DE ELITE' : stats.trustLevel >= 3 ? 'SOLDADO VERIFICADO' : 'SOLDADO EM OBSERVAÇÃO'}
                           </span>
                           <div className="text-[10px] text-slate-600 font-mono tracking-widest uppercase bg-black/40 px-3 py-1 border border-white/5">SIG-INT: {user?.id.slice(0, 12)}</div>
                        </div>

@@ -4,6 +4,7 @@ import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { gerarLinkWhatsApp, getPublicMissionLink } from '../utils/sharing';
+import { MISSION_TYPES } from '../data/missionCatalog';
 
 interface Event {
   id: string;
@@ -21,6 +22,8 @@ interface Event {
   profiles?: {
     full_name: string | null;
   };
+  mission_type: string | null;
+  game_mode: string | null;
 }
 
 // Tabela de Eventos original removida em favor do Supabase
@@ -79,6 +82,19 @@ function EventCard({ event, rating }: { event: Event, rating?: { avg: number, co
             {getTimeUntil(event.event_date)}
           </span>
         </div>
+
+        {/* Mission Type Badge */}
+        {event.mission_type && (
+          <div className="absolute bottom-4 left-4 z-10 flex gap-2">
+            <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 border ${
+              event.mission_type === 'milsim' 
+                ? 'bg-primary text-black border-primary shadow-[0_0_15px_rgba(251,191,36,0.3)]' 
+                : 'bg-white/10 text-white border-white/20 backdrop-blur-md'
+            }`}>
+              {MISSION_TYPES.find(t => t.id === event.mission_type)?.label}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Card Body */}

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { gerarLinkWhatsApp, getPublicMissionLink } from '../utils/sharing';
+import { MISSION_TYPES, GAME_MODES } from '../data/missionCatalog';
 
 interface Event {
   id: string;
@@ -21,6 +22,8 @@ interface Event {
   organizer_id: string;
   checkin_token: string | null;
   engagement_rules: string[] | null;
+  mission_type: string | null;
+  game_mode: string | null;
 }
 
 export default function EventDetailPage() {
@@ -193,6 +196,26 @@ export default function EventDetailPage() {
               <span className="text-[9px] font-black px-2 py-1 bg-white/5 border border-white/10 text-white/50 uppercase tracking-widest">
                 📍 {event.location}
               </span>
+            )}
+
+            {/* Novas Categorias */}
+            {event.mission_type && (
+              <Link 
+                to={`/blog/modalidades/${MISSION_TYPES.find(t => t.id === event.mission_type)?.slug}`}
+                className="text-[9px] font-black px-2 py-1 bg-primary/10 border border-primary/20 text-primary uppercase tracking-widest hover:bg-primary hover:text-black transition-all flex items-center gap-1.5 group"
+              >
+                <span className="material-symbols-outlined text-[12px]">military_tech</span>
+                {MISSION_TYPES.find(t => t.id === event.mission_type)?.label}
+              </Link>
+            )}
+            {event.game_mode && (
+              <Link 
+                to={`/blog/modos/${GAME_MODES.find(m => m.id === event.game_mode)?.slug}`}
+                className="text-[9px] font-black px-2 py-1 bg-white/5 border border-white/10 text-white hover:border-primary/40 transition-all flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[12px]">security</span>
+                {GAME_MODES.find(m => m.id === event.game_mode)?.label}
+              </Link>
             )}
           </div>
           <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none max-w-3xl mb-4">

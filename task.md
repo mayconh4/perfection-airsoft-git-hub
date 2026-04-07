@@ -68,9 +68,23 @@
 
 ---
 
+---
+
+## 🎒 PROTOCOLO DE VERIFICAÇÃO TÁTICA (2026-04-07)
+
+- [x] **Status Labels:** 'Soldado em observação' e 'Soldado verificado' integrado
+- [x] **Integrity Badge:** 'Complete para ganhar confiabilidade' unificado
+- [x] **Automação de Status:** Trigger SQL para promover operador após 3 missões
+- [x] **Lembrete de Missão:** Edge Function com Checklist e Intel metadata
+- [/] **Manual de Operações (Blog):**
+  - [x] Estrutura de dados (`missionCatalog`, `missionLore`)
+  - [x] Rotas `/blog` configuradas
+  - [/] Refinamento visual (Premium HUD aesthetics)
+  - [ ] Validar links 'Saiba Mais' nos popups
+
 ## 🔥 PRÓXIMAS PRIORIDADES
-1. 🔑 Confirmar Secrets SMTP no painel Supabase (SMTP_HOSTNAME, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD)
-2. 🧪 Testar fluxo Webhook → Ticket → E-mail ponta-a-ponta (via UATScannerTester)
-3. 🚀 Deploy final consolidado das Edge Functions
-4. 🏪 Validar trava: Drop só publicável com chave PIX cadastrada (já implementado em CreateRafflePage — validar em teste UAT)
+1. 🎨 Polir UI do Blog (`BlogListingPage` e `BlogDetailPage`)
+2. 🔗 Validar redirecionamentos de 'Saiba Mais' em `CreateEventPage`
+3. 🧪 Testar Trigger de Verificação (Manual SQL Verification)
+4. 🚀 Deploy final consolidado das Edge Functions
 5. 🍃 Fix TS no CreateClassPage (erro pré-existente)
