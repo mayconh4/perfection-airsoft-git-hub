@@ -191,7 +191,7 @@ export default function EventsPage() {
         .from('events')
         .select('*')
         .eq('status', 'published')
-        .order('event_date', { ascending: true });
+        .order('event_date', { ascending: false });
       
       if (!error && data) {
         setEvents(data);

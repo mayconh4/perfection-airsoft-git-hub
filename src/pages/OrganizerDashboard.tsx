@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { gerarLinkWhatsApp, getPublicMissionLink } from '../utils/sharing';
 
 interface EventStats {
   ticketsSold: number;
@@ -26,6 +27,7 @@ export default function OrganizerDashboard() {
   const [selectedEventParticipants, setSelectedEventParticipants] = useState<any[]>([]);
   const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
+  const [organizerName, setOrganizerName] = useState<string>('Perfection Operator');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -92,9 +94,13 @@ export default function OrganizerDashboard() {
       // 3. Buscar Dados de Confiança
       const { data: profile } = await supabase
         .from('profiles')
-        .select('trust_level, completed_drops')
+        .select('trust_level, completed_drops, full_name, email')
         .eq('id', user?.id)
         .single();
+
+      if (profile) {
+        setOrganizerName(profile.full_name || profile.email?.split('@')[0] || 'Perfection Operator');
+      }
 
       const { data: winnersData } = await supabase
         .from('raffle_winners')
@@ -426,9 +432,34 @@ export default function OrganizerDashboard() {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <button onClick={() => fetchParticipants(event.id)} className="p-3 bg-white/5 border border-white/5 text-slate-400 hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all rounded-sm tooltip" title="Lista de Operadores"><span className="material-symbols-outlined text-base">groups</span></button>
-                          <Link to={`/eventos/${event.id}`} className="p-3 bg-white/5 border border-white/5 text-slate-400 hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all rounded-sm"><span className="material-symbols-outlined text-base">visibility</span></Link>
-                          <Link to={`/organizador/eventos/${event.id}`} className="p-3 bg-white/5 border border-white/5 text-slate-400 hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all rounded-sm"><span className="material-symbols-outlined text-base">settings</span></Link>
+                          <button 
+                            onClick={() => fetchParticipants(event.id)} 
+                            className="p-3 bg-white/5 border border-white/5 text-slate-400 hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all rounded-sm tooltip" 
+                            title="Lista de Operadores"
+                          >
+                            <span className="material-symbols-outlined text-base">groups</span>
+                          </button>
+                          <button 
+                            onClick={() => {
+                              const link = getPublicMissionLink(event.id);
+                              const whatsappUrl = gerarLinkWhatsApp({
+                                nome: event.title,
+                                organizacao: organizerName,
+                                data: new Date(event.event_date).toLocaleDateString('pt-BR'),
+                                horario: new Date(event.event_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                                local: event.location,
+                                valor: `R$ ${event.ticket_price.toFixed(2)}`,
+                                link: link
+                              });
+                              window.open(whatsappUrl, '_blank');
+                            }}
+                            className="p-3 bg-green-500/5 border border-green-500/10 text-green-500 hover:bg-green-500 hover:text-black transition-all rounded-sm tooltip" 
+                            title="Viralizar no WhatsApp"
+                          >
+                            <span className="material-symbols-outlined text-base">share</span>
+                          </button>
+                          <Link to={`/eventos/${event.id}`} className="p-3 bg-white/5 border border-white/5 text-slate-400 hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all rounded-sm tooltip" title="Visualizar Página"><span className="material-symbols-outlined text-base">visibility</span></Link>
+                          <Link to={`/organizador/eventos/${event.id}`} className="p-3 bg-white/5 border border-white/5 text-slate-400 hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all rounded-sm tooltip" title="Configurações"><span className="material-symbols-outlined text-base">settings</span></Link>
                         </div>
                       </div>
                     </div>

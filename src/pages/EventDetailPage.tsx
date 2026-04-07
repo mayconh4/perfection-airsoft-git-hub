@@ -4,6 +4,7 @@ import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { gerarLinkWhatsApp, getPublicMissionLink } from '../utils/sharing';
 
 interface Event {
   id: string;
@@ -26,7 +27,7 @@ export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
-  const { user } = useAuth();
+  useAuth();
 
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,7 +35,7 @@ export default function EventDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [avgRating, setAvgRating] = useState<number | null>(null);
-  const [reviewsCount, setReviewsCount] = useState(0);
+  const [organizerName, setOrganizerName] = useState<string>('Perfection Operator');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -63,7 +64,17 @@ export default function EventDetailPage() {
       if (reviews && reviews.length > 0) {
         const avg = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length;
         setAvgRating(avg);
-        setReviewsCount(reviews.length);
+      }
+
+      // Busca Perfil do Organizador para o compartilhamento
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', data.organizer_id)
+        .single();
+      
+      if (profile) {
+        setOrganizerName(profile.full_name || profile.email?.split('@')[0] || 'Perfection Operator');
       }
     } catch (err: any) {
       setError('Evento não encontrado.');
@@ -366,6 +377,29 @@ export default function EventDetailPage() {
                   <p className="text-[9px] text-center text-slate-600 font-mono uppercase italic mt-4">
                     Pagamento seguro via PIX • Ingresso digital enviado por email
                   </p>
+
+                  <div className="mt-8 pt-8 border-t border-white/5">
+                    <button
+                      onClick={() => {
+                        if (!event) return;
+                        const link = getPublicMissionLink(event.id);
+                        const whatsappUrl = gerarLinkWhatsApp({
+                          nome: event.title,
+                          organizacao: organizerName,
+                          data: new Date(event.event_date).toLocaleDateString('pt-BR'),
+                          horario: new Date(event.event_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                          local: event.location,
+                          valor: `R$ ${event.ticket_price.toFixed(2)}`,
+                          link: link
+                        });
+                        window.open(whatsappUrl, '_blank');
+                      }}
+                      className="w-full bg-green-500/10 border border-green-500/20 text-green-500 font-black py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-green-500 hover:text-black transition-all flex items-center justify-center gap-2 group"
+                    >
+                      <span className="material-symbols-outlined text-sm group-hover:rotate-12 transition-transform">share</span>
+                      Compartilhar no WhatsApp
+                    </button>
+                  </div>
                 </>
               ) : (
                 <div className="text-center py-12">
