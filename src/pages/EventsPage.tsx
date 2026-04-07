@@ -41,7 +41,8 @@ function EventCard({ event, rating }: { event: Event, rating?: { avg: number, co
   const { user } = useAuth();
   const availableSlots = event.capacity - event.sold_count;
   const occupancyPercent = (event.sold_count / event.capacity) * 100;
-  const isSoldOut = event.status === 'closed' || availableSlots === 0;
+  const isPast = new Date(event.event_date) < new Date();
+  const isSoldOut = event.status === 'closed' || availableSlots === 0 || isPast;
   const dateStr = new Date(event.event_date).toLocaleDateString('pt-BR', {
     day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
   });
@@ -63,7 +64,7 @@ function EventCard({ event, rating }: { event: Event, rating?: { avg: number, co
         {/* Status Badge */}
         <div className="absolute top-4 left-4 z-10">
           {isSoldOut ? (
-            <span className="bg-red-900/80 border border-red-500/30 text-red-400 text-[9px] font-black uppercase tracking-widest px-3 py-1">ESGOTADO</span>
+            <span className="bg-red-900/80 border border-red-500/30 text-red-400 text-[9px] font-black uppercase tracking-widest px-3 py-1">VAGAS ENCERRADAS</span>
           ) : (
             <span className="bg-green-900/80 border border-green-500/30 text-green-400 text-[9px] font-black uppercase tracking-widest px-3 py-1 flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-green-400 animate-pulse" />
@@ -121,7 +122,7 @@ function EventCard({ event, rating }: { event: Event, rating?: { avg: number, co
         <div className="mb-4">
           <div className="flex justify-between text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">
             <span>{event.sold_count}/{event.capacity} operadores</span>
-            <span>{availableSlots > 0 ? `${availableSlots} vagas` : 'Esgotado'}</span>
+            <span>{availableSlots > 0 && !isPast ? `${availableSlots} vagas` : 'Encerrado'}</span>
           </div>
           <div className="h-1 bg-white/5 rounded-full overflow-hidden">
             <div 
@@ -187,7 +188,7 @@ function EventCard({ event, rating }: { event: Event, rating?: { avg: number, co
 
           {isSoldOut ? (
             <button disabled className="w-full bg-white/5 text-slate-600 font-black py-3 text-[9px] uppercase tracking-widest cursor-not-allowed">
-              ESGOTADO
+              MISSÃO ENCERRADA
             </button>
           ) : (
             <Link 

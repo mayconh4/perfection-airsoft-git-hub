@@ -146,7 +146,8 @@ export default function EventDetailPage() {
   // ─── Derived State ────────────────────────────────────────────────────────
 
   const spotsLeft = event.capacity - event.sold_count;
-  const isSoldOut = event.status === 'closed' || spotsLeft <= 0;
+  const isPast = new Date(event.event_date) < new Date();
+  const isSoldOut = event.status === 'closed' || spotsLeft <= 0 || isPast;
   const totalPrice = event.ticket_price * quantity;
   const occupancyPct = Math.min(100, Math.round((event.sold_count / event.capacity) * 100));
   const dateStr = new Date(event.event_date).toLocaleDateString('pt-BR', {
@@ -186,7 +187,7 @@ export default function EventDetailPage() {
               occupancyPct >= 80 ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
               'bg-primary/20 text-primary border border-primary/30'
             }`}>
-              {isSoldOut ? '⛔ ESGOTADO' : occupancyPct >= 80 ? '⚡ ÚLTIMAS VAGAS' : '🟢 VAGAS DISPONÍVEIS'}
+              {isSoldOut ? '⛔ VAGAS ENCERRADAS' : occupancyPct >= 80 ? '⚡ ÚLTIMAS VAGAS' : '🟢 VAGAS DISPONÍVEIS'}
             </span>
             {event.location && (
               <span className="text-[9px] font-black px-2 py-1 bg-white/5 border border-white/10 text-white/50 uppercase tracking-widest">
@@ -254,7 +255,7 @@ export default function EventDetailPage() {
                 <span className="material-symbols-outlined text-primary mb-2 md:mb-3 block text-xl">confirmation_number</span>
                 <h4 className="text-[8px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 md:mb-2 text-wrap">Vagas</h4>
                 <p className={`text-[11px] md:text-sm font-black uppercase tracking-tighter ${isSoldOut ? 'text-red-400' : 'text-primary'}`}>
-                  {isSoldOut ? 'ESGOTADO' : `${spotsLeft} vagas`}
+                  {isSoldOut ? 'ENCERRADO' : `${spotsLeft} vagas`}
                 </p>
               </div>
             </section>
@@ -399,9 +400,9 @@ export default function EventDetailPage() {
               ) : (
                 <div className="text-center py-12">
                   <span className="material-symbols-outlined text-red-500 text-5xl mb-4 block">cancel</span>
-                  <h4 className="text-white font-black uppercase text-sm mb-2">Missão Esgotada</h4>
+                  <h4 className="text-white font-black uppercase text-sm mb-2">Missão Encerrada</h4>
                   <p className="text-slate-500 text-[10px] font-mono uppercase">
-                    Não há mais vagas disponíveis para esta operação.
+                    As inscrições para esta operação foram finalizadas.
                   </p>
                 </div>
               )}
