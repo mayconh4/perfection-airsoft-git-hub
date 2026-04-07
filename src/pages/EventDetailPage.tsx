@@ -355,7 +355,29 @@ export default function EventDetailPage() {
                     </div>
                   </div>
 
-                  {/* CTA */}
+                  {/* Botão de Compartilhar (Verde) - Prioridade de Engajamento */}
+                  <button
+                    onClick={() => {
+                      if (!event) return;
+                      const link = getPublicMissionLink(event.id);
+                      const whatsappUrl = gerarLinkWhatsApp({
+                        nome: event.title,
+                        organizacao: organizerName,
+                        data: new Date(event.event_date).toLocaleDateString('pt-BR'),
+                        horario: new Date(event.event_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                        local: event.location,
+                        valor: `R$ ${event.ticket_price.toFixed(2)}`,
+                        link: link
+                      });
+                      window.open(whatsappUrl, '_blank');
+                    }}
+                    className="w-full bg-green-500/10 border border-green-500/20 text-green-500 font-black py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-green-500 hover:text-black transition-all flex items-center justify-center gap-2 group mb-4"
+                  >
+                    <span className="material-symbols-outlined text-sm group-hover:rotate-12 transition-transform">share</span>
+                    Compartilhar no WhatsApp
+                  </button>
+
+                  {/* CTA Compra (Amarelo) */}
                   <button
                     onClick={handleBuyTicket}
                     disabled={adding}
@@ -373,33 +395,6 @@ export default function EventDetailPage() {
                       </>
                     )}
                   </button>
-                  {/* Info de Pagamento Seguro */}
-                  <p className="text-[9px] text-center text-slate-600 font-mono uppercase italic mt-4">
-                    Pagamento seguro via PIX • Ingresso digital enviado por email
-                  </p>
-
-                  <div className="mt-8 pt-8 border-t border-white/5">
-                    <button
-                      onClick={() => {
-                        if (!event) return;
-                        const link = getPublicMissionLink(event.id);
-                        const whatsappUrl = gerarLinkWhatsApp({
-                          nome: event.title,
-                          organizacao: organizerName,
-                          data: new Date(event.event_date).toLocaleDateString('pt-BR'),
-                          horario: new Date(event.event_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-                          local: event.location,
-                          valor: `R$ ${event.ticket_price.toFixed(2)}`,
-                          link: link
-                        });
-                        window.open(whatsappUrl, '_blank');
-                      }}
-                      className="w-full bg-green-500/10 border border-green-500/20 text-green-500 font-black py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-green-500 hover:text-black transition-all flex items-center justify-center gap-2 group"
-                    >
-                      <span className="material-symbols-outlined text-sm group-hover:rotate-12 transition-transform">share</span>
-                      Compartilhar no WhatsApp
-                    </button>
-                  </div>
                 </>
               ) : (
                 <div className="text-center py-12">

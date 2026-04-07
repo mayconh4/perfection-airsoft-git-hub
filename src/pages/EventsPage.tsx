@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { gerarLinkWhatsApp, getPublicMissionLink } from '../utils/sharing';
 
 interface Event {
   id: string;
@@ -17,6 +18,9 @@ interface Event {
   image_url: string | null;
   status: 'draft' | 'published' | 'closed';
   organizer_id: string;
+  profiles?: {
+    full_name: string | null;
+  };
 }
 
 // Tabela de Eventos original removida em favor do Supabase
@@ -128,23 +132,19 @@ function EventCard({ event, rating }: { event: Event, rating?: { avg: number, co
         </div>
 
         {/* Price + CTA */}
-        <div className="flex items-center justify-between gap-4 mt-auto">
-          <div>
-            <span className="text-[8px] text-slate-600 font-black uppercase tracking-widest block">Valor</span>
-            <span className="text-xl font-black text-white">
-              R$ {event.ticket_price.toFixed(2)}
-            </span>
-          </div>
+        <div className="flex flex-col gap-4 mt-auto pt-4 border-t border-white/5">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[8px] text-slate-600 font-black uppercase tracking-widest block">Valor</span>
+              <span className="text-xl font-black text-white">
+                R$ {event.ticket_price.toFixed(2)}
+              </span>
+            </div>
 
-          {isSoldOut ? (
-            <button disabled className="flex-1 bg-white/5 text-slate-600 font-black py-3 text-[9px] uppercase tracking-widest cursor-not-allowed">
-              ESGOTADO
-            </button>
-          ) : (
-            <div className="flex-1 flex gap-2">
+            <div className="flex items-center gap-2">
               <Link 
                 to={`/eventos/${event.id}`}
-                className="bg-white/5 border border-white/10 text-white/50 hover:text-primary hover:border-primary/40 p-3 flex items-center justify-center transition-all"
+                className="bg-white/5 border border-white/10 text-white/50 hover:text-primary hover:border-primary/40 p-2.5 flex items-center justify-center transition-all"
                 title="Ver briefing da missão"
               >
                 <span className="material-symbols-outlined text-sm text-[16px]">visibility</span>
@@ -153,20 +153,49 @@ function EventCard({ event, rating }: { event: Event, rating?: { avg: number, co
               {user?.id === event.organizer_id && (
                 <Link 
                   to={`/organizador?event=${event.id}`}
-                  className="bg-white/5 border border-white/10 text-white/50 hover:text-primary hover:border-primary/40 p-3 flex items-center justify-center transition-all group/edit"
+                  className="bg-white/5 border border-white/10 text-white/50 hover:text-primary hover:border-primary/40 p-2.5 flex items-center justify-center transition-all group/edit"
                   title="Gerenciar Missão"
                 >
                   <span className="material-symbols-outlined text-sm text-[16px] group-hover/edit:rotate-45 transition-transform">settings</span>
                 </Link>
               )}
-              
-              <Link 
-                to={`/eventos/${event.id}`}
-                className="flex-1 bg-primary text-background-dark font-black py-3 text-[9px] uppercase tracking-widest hover:bg-white transition-all text-center flex items-center justify-center gap-2"
+
+              {/* Botão de Compartilhar (Verde) - Agora no lugar de destaque ao lado dos ícones */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const link = getPublicMissionLink(event.id);
+                  const whatsappUrl = gerarLinkWhatsApp({
+                    nome: event.title,
+                    organizacao: event.profiles?.full_name || 'Organizador',
+                    data: new Date(event.event_date).toLocaleDateString('pt-BR'),
+                    horario: new Date(event.event_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                    local: event.location,
+                    valor: `R$ ${event.ticket_price.toFixed(2)}`,
+                    link: link
+                  });
+                  window.open(whatsappUrl, '_blank');
+                }}
+                className="bg-green-600/10 border border-green-500/20 text-green-500 hover:bg-green-500 hover:text-black p-2.5 flex items-center justify-center transition-all group/share"
+                title="Compartilhar no WhatsApp"
               >
-                COMPRAR TICKET
-              </Link>
+                <span className="material-symbols-outlined text-sm text-[16px] group-hover/share:rotate-12 transition-transform">share</span>
+              </button>
             </div>
+          </div>
+
+          {isSoldOut ? (
+            <button disabled className="w-full bg-white/5 text-slate-600 font-black py-3 text-[9px] uppercase tracking-widest cursor-not-allowed">
+              ESGOTADO
+            </button>
+          ) : (
+            <Link 
+              to={`/eventos/${event.id}`}
+              className="w-full bg-primary text-background-dark font-black py-3 text-[9px] uppercase tracking-widest hover:bg-white transition-all text-center flex items-center justify-center gap-2"
+            >
+              COMPRAR TICKET
+            </Link>
           )}
         </div>
       </div>
@@ -189,7 +218,7 @@ export default function EventsPage() {
     try {
       const { data, error } = await supabase
         .from('events')
-        .select('*')
+        .select('*, profiles(full_name)')
         .eq('status', 'published')
         .order('event_date', { ascending: false });
       
