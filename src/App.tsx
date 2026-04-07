@@ -73,7 +73,7 @@ function App() {
                   <Route path="/termos" element={<TermsOfServicePage />} />
                   <Route path="/faq" element={<FAQPage />} />
                   <Route path="/contato" element={<ContactPage />} />
-                  <Route path="/customizacao" element={<CustomizacaoPage />} />
+                  <Route path="/armaria" element={<CustomizacaoPage />} />
                   <Route path="/eventos" element={<EventsPage />} />
                   <Route path="/eventos/criar" element={<CreateEventPage />} />
                   <Route path="/eventos/:id" element={<EventDetailPage />} />

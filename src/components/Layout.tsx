@@ -68,8 +68,8 @@ export function Layout({ children }: LayoutProps) {
       badge: 'new'
     },
     {
-      label: 'Customização',
-      href: '/customizacao',
+      label: 'Armaria',
+      href: '/armaria',
       icon: 'settings',
       subcategories: [],
       badge: 'new'

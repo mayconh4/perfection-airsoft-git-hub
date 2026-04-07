@@ -11,19 +11,20 @@ interface PendingProfile {
   kyc_status: string;
   created_at: string;
   phone?: string;
-  cep?: string;
   city?: string;
   state?: string;
-  street?: string;
-  neighborhood?: string;
-  address_number?: string;
-  complement?: string;
-  pix_key?: string;
-  pix_key_type?: string;
-  asaas_wallet_id?: string;
-  asaas_api_key?: string;
-  role: string;
   role_request?: string;
+}
+
+interface PendingGunsmith {
+  id: string;
+  workshop_name: string;
+  description: string;
+  location_city: string;
+  location_state: string;
+  specialties: string[];
+  created_at: string;
+  user_id: string;
 }
 
 export default function AdminModeration() {
@@ -32,14 +33,13 @@ export default function AdminModeration() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [pendingProfiles, setPendingProfiles] = useState<PendingProfile[]>([]);
+  const [pendingGunsmiths, setPendingGunsmiths] = useState<PendingGunsmith[]>([]);
+  const [activeTab, setActiveTab] = useState<'kyc' | 'armaria'>('kyc');
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAdmin();
   }, [user]);
-// ... (omitting middle part to keep focus on replacement)
-// I will use multi_replace for clarity instead of one big chunk with // ...
 
   const checkAdmin = async () => {
     if (!user) {
@@ -54,69 +54,56 @@ export default function AdminModeration() {
       .single();
 
     if (error || data?.role !== 'admin') {
-      console.error('Acesso Negado: Usuário não é administrador.');
       navigate('/dashboard');
       return;
     }
 
     setIsAdmin(true);
-    fetchPendingProfiles();
+    fetchData();
   };
 
-  const fetchPendingProfiles = async () => {
+  const fetchData = async () => {
     setLoading(true);
-    const { data: kycPending, error: kycError } = await supabase
+    
+    // Fetch KYC/Organizer Requests
+    const { data: kycData } = await supabase
       .from('profiles')
       .select('*')
-      .in('kyc_status', ['waiting_approval', 'pending'])
+      .or('kyc_status.in.(waiting_approval,pending),role_request.eq.organizer')
       .order('created_at', { ascending: true });
 
-    const { data: rolePending, error: roleError } = await supabase
-      .from('profiles')
+    if (kycData) setPendingProfiles(kycData);
+
+    // Fetch Gunsmith Requests
+    const { data: gsData } = await supabase
+      .from('gunsmith_profiles')
       .select('*')
-      .eq('role_request', 'organizer')
+      .eq('status', 'pending')
       .order('created_at', { ascending: true });
 
-    if (!kycError && !roleError) {
-      // Unificar sem duplicatas (um usuário pode estar em ambos)
-      const allPending = [...(kycPending || []), ...(rolePending || [])];
-      const uniquePending = allPending.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-      setPendingProfiles(uniquePending);
-    }
+    if (gsData) setPendingGunsmiths(gsData);
+    
     setLoading(false);
   };
 
-  const handleApprove = async (targetId: string) => {
-    setProcessingId(targetId);
-    const { error } = await supabase
-      .from('profiles')
-      .update({ kyc_status: 'approved' })
-      .eq('id', targetId);
-
-    if (error) {
-      alert('Erro ao aprovar KYC: ' + error.message);
-    } else {
-      fetchPendingProfiles();
-    }
+  const handleApproveKYC = async (id: string) => {
+    setProcessingId(id);
+    const { error } = await supabase.from('profiles').update({ kyc_status: 'approved' }).eq('id', id);
+    if (!error) fetchData();
     setProcessingId(null);
   };
 
-  const handleApproveRole = async (targetId: string) => {
-    setProcessingId(targetId);
-    const { error } = await supabase
-      .from('profiles')
-      .update({ 
-        role: 'organizer',
-        role_request: null // Limpa a solicitação após aprovação
-      })
-      .eq('id', targetId);
+  const handleApproveGunsmith = async (id: string) => {
+    setProcessingId(id);
+    const { error } = await supabase.from('gunsmith_profiles').update({ status: 'approved' }).eq('id', id);
+    if (!error) fetchData();
+    setProcessingId(null);
+  };
 
-    if (error) {
-      alert('Erro ao promover organizador: ' + error.message);
-    } else {
-      alert('OPERADOR PROMOVIDO A ORGANIZADOR!');
-      fetchPendingProfiles();
-    }
+  const handleRejectGunsmith = async (id: string) => {
+    setProcessingId(id);
+    const { error } = await supabase.from('gunsmith_profiles').update({ status: 'rejected' }).eq('id', id);
+    if (!error) fetchData();
     setProcessingId(null);
   };
 
@@ -124,122 +111,101 @@ export default function AdminModeration() {
 
   return (
     <div className="min-h-screen bg-black text-white p-4 lg:p-8 pt-24">
-      <SEO title="Central de Moderação | Perfection Airsoft" />
+      <SEO title="Admin HQ // Moderação Tática" />
       
       <div className="max-w-6xl mx-auto">
-        <header className="mb-8 border-l-4 border-primary pl-4">
-          <h1 className="text-3xl font-black italic tracking-tighter uppercase">
-            Central de <span className="text-primary">Moderação</span>
-          </h1>
-          <p className="text-gray-400 text-sm mt-1 uppercase tracking-widest">
-            Protocolo de Aprovação de Operadores (KYC)
-          </p>
+        <header className="mb-12">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="material-symbols-outlined text-primary text-3xl">verified_user</span>
+            <h1 className="text-4xl font-black italic tracking-tighter uppercase">HQ <span className="text-primary">CONTROL</span></h1>
+          </div>
+          <p className="text-white/30 text-[10px] uppercase font-bold tracking-[0.3em]">Protocolo de Segurança e Avaliação Técnica // Perfection Airsoft</p>
         </header>
 
+        {/* TABS TÁTICAS */}
+        <div className="flex gap-4 mb-10 border-b border-white/5">
+          <button 
+            onClick={() => setActiveTab('kyc')}
+            className={`px-8 py-4 text-[10px] font-black uppercase tracking-widest transition-all relative ${activeTab === 'kyc' ? 'text-primary' : 'text-white/40 hover:text-white'}`}
+          >
+            Operadores (KYC)
+            {pendingProfiles.length > 0 && <span className="absolute top-2 right-2 bg-primary text-black size-4 rounded-full flex items-center justify-center text-[8px] font-black">{pendingProfiles.length}</span>}
+            {activeTab === 'kyc' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></div>}
+          </button>
+          <button 
+            onClick={() => setActiveTab('armaria')}
+            className={`px-8 py-4 text-[10px] font-black uppercase tracking-widest transition-all relative ${activeTab === 'armaria' ? 'text-primary' : 'text-white/40 hover:text-white'}`}
+          >
+            Especialistas (Armaria)
+            {pendingGunsmiths.length > 0 && <span className="absolute top-2 right-2 bg-primary text-black size-4 rounded-full flex items-center justify-center text-[8px] font-black">{pendingGunsmiths.length}</span>}
+            {activeTab === 'armaria' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></div>}
+          </button>
+        </div>
+
         {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-          </div>
-        ) : pendingProfiles.length === 0 ? (
-          <div className="bg-white/5 border border-white/10 rounded-lg p-12 text-center">
-            <p className="text-gray-500 italic">NENHUM OPERADOR AGUARDANDO APROVAÇÃO NO MOMENTO.</p>
-          </div>
+          <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary"></div></div>
         ) : (
-          <div className="grid gap-4">
-            {pendingProfiles.map((p) => (
-              <div key={p.id} className="bg-white/5 border border-white/10 rounded-lg overflow-hidden transition-all hover:border-primary/30">
-                <div className="p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>
-                      <h3 className="text-xl font-bold uppercase tracking-tight">{p.full_name || 'NOME NÃO INFORMADO'}</h3>
+          <div className="grid gap-6 animate-fade-in">
+            {activeTab === 'kyc' ? (
+              pendingProfiles.length === 0 ? (
+                <div className="p-12 border border-dashed border-white/5 text-center"><p className="text-xs uppercase text-white/20 italic tracking-widest font-black">Área Limpa. Nenhum Operador pendente.</p></div>
+              ) : (
+                pendingProfiles.map(p => (
+                  <div key={p.id} className="bg-surface/30 border border-white/5 p-6 flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="flex-1">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-white mb-2">{p.full_name || 'Codinome Não Informado'}</h3>
+                      <div className="flex gap-4 text-[9px] text-white/40 font-black uppercase tracking-widest">
+                        <span>DOC: {p.cpf_cnpj || '---'}</span>
+                        <span>LOCAL: {p.city || '---'}/{p.state || '--'}</span>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-400">
-                      <p><span className="text-gray-600 uppercase text-[10px] font-black mr-2">ID:</span> {p.id.slice(0, 8)}...</p>
-                      <p><span className="text-gray-600 uppercase text-[10px] font-black mr-2">DOC:</span> {p.cpf_cnpj || '---'}</p>
-                      <p><span className="text-gray-600 uppercase text-[10px] font-black mr-2">DATA:</span> {new Date(p.created_at).toLocaleDateString()}</p>
-                    </div>
+                    <button onClick={() => handleApproveKYC(p.id)} disabled={processingId === p.id} className="bg-white text-black px-6 py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-primary transition-all">Aprovar Acesso</button>
                   </div>
-
-                    <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                      <button
-                        onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
-                        className="flex-1 md:flex-none py-3 px-6 bg-white/5 border border-white/10 text-white font-bold uppercase text-[10px] tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
-                      >
-                        <span className="material-symbols-outlined text-sm">
-                          {expandedId === p.id ? 'expand_less' : 'expand_more'}
-                        </span>
-                        {expandedId === p.id ? 'OCULTAR' : 'VER MAIS'}
-                      </button>
+                ))
+              )
+            ) : (
+              pendingGunsmiths.length === 0 ? (
+                <div className="p-12 border border-dashed border-white/5 text-center"><p className="text-xs uppercase text-white/20 italic tracking-widest font-black">Área Limpa. Nenhuma Oficina pendente.</p></div>
+              ) : (
+                pendingGunsmiths.map(gs => (
+                  <div key={gs.id} className="bg-surface/30 border border-white/10 p-8 flex flex-col gap-6 relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-1 h-0 group-hover:h-full bg-primary transition-all duration-500"></div>
+                    <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                      <div className="space-y-4 max-w-2xl">
+                        <div>
+                          <h3 className="text-xl font-black uppercase tracking-tighter text-white">{gs.workshop_name}</h3>
+                          <p className="text-[10px] text-primary font-black uppercase tracking-widest">{gs.location_city}, {gs.location_state}</p>
+                        </div>
+                        <p className="text-xs text-white/50 leading-relaxed uppercase tracking-widest">{gs.description}</p>
+                        <div className="flex flex-wrap gap-2">
+                           {gs.specialties?.map(s => (
+                             <span key={s} className="px-2 py-0.5 bg-white/5 border border-white/10 text-[8px] font-black uppercase text-white/40 tracking-widest">{s}</span>
+                           ))}
+                        </div>
+                        <p className="text-[8px] text-white/20 font-mono tracking-widest italic pt-2">USER_ID: {gs.user_id}</p>
+                      </div>
                       
-                      {(p.kyc_status === 'pending' || p.kyc_status === 'waiting_approval') && (
-                        <button
-                          onClick={() => handleApprove(p.id)}
-                          disabled={processingId === p.id}
-                          className="flex-1 md:flex-none py-3 px-8 bg-white border border-white text-black font-black uppercase italic hover:bg-white/90 transition-colors disabled:opacity-50 text-[11px] tracking-tighter"
+                      <div className="flex md:flex-col gap-2 w-full md:w-auto">
+                        <button 
+                          onClick={() => handleApproveGunsmith(gs.id)} 
+                          disabled={processingId === gs.id}
+                          className="flex-1 bg-primary text-black px-8 py-3 text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-[0_0_15px_rgba(255,193,7,0.3)]"
                         >
-                          {processingId === p.id ? '...' : 'APROVAR KYC'}
+                          APROVAR
                         </button>
-                      )}
-
-                      {p.role_request === 'organizer' && (
-                        <button
-                          onClick={() => handleApproveRole(p.id)}
-                          disabled={processingId === p.id}
-                          className="flex-1 md:flex-none py-3 px-8 bg-primary text-black font-black uppercase italic hover:bg-yellow-400 transition-colors disabled:opacity-50 text-[11px] tracking-tighter"
+                        <button 
+                          onClick={() => handleRejectGunsmith(gs.id)} 
+                          disabled={processingId === gs.id}
+                          className="flex-1 bg-red-500/10 border border-red-500/20 text-red-500 px-8 py-3 text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all"
                         >
-                          {processingId === p.id ? '...' : 'PROMOVER ORGANIZADOR'}
+                          REJEITAR
                         </button>
-                      )}
-                    </div>
-                </div>
-
-                {/* Detalhes Expandidos (Modo Tático) */}
-                {expandedId === p.id && (
-                  <div className="px-6 pb-6 pt-2 border-t border-white/5 bg-white/[0.02] animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                      {/* Contato */}
-                      <div>
-                        <h4 className="text-primary font-black text-[10px] uppercase tracking-widest mb-3 border-b border-primary/20 pb-1">COMUNICAÇÃO</h4>
-                        <div className="space-y-2 text-sm">
-                          <p><span className="text-gray-600">TEL:</span> {p.phone || 'NÃO INFORMADO'}</p>
-                        </div>
-                      </div>
-
-                      {/* Endereço */}
-                      <div className="md:col-span-2">
-                        <h4 className="text-primary font-black text-[10px] uppercase tracking-widest mb-3 border-b border-primary/20 pb-1">LOCALIZAÇÃO / LOGÍSTICA</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p><span className="text-gray-600">CEP:</span> {p.cep || '---'}</p>
-                            <p><span className="text-gray-600">CIDADE/UF:</span> {p.city || '---'} - {p.state || '---'}</p>
-                          </div>
-                          <div>
-                            <p><span className="text-gray-600">RUA:</span> {p.street || '---'}, {p.address_number || 'S/N'}</p>
-                            <p><span className="text-gray-600">BAIRRO:</span> {p.neighborhood || '---'}</p>
-                            {p.complement && <p><span className="text-gray-600">COMP:</span> {p.complement}</p>}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Financeiro */}
-                      <div className="md:col-span-3">
-                        <h4 className="text-primary font-black text-[10px] uppercase tracking-widest mb-3 border-b border-primary/20 pb-1">INTELIGÊNCIA FINANCEIRA (PIX)</h4>
-                        <div className="bg-black/40 p-4 border border-white/5 rounded flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div>
-                            <p className="text-[10px] text-gray-500 uppercase font-black">CHAVE PIX ({p.pix_key_type})</p>
-                            <p className="font-mono text-primary text-lg">{p.pix_key || 'NÃO CONFIGURADA'}</p>
-                          </div>
-                          <div className="text-[10px] text-gray-600 uppercase font-bold italic">
-                            VERIFIQUE OS DADOS ANTES DE APROVAR O ACESSO AO PIX SPLIT.
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
-            ))}
+                ))
+              )
+            )}
           </div>
         )}
       </div>

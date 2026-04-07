@@ -488,54 +488,43 @@ export function CheckoutPage() {
 
           {/* Step 3 — PIX QR Code */}
           {step === 3 && paymentData && (
-            <div className="bg-surface/30 border border-primary/20 p-12 text-center space-y-8 backdrop-blur-md">
-              <div className="space-y-2">
-                <span className="text-secondary text-[10px] font-black uppercase tracking-[0.5em] animate-pulse italic">Aguardando Pagamento</span>
-                <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter">Seu PIX foi Gerado!</h2>
+            <div className="bg-surface/30 border border-primary/20 p-6 text-center space-y-4 backdrop-blur-md max-w-2xl mx-auto">
+              <div className="space-y-1">
+                <span className="text-secondary text-[8px] font-black uppercase tracking-[0.3em] animate-pulse italic">Aguardando Pagamento</span>
+                <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">PIX Gerado!</h2>
               </div>
 
-              <div className="flex justify-center">
-                <div className="bg-white p-6 rounded-3xl shadow-[0_0_60px_rgba(255,193,7,0.3)] border-[8px] border-primary/50">
-                  <img src={`data:image/png;base64,${paymentData.qr_code_base64}`} alt="QR PIX" className="w-64 h-64" />
+              <div className="flex justify-center py-2">
+                <div className="bg-white p-4 rounded-2xl shadow-[0_0_40px_rgba(255,193,7,0.2)] border-[4px] border-primary/30">
+                  <img src={`data:image/png;base64,${paymentData.qr_code_base64}`} alt="QR PIX" className="w-48 h-48" />
                 </div>
               </div>
               
-              <div className="bg-black/50 p-6 border border-white/10 space-y-4 max-w-md mx-auto rounded-lg">
-                <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase">Pix Copia e Cola</p>
+              <div className="bg-black/50 p-4 border border-white/10 space-y-2 max-w-sm mx-auto rounded-lg">
+                <p className="text-[8px] font-black tracking-widest text-slate-500 uppercase">Pix Copia e Cola</p>
                 <div className="flex gap-2">
-                  <input readOnly value={paymentData.qr_code} className="flex-1 bg-background-dark border border-white/10 px-4 py-4 text-[10px] font-mono text-white/40 truncate outline-none rounded" />
+                  <input readOnly value={paymentData.qr_code} className="flex-1 bg-background-dark border border-white/10 px-3 py-2 text-[9px] font-mono text-white/40 truncate outline-none rounded" />
                   <button onClick={() => {
                     navigator.clipboard.writeText(paymentData.qr_code || '');
                     alert('PIX Copiado com Sucesso!');
-                  }} className="px-6 py-4 bg-primary text-black font-black uppercase text-[10px] tracking-widest hover:bg-white transition-all rounded">
+                  }} className="px-4 py-2 bg-primary text-black font-black uppercase text-[9px] tracking-widest hover:bg-white transition-all rounded">
                     Copiar
                   </button>
                 </div>
               </div>
 
-              <div className="pt-8 border-t border-white/10 space-y-6">
-                <div className="flex flex-col items-center gap-4 py-6 bg-black/40 border-2 border-primary/20 rounded-xl shadow-[inset_0_0_20px_rgba(255,193,7,0.05)]">
-                  <div className="relative">
-                    <div className="w-12 h-12 border-4 border-primary/10 border-t-primary rounded-full animate-spin"></div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-2 h-2 bg-primary rounded-full animate-ping"></div>
-                    </div>
+              <div className="pt-4 border-t border-white/10 space-y-4">
+                <div className="flex flex-col items-center gap-3 py-4 bg-black/40 border border-primary/20 rounded-xl shadow-[inset_0_0_15px_rgba(255,193,7,0.03)]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 border-3 border-primary/10 border-t-primary rounded-full animate-spin"></div>
+                    <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em] animate-pulse">SINCRONIZAÇÃO TÁTICA ATIVA</p>
                   </div>
-                  <div className="text-center">
-                    <p className="text-[11px] text-primary font-black uppercase tracking-[0.4em] animate-pulse">AGUARDANDO CONFIRMAÇÃO DO DROP! [V2]</p>
-                    <div className="flex items-center justify-center gap-2 mt-2">
-                       <span className="w-1 h-1 bg-primary/40 rounded-full animate-bounce"></span>
-                       <span className="w-1 h-1 bg-primary/40 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                       <span className="w-1 h-1 bg-primary/40 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-                    </div>
-                    <p className="text-[8px] text-white/20 uppercase tracking-[0.2em] mt-3 font-mono">Sincronização Tática em Tempo Real Ativa</p>
-                  </div>
+                  <p className="text-[8px] text-white/20 uppercase tracking-[0.1em] font-mono">Radar de confirmação operando em tempo real</p>
                 </div>
 
-                <div className="space-y-4">
-                  <p className="text-[10px] text-white/40 uppercase tracking-widest italic font-bold">Após pagar, seus itens aparecerão no seu painel de operador.</p>
-                  
-                  <button onClick={() => navigate('/dashboard')} className="w-full px-10 py-5 border-2 border-primary text-primary font-black uppercase tracking-[0.4em] text-[10px] hover:bg-primary hover:text-black transition-all rounded outline-offset-4">
+                <div className="space-y-3">
+                  <p className="text-[8px] text-white/40 uppercase tracking-widest italic font-bold">Ativação automática após o processamento.</p>
+                  <button onClick={() => navigate('/dashboard')} className="w-full px-6 py-4 border border-primary text-primary font-black uppercase tracking-[0.3em] text-[9px] hover:bg-primary hover:text-black transition-all rounded">
                     Acessar Meu Painel →
                   </button>
                 </div>
