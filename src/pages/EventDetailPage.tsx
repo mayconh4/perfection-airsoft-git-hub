@@ -400,7 +400,7 @@ export default function EventDetailPage() {
               ) : (
                 <div className="text-center py-12">
                   <span className="material-symbols-outlined text-red-500 text-5xl mb-4 block">cancel</span>
-                  <h4 className="text-white font-black uppercase text-sm mb-2">Missão Encerrada</h4>
+                  <h4 className="text-white font-black uppercase text-sm mb-2">MISSÃO CONCLUÍDA</h4>
                   <p className="text-slate-500 text-[10px] font-mono uppercase">
                     As inscrições para esta operação foram finalizadas.
                   </p>

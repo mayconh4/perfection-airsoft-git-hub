@@ -188,7 +188,7 @@ function EventCard({ event, rating }: { event: Event, rating?: { avg: number, co
 
           {isSoldOut ? (
             <button disabled className="w-full bg-white/5 text-slate-600 font-black py-3 text-[9px] uppercase tracking-widest cursor-not-allowed">
-              MISSÃO ENCERRADA
+              MISSÃO CONCLUÍDA
             </button>
           ) : (
             <Link 
