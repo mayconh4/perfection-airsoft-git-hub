@@ -32,6 +32,8 @@ export default function MyTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [reviews, setReviews] = useState<Record<string, number>>({});
+  const [ratingLoading, setRatingLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) { navigate('/login?redirect=/meus-ingressos'); return; }
@@ -50,7 +52,42 @@ export default function MyTicketsPage() {
       .order('created_at', { ascending: false });
 
     if (!error && data) setTickets(data as Ticket[]);
+    
+    // Carregar avaliações já feitas
+    const { data: reviewData } = await supabase
+      .from('event_reviews')
+      .select('event_id, rating')
+      .eq('user_id', user!.id);
+    
+    if (reviewData) {
+      const reviewMap: Record<string, number> = {};
+      reviewData.forEach(r => { reviewMap[r.event_id] = r.rating; });
+      setReviews(reviewMap);
+    }
+
     setLoading(false);
+  };
+
+  const handleRate = async (eventId: string, rating: number) => {
+    if (!user) return;
+    setRatingLoading(eventId);
+    try {
+      const { error } = await supabase
+        .from('event_reviews')
+        .upsert({
+          event_id: eventId,
+          user_id: user.id,
+          rating: rating
+        }, { onConflict: 'event_id, user_id' });
+
+      if (error) throw error;
+      setReviews(prev => ({ ...prev, [eventId]: rating }));
+    } catch (err: any) {
+      console.error('Erro ao avaliar:', err);
+      alert('FALHA NO PROTOCOLO DE AVALIAÇÃO: ' + err.message);
+    } finally {
+      setRatingLoading(null);
+    }
   };
 
   const statusConfig = {
@@ -188,11 +225,40 @@ export default function MyTicketsPage() {
                         </button>
                       )}
                       {ticket.status === 'used' && (
-                        <div className="flex items-center gap-2 text-slate-500 font-mono text-[9px] uppercase">
-                          <span className="material-symbols-outlined text-sm">task_alt</span>
-                          Check-in em {ticket.checked_in_at
-                            ? new Date(ticket.checked_in_at).toLocaleDateString('pt-BR')
-                            : 'data não disponível'}
+                        <div className="flex flex-col gap-2">
+                           <div className="flex items-center gap-2 text-slate-500 font-mono text-[9px] uppercase">
+                            <span className="material-symbols-outlined text-sm">task_alt</span>
+                            Check-in em {ticket.checked_in_at
+                              ? new Date(ticket.checked_in_at).toLocaleDateString('pt-BR')
+                              : 'data não disponível'}
+                          </div>
+                          
+                          {/* Sistema de Estrelas Interativo */}
+                          <div className="flex items-center gap-3 bg-white/5 p-3 border border-white/5">
+                            <span className="text-[8px] font-black text-primary uppercase tracking-widest">AVALIAR MISSÃO:</span>
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((star) => {
+                                const currentRating = reviews[ticket.event_id] || 0;
+                                const isFilled = currentRating >= star;
+                                return (
+                                  <button
+                                    key={star}
+                                    disabled={ratingLoading === ticket.event_id}
+                                    onClick={() => handleRate(ticket.event_id, star)}
+                                    className={`material-symbols-outlined text-lg transition-all hover:scale-125 active:scale-95 ${
+                                      isFilled ? 'text-primary fill-1' : 'text-slate-600 hover:text-primary'
+                                    } ${ratingLoading === ticket.event_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                    style={{ fontVariationSettings: `'FILL' ${isFilled ? 1 : 0}` }}
+                                  >
+                                    {isFilled ? 'star' : 'star_outline'}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            {ratingLoading === ticket.event_id && (
+                              <div className="size-3 border-2 border-primary border-t-transparent animate-spin rounded-full"></div>
+                            )}
+                          </div>
                         </div>
                       )}
                       <Link

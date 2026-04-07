@@ -19,6 +19,7 @@ interface Event {
   status: 'draft' | 'published' | 'closed';
   organizer_id: string;
   checkin_token: string | null;
+  engagement_rules: string[] | null;
 }
 
 export default function EventDetailPage() {
@@ -190,18 +191,18 @@ export default function EventDetailPage() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map((star) => {
-                const fillAmount = avgRating ? Math.min(1, Math.max(0, (avgRating / 2) - star + 1)) : 0;
+                const isFilled = avgRating ? Math.round(avgRating) >= star : true;
                 return (
-                  <span key={star} className="material-symbols-outlined text-yellow-400 text-lg select-none" style={{ fontVariationSettings: `'FILL' ${fillAmount >= 0.5 ? 1 : 0}` }}>
-                    {fillAmount >= 0.5 ? 'star' : 'star_outline'}
+                  <span key={star} className={`material-symbols-outlined text-primary text-lg select-none ${isFilled ? 'fill-1' : ''}`} style={{ fontVariationSettings: `'FILL' ${isFilled ? 1 : 0}` }}>
+                    {isFilled ? 'star' : 'star_outline'}
                   </span>
                 );
               })}
             </div>
-            <div className="flex items-center gap-2 bg-yellow-400/10 px-3 py-1 border border-yellow-400/20">
-              <span className="text-yellow-400 font-black text-xs tracking-tighter">{avgRating ? avgRating.toFixed(1) : '10.0'}</span>
-              <span className="text-[8px] text-yellow-400/50 uppercase font-bold tracking-widest mt-0.5">
-                {reviewsCount > 0 ? `${reviewsCount} avaliações` : 'Operação de Elite'}
+            <div className="flex items-center gap-2 bg-primary/10 px-3 py-1 border border-primary/20">
+              <span className="text-primary font-black text-xs tracking-tighter">{avgRating ? avgRating.toFixed(1) : '5.0'}</span>
+              <span className="text-[8px] text-primary/50 uppercase font-bold tracking-widest mt-0.5">
+                {reviewsCount > 0 ? `${reviewsCount} avaliações` : 'OPERAÇÃO DE ELITE'}
               </span>
             </div>
           </div>
@@ -269,25 +270,30 @@ export default function EventDetailPage() {
               </div>
             </section>
 
-            {/* Regras */}
-            <section>
-              <h2 className="text-xl font-black text-white uppercase tracking-widest mb-6 border-l-4 border-primary pl-4">
-                Regras de Engajamento
-              </h2>
-              <ul className="space-y-4 font-mono text-xs text-slate-500 uppercase">
-                {[
-                  'Uso obrigatório de óculos de proteção balística (ANSI Z87.1+).',
-                  'Respeito absoluto às ordens dos Staffs e Marechais de campo.',
-                  'Cronagem obrigatória antes do início da missão.',
-                  'Proibido qualquer tipo de contato físico hostil.',
-                ].map((rule, i) => (
-                  <li key={i} className="flex gap-4">
-                    <span className="text-primary font-black">0{i + 1}</span>
-                    <span>{rule}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
+            {/* Regras de Engajamento (Dinâmico) */}
+            {(event.engagement_rules && event.engagement_rules.length > 0) && (
+              <section className="animate-in fade-in slide-in-from-bottom duration-1000">
+                <div className="flex items-center gap-4 mb-8">
+                   <div className="w-1.5 h-8 bg-primary"></div>
+                   <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic">
+                     REGRAS DE ENGAJAMENTO
+                   </h2>
+                </div>
+                
+                <div className="space-y-6">
+                  {event.engagement_rules.map((rule, i) => (
+                    <div key={i} className="flex gap-6 group">
+                      <span className="text-primary font-black text-lg italic tracking-tighter opacity-60 group-hover:opacity-100 transition-opacity">
+                        {(i + 1).toString().padStart(2, '0')}
+                      </span>
+                      <p className="text-white font-black text-sm uppercase tracking-widest leading-relaxed pt-1">
+                        {rule}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
 
           {/* ── Checkout Card ── */}

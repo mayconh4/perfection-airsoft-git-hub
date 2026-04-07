@@ -23,8 +23,10 @@ export default function CreateEventPage() {
     ticket_price: '0',
     capacity: '50',
     image_url: '',
-    status: 'draft' as 'draft' | 'published' | 'closed'
+    status: 'draft' as 'draft' | 'published' | 'closed',
+    engagement_rules: [] as string[]
   });
+  const [newRule, setNewRule] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -92,7 +94,8 @@ export default function CreateEventPage() {
           ticket_price: data.ticket_price.toString(),
           capacity: data.capacity.toString(),
           image_url: data.image_url || '',
-          status: data.status
+          status: data.status,
+          engagement_rules: data.engagement_rules || []
         });
       }
     } catch (err: any) {
@@ -155,7 +158,8 @@ export default function CreateEventPage() {
         ticket_price: parseFloat(formData.ticket_price),
         capacity: parseInt(formData.capacity),
         image_url: formData.image_url,
-        status: formData.status
+        status: formData.status,
+        engagement_rules: formData.engagement_rules
       };
 
       if (id) {
@@ -360,6 +364,65 @@ export default function CreateEventPage() {
                   <option value="published">PUBLICADO (ATIVO NO SITE)</option>
                   <option value="closed">ENCERRADO</option>
                 </select>
+              </div>
+            </div>
+
+            {/* Regras de Engajamento (Obrigatoriedades) */}
+            <div className="pt-8 border-t border-white/5">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                   <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1 italic">PAINEL DE OBRIGATORIEDADES</label>
+                   <h3 className="text-sm font-black text-white uppercase tracking-widest">REGRAS DE ENGAJAMENTO</h3>
+                </div>
+                <span className="text-[8px] bg-primary/10 text-primary border border-primary/20 px-2 py-1 font-mono uppercase tracking-widest">Protocolo de Segurança</span>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex gap-4">
+                  <input
+                    type="text"
+                    placeholder="EX: USO OBRIGATÓRIO DE ÓCULOS DE PROTEÇÃO"
+                    className="flex-1 bg-black/40 border border-white/10 p-4 text-white font-mono text-sm focus:border-primary outline-none transition-all placeholder:opacity-20 uppercase"
+                    value={newRule}
+                    onChange={e => setNewRule(e.target.value)}
+                    onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), newRule && (setFormData(f => ({ ...f, engagement_rules: [...f.engagement_rules, newRule] })), setNewRule('')))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newRule) {
+                        setFormData(f => ({ ...f, engagement_rules: [...f.engagement_rules, newRule] }));
+                        setNewRule('');
+                      }
+                    }}
+                    className="bg-primary text-background-dark font-black px-6 hover:bg-white transition-all uppercase text-[10px] tracking-widest"
+                  >
+                    Adicionar
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {formData.engagement_rules.map((rule, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-white/5 border border-white/5 p-4 group">
+                      <div className="flex items-center gap-4">
+                        <span className="text-primary font-black font-mono text-xs">{(idx + 1).toString().padStart(2, '0')}</span>
+                        <span className="text-white text-[10px] font-black uppercase tracking-widest">{rule}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(f => ({ ...f, engagement_rules: f.engagement_rules.filter((_, i) => i !== idx) }))}
+                        className="text-red-500/40 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                      </button>
+                    </div>
+                  ))}
+                  {formData.engagement_rules.length === 0 && (
+                    <p className="text-[9px] text-slate-600 italic uppercase font-mono py-4 text-center border border-dashed border-white/5 bg-black/10">
+                      Nenhuma regra de engajamento definida para esta missão.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
