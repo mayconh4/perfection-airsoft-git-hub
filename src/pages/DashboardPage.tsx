@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useOrders } from '../hooks/useOrders';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { useEffect } from 'react';
 import { formatPrice, statusLabels, type Order } from '../types/database';
 import { getTacticalCode, formatTacticalTimestamp } from '../lib/utils';
 
@@ -383,24 +382,49 @@ function RatingStars({ eventId, initialRating, onRate }: { eventId: string, init
 
 // Sub-component: Events List
 function EventsList({ orders, loading }: { orders: Order[], loading: boolean }) {
-  if (loading) return <div className="text-center py-20 text-primary animate-pulse uppercase tracking-widest text-xs">Escaneando base de dados...</div>;
+  // 1. Extrair tickets válidos (memoizado para performance e estabilidade dos hooks)
+  const tickets = useMemo(() => {
+    const tks: { item: any, order: Order }[] = [];
+    orders.forEach(order => {
+      const status = order.status?.toLowerCase();
+      const isRelevantStatus = status === 'pago' || status === 'paga' || status === 'pendente' || status === 'processing';
+      
+      if (isRelevantStatus) {
+        order.items?.forEach(item => {
+          if (item.metadata?.type === 'ticket') {
+            tks.push({ item, order });
+          }
+        });
+      }
+    });
+    return tks;
+  }, [orders]);
 
-  // Extrair tickets válidos (de pedidos pagos, pendentes ou em processamento)
-  const tickets: { item: any, order: Order }[] = [];
-  orders.forEach(order => {
-    // Flexibilizar o filtro de status (permitir visualizar mesmo que pendente, mas com badge)
-    const status = order.status?.toLowerCase();
-    const isRelevantStatus = status === 'pago' || status === 'paga' || status === 'pendente' || status === 'processing';
-    
-    if (isRelevantStatus) {
-      order.items?.forEach(item => {
-        // Log para depuração interna se necessário (removido no build final)
-        if (item.metadata?.type === 'ticket') {
-          tickets.push({ item, order });
-        }
-      });
-    }
-  });
+  const [eventImages, setEventImages] = useState<Record<string, string>>({});
+
+  // 2. Buscar fotos retroativas dos eventos
+  useEffect(() => {
+    const fetchImages = async () => {
+      const ids = tickets.map((t: any) => t.item.metadata?.event_id).filter(Boolean);
+      if (ids.length === 0) return;
+
+      const { data } = await supabase
+        .from('events')
+        .select('id, image_url')
+        .in('id', ids);
+      
+      if (data) {
+        const mapping = data.reduce((acc: Record<string, string>, ev: any) => {
+          acc[ev.id] = ev.image_url;
+          return acc;
+        }, {});
+        setEventImages(mapping);
+      }
+    };
+    fetchImages();
+  }, [tickets]);
+
+  if (loading) return <div className="text-center py-20 text-primary animate-pulse uppercase tracking-widest text-xs">Escaneando base de dados...</div>;
 
   if (tickets.length === 0) return (
     <div className="bg-surface border border-border-tactical p-12 text-center">
@@ -412,7 +436,7 @@ function EventsList({ orders, loading }: { orders: Order[], loading: boolean }) 
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {tickets.map((t, idx) => {
+      {tickets.map((t: any, idx: number) => {
         const eventDate = t.item.metadata?.event_date ? new Date(t.item.metadata.event_date) : null;
         const purchaseDate = new Date(t.order.created_at);
         const location = t.item.metadata?.event_location || 'Local não informado';
@@ -424,8 +448,7 @@ function EventsList({ orders, loading }: { orders: Order[], loading: boolean }) 
         const isFinished = eventDateObj && eventDateObj < now;
         const isUpcoming = eventDateObj && eventDateObj >= now;
         
-        // Status de Pagamento/Acesso
-        const isPaid = t.order.status?.toLowerCase() === 'pago' || t.order.status?.toLowerCase() === 'paga';
+        // Status de Acesso
 
         return (
           <div key={idx} className={`bg-surface border overflow-hidden flex flex-col group transition-all duration-300 ${isFinished ? 'border-white/5 opacity-70' : 'border-white/5 hover:border-primary/30'}`}>
@@ -433,14 +456,18 @@ function EventsList({ orders, loading }: { orders: Order[], loading: boolean }) 
             <div className="h-32 bg-background-dark relative overflow-hidden">
                <div className="absolute inset-0 bg-neutral-900 group-hover:bg-neutral-800 transition-colors" />
                
-               {/* Fundo Real do Evento */}
-               {t.item.metadata?.event_image && (
-                 <img src={t.item.metadata.event_image} alt="Mapa" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity" />
+               {/* Fundo Real do Evento (Prioriza metadados, fallback para busca dinâmica) */}
+               {(t.item.metadata?.event_image || eventImages[t.item.metadata?.event_id]) && (
+                 <img 
+                   src={t.item.metadata?.event_image || eventImages[t.item.metadata?.event_id]} 
+                   alt="Mapa" 
+                   className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity" 
+                 />
                )}
 
                <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/40 to-transparent z-10" />
                <div className="absolute inset-0 flex items-center justify-center">
-                 {!t.item.metadata?.event_image && (
+                 {!(t.item.metadata?.event_image || eventImages[t.item.metadata?.event_id]) && (
                    <span className={`material-symbols-outlined text-8xl ${isFinished ? 'text-white/5' : 'text-white/5 group-hover:text-primary/10 transition-colors'}`}>map</span>
                  )}
                </div>
