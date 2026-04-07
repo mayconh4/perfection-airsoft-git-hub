@@ -323,6 +323,64 @@ function ProfileForm({ user }: { user: any }) {
   );
 }
 
+// Sub-component: Rating Stars (0-10)
+function RatingStars({ eventId, initialRating, onRate }: { eventId: string, initialRating?: number, onRate?: (rating: number) => void }) {
+  const [hover, setHover] = useState(0);
+  const [rating, setRating] = useState(initialRating || 0);
+  const [submitting, setSubmitting] = useState(false);
+  const { user } = useAuth();
+
+  const handleRate = async (val: number) => {
+    if (!onRate || !user || submitting) return;
+    setSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('event_reviews')
+        .insert({
+          event_id: eventId,
+          user_id: user.id,
+          rating: val * 2 // Converte 1-5 estrelas para 2-10 pontos
+        });
+      
+      if (!error) {
+        setRating(val * 2);
+        onRate(val * 2);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            disabled={!!rating || !onRate}
+            onMouseEnter={() => !rating && setHover(star)}
+            onMouseLeave={() => !rating && setHover(0)}
+            onClick={() => handleRate(star)}
+            className={`material-symbols-outlined text-lg transition-all ${
+              (hover || (rating / 2)) >= star ? 'text-yellow-400 fill-[1]' : 'text-slate-600'
+            } ${!rating && onRate ? 'cursor-pointer hover:scale-110' : 'cursor-default'}`}
+          >
+            star
+          </button>
+        ))}
+        <span className="text-[10px] font-black text-white ml-2 bg-yellow-400/20 px-1.5 py-0.5 rounded-sm">
+          {rating ? (rating).toFixed(1) : (hover * 2 || 0).toFixed(1)} / 10
+        </span>
+      </div>
+      {!rating && onRate && (
+        <p className="text-[8px] text-slate-500 uppercase font-bold tracking-widest italic animate-pulse">Como foi a missão, recruta?</p>
+      )}
+    </div>
+  );
+}
+
 // Sub-component: Events List
 function EventsList({ orders, loading }: { orders: Order[], loading: boolean }) {
   if (loading) return <div className="text-center py-20 text-primary animate-pulse uppercase tracking-widest text-xs">Escaneando base de dados...</div>;
@@ -373,9 +431,18 @@ function EventsList({ orders, loading }: { orders: Order[], loading: boolean }) 
           <div key={idx} className={`bg-surface border overflow-hidden flex flex-col group transition-all duration-300 ${isFinished ? 'border-white/5 opacity-70' : 'border-white/5 hover:border-primary/30'}`}>
             {/* Header: Imagem/Mapa (Simulado) */}
             <div className="h-32 bg-background-dark relative overflow-hidden">
-               <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent opacity-60 z-10" />
+               <div className="absolute inset-0 bg-neutral-900 group-hover:bg-neutral-800 transition-colors" />
+               
+               {/* Fundo Real do Evento */}
+               {t.item.metadata?.event_image && (
+                 <img src={t.item.metadata.event_image} alt="Mapa" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity" />
+               )}
+
+               <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/40 to-transparent z-10" />
                <div className="absolute inset-0 flex items-center justify-center">
-                 <span className={`material-symbols-outlined text-8xl ${isFinished ? 'text-white/5' : 'text-white/5 group-hover:text-primary/10 transition-colors'}`}>map</span>
+                 {!t.item.metadata?.event_image && (
+                   <span className={`material-symbols-outlined text-8xl ${isFinished ? 'text-white/5' : 'text-white/5 group-hover:text-primary/10 transition-colors'}`}>map</span>
+                 )}
                </div>
                
                <div className="absolute bottom-4 left-4 z-20 flex gap-2">
@@ -385,11 +452,6 @@ function EventsList({ orders, loading }: { orders: Order[], loading: boolean }) 
                   )}
                   {isFinished && (
                     <span className="text-[9px] font-black bg-slate-700 text-slate-300 px-2 py-0.5 uppercase tracking-widest shadow-lg italic">🔘 Finalizado</span>
-                  )}
-
-                  {/* Status de Pagamento */}
-                  {!isPaid && (
-                    <span className="text-[9px] font-black bg-amber-500 text-black px-2 py-0.5 uppercase tracking-widest shadow-lg italic">Aguardando PIX</span>
                   )}
                </div>
             </div>
@@ -411,8 +473,15 @@ function EventsList({ orders, loading }: { orders: Order[], loading: boolean }) 
 
               <div className="grid grid-cols-2 gap-4 py-4 border-y border-white/5">
                 <div>
-                  <span className="text-[8px] text-slate-600 uppercase font-black tracking-widest mb-1 block">Operador Digital</span>
-                  <p className="text-[10px] text-white font-black uppercase truncate">{t.order.customer_data?.name || 'Recruta'}</p>
+                  <span className="text-[8px] text-slate-600 uppercase font-black tracking-widest mb-1 block">Avaliação da Operação</span>
+                  {isFinished ? (
+                    <RatingStars 
+                      eventId={t.item.metadata?.event_id} 
+                      onRate={(r) => console.log('Rated:', r)} 
+                    />
+                  ) : (
+                    <p className="text-[9px] text-slate-500 font-bold uppercase italic tracking-wider">Disponível após a missão</p>
+                  )}
                 </div>
                 <div>
                   <span className="text-[8px] text-slate-600 uppercase font-black tracking-widest mb-1 block">Data da Missão</span>

@@ -32,6 +32,8 @@ export default function EventDetailPage() {
   const [adding, setAdding] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [avgRating, setAvgRating] = useState<number | null>(null);
+  const [reviewsCount, setReviewsCount] = useState(0);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -50,6 +52,18 @@ export default function EventDetailPage() {
 
       if (error) throw error;
       setEvent(data);
+
+      // Busca média de avaliações
+      const { data: reviews } = await supabase
+        .from('event_reviews')
+        .select('rating')
+        .eq('event_id', id);
+      
+      if (reviews && reviews.length > 0) {
+        const avg = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length;
+        setAvgRating(avg);
+        setReviewsCount(reviews.length);
+      }
     } catch (err: any) {
       setError('Evento não encontrado.');
     } finally {
@@ -78,6 +92,7 @@ export default function EventDetailPage() {
           event_title: event.title,
           event_date: event.event_date,
           event_location: event.location,
+          event_image: event.image_url, // inteligência de imagem preservada
           unit_price: event.ticket_price,
         }
       );
@@ -167,9 +182,29 @@ export default function EventDetailPage() {
               </span>
             )}
           </div>
-          <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none max-w-3xl">
+          <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none max-w-3xl mb-4">
             {event.title}
           </h1>
+
+          {/* Sistema de Estrelas (0-10) */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-0.5">
+              {[1, 2, 3, 4, 5].map((star) => {
+                const fillAmount = avgRating ? Math.min(1, Math.max(0, (avgRating / 2) - star + 1)) : 0;
+                return (
+                  <span key={star} className="material-symbols-outlined text-yellow-400 text-lg select-none" style={{ fontVariationSettings: `'FILL' ${fillAmount >= 0.5 ? 1 : 0}` }}>
+                    {fillAmount >= 0.5 ? 'star' : 'star_outline'}
+                  </span>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2 bg-yellow-400/10 px-3 py-1 border border-yellow-400/20">
+              <span className="text-yellow-400 font-black text-xs tracking-tighter">{avgRating ? avgRating.toFixed(1) : '10.0'}</span>
+              <span className="text-[8px] text-yellow-400/50 uppercase font-bold tracking-widest mt-0.5">
+                {reviewsCount > 0 ? `${reviewsCount} avaliações` : 'Operação de Elite'}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
