@@ -16,8 +16,6 @@ interface Raffle {
   draw_date: string;
   rules?: string;
   images: string[];
-  rules_title?: string;
-  logistics_title?: string;
   logistics_description?: string;
   slug?: string;
 }

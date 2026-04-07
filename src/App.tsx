@@ -20,7 +20,7 @@ import { ContactPage } from './pages/ContactPage';
 import { OrderSuccessPage } from './pages/OrderSuccessPage';
 import { BrandsPage } from './pages/BrandsPage';
 import { MapsPage } from './pages/MapsPage';
-import { CustomizacaoPage } from './pages/CustomizacaoPage';
+import { ArmariaPage } from './pages/ArmariaPage';
 import EventsPage from './pages/EventsPage';
 import EventDetailPage from './pages/EventDetailPage';
 import CreateEventPage from './pages/CreateEventPage';
@@ -73,7 +73,7 @@ function App() {
                   <Route path="/termos" element={<TermsOfServicePage />} />
                   <Route path="/faq" element={<FAQPage />} />
                   <Route path="/contato" element={<ContactPage />} />
-                  <Route path="/armaria" element={<CustomizacaoPage />} />
+                  <Route path="/armaria" element={<ArmariaPage />} />
                   <Route path="/eventos" element={<EventsPage />} />
                   <Route path="/eventos/criar" element={<CreateEventPage />} />
                   <Route path="/eventos/:id" element={<EventDetailPage />} />
