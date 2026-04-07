@@ -216,15 +216,36 @@ export default function EventsPage() {
   const loadEvents = async () => {
     setLoading(true);
     try {
+      // 1. Busca inicial das missões sem joins para evitar quebras de esquema
       const { data, error } = await supabase
         .from('events')
-        .select('*, profiles(full_name)')
-        .eq('status', 'published')
+        .select('*')
         .order('event_date', { ascending: false });
       
       if (!error && data) {
-        setEvents(data);
-        // Buscar avaliações para os eventos carregados
+        // 2. Coletar IDs únicos de organizadores
+        const organizerIds = [...new Set(data.map(e => e.organizer_id))];
+        
+        // 3. Buscar nomes dos organizadores em uma query separada (mais seguro)
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', organizerIds);
+        
+        const profileMap = (profiles || []).reduce((acc: Record<string, string>, p: any) => {
+          acc[p.id] = p.full_name;
+          return acc;
+        }, {});
+
+        // 4. Acoplar os dados dos perfis
+        const eventsWithProfiles = data.map(e => ({
+          ...e,
+          profiles: { full_name: profileMap[e.organizer_id] || 'Organizador' }
+        }));
+
+        setEvents(eventsWithProfiles);
+
+        // 5. Buscar avaliações
         const eventIds = data.map(e => e.id);
         if (eventIds.length > 0) {
           const { data: reviews } = await supabase
@@ -250,9 +271,11 @@ export default function EventsPage() {
             setRatings(finalMapping);
           }
         }
+      } else if (error) {
+        console.error('Erro Supabase:', error.message);
       }
-    } catch {
-      // Falha na conexão
+    } catch (err: any) {
+      console.error('Erro ao carregar missões:', err.message);
     } finally {
       setLoading(false);
     }
