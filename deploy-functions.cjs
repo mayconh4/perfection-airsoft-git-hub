@@ -11,7 +11,8 @@ const FUNCTIONS = [
     'mercadopago-webhook', 
     'asaas-create-subaccount',
     'asaas-payment',
-    'asaas-webhook'
+    'asaas-webhook',
+    'cep-lookup'
 ];
 
 // Lê o token

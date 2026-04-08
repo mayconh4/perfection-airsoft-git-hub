@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCreateOrder } from '../hooks/useOrders';
+import { useShipping } from '../hooks/useShipping';
 import { formatPrice } from '../types/database';
 import { DynamicCheckoutAccordion } from '../components/DynamicCheckoutAccordion';
 
@@ -29,7 +30,8 @@ const InputField = ({ name, label, type = 'text', placeholder = '', className = 
 );
 
 export function CheckoutPage() {
-  const { items, total, selectedShipping, clearCart } = useCart();
+  const { items, total, selectedShipping, clearCart, setSelectedShipping } = useCart();
+  const { lookupCep, calculateShipping, loading: shippingLoading } = useShipping();
   const { user } = useAuth();
   const { createOrder } = useCreateOrder();
   const navigate = useNavigate();
@@ -63,8 +65,34 @@ export function CheckoutPage() {
     return saved ? JSON.parse(saved) : { name: [], cpf: [], email: [], phone: [] };
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const newForm = { ...form, [name]: value };
+    setForm(newForm);
+
+    // Auto-preenchimento de CEP
+    if (name === 'cep') {
+      const cleanCep = value.replace(/\D/g, '');
+      if (cleanCep.length === 8) {
+        setProcessing(true);
+        const address = await lookupCep(cleanCep);
+        if (address && !address.error) {
+          setForm(prev => ({
+            ...prev,
+            street: address.street || prev.street,
+            district: address.district || prev.district,
+            city: address.city || prev.city,
+            state: address.state || prev.state
+          }));
+          // Também já dispara o cálculo de frete
+          await calculateShipping(cleanCep);
+        } else if (address?.error) {
+          setError(address.error);
+        }
+        setProcessing(false);
+      }
+    }
+  };
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();

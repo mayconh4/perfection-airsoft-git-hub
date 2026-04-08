@@ -60,5 +60,31 @@ export function useShipping() {
     }
   };
 
-  return { options, loading, error, selectedOption, setSelectedOption, calculateShipping };
+  const lookupCep = async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length !== 8) return null;
+
+    try {
+      const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const cepUrl = isDev 
+        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cep-lookup?cep=${cleanCep}` // Em local usamos direto a URL do Supabase ou proxy
+        : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cep-lookup?cep=${cleanCep}`;
+
+      const response = await fetch(cepUrl, {
+        method: 'GET',
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        }
+      });
+
+      if (!response.ok) return null;
+      return await response.json();
+    } catch (err) {
+      console.error('[useShipping] Erro ao consultar CEP:', err);
+      return null;
+    }
+  };
+
+  return { options, loading, error, selectedOption, setSelectedOption, calculateShipping, lookupCep };
 }
