@@ -69,7 +69,7 @@ export function CartDrawer() {
                 </div>
                 <button 
                   onClick={() => removeItem(item.id)} 
-                  className="absolute top-2 right-2 text-white/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all bg-background-dark p-1 rounded-sm"
+                  className="absolute top-2 right-2 text-white/40 hover:text-red-500 group-hover/item:opacity-100 transition-all bg-background-dark/80 p-2 rounded-sm"
                   title="Remover"
                 >
                   <span className="material-symbols-outlined text-[16px]">delete</span>

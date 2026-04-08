@@ -255,13 +255,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
 
   const removeItem = async (itemId: string) => {
+    // Atualização otimista: remove do estado local imediatamente
+    setItems(prev => prev.filter(i => i.id !== itemId));
+
     if (!user) {
       const local = getLocalCart().filter(i => i.id !== itemId);
       saveLocalCart(local);
       return;
     }
-    await supabase.from('cart_items').delete().eq('id', itemId);
-    await fetchCart();
+    
+    const { error } = await supabase.from('cart_items').delete().eq('id', itemId);
+    
+    if (error) {
+       console.error('[CartContext] Erro ao remover do banco:', error.message);
+       // Reverte em caso de erro (opcional, mas seguro)
+       await fetchCart();
+    }
   };
 
   const updateQuantity = async (itemId: string, quantity: number) => {
