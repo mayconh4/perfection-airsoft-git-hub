@@ -138,9 +138,11 @@ export function CheckoutPage() {
           { name: form.name, cpf: form.cpf, email: form.email, phone: form.phone, payment_method: method },
           {
             street: isDigitalOnly ? 'Digital' : `${form.street}, ${form.number}`,
+            complement: isDigitalOnly ? '-' : form.complement,
             district: isDigitalOnly ? '-' : form.district,
             cep: isDigitalOnly ? '00000-000' : form.cep,
             city: isDigitalOnly ? 'Online' : form.city,
+            state: isDigitalOnly ? 'UF' : form.state,
             shipping_method: isDigitalOnly ? 'Entrega Digital' : selectedShipping?.name,
             shipping_price: isDigitalOnly ? 0 : selectedShipping?.price
           },
@@ -288,6 +290,7 @@ export function CheckoutPage() {
                 <InputField name="cep" label="CEP" placeholder="00000-000" value={form.cep} onChange={handleChange} />
                 <InputField name="street" label="Rua / Logradouro" placeholder="Av. Principal" value={form.street} onChange={handleChange} />
                 <InputField name="number" label="Número" placeholder="123" value={form.number} onChange={handleChange} />
+                <InputField name="complement" label="Complemento" placeholder="Apto, Fundos, etc." required={false} value={form.complement} onChange={handleChange} />
                 <InputField name="district" label="Bairro" placeholder="Centro" value={form.district} onChange={handleChange} />
                 <InputField name="city" label="Cidade" placeholder="Cidade" value={form.city} onChange={handleChange} />
                 <InputField name="state" label="Estado" placeholder="UF" value={form.state} onChange={handleChange} />
