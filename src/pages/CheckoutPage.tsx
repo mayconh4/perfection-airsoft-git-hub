@@ -334,11 +334,23 @@ export function CheckoutPage() {
                   <div className="bg-black/40 p-6 border border-white/10 rounded-xl space-y-4">
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Linha Digitável</p>
                     <div className="flex flex-col gap-3">
-                      <input readOnly value={paymentData.identificationField} className="w-full bg-black/60 border border-white/10 px-4 py-3 text-xs font-mono text-primary text-center rounded" />
+                      <input 
+                        readOnly 
+                        value={paymentData.identificationField || 'Código não disponível'} 
+                        className="w-full bg-black/60 border border-white/10 px-4 py-3 text-xs font-mono text-primary text-center rounded focus:ring-1 focus:ring-primary/30" 
+                      />
                       <div className="flex gap-3">
-                        <button onClick={() => { navigator.clipboard.writeText(paymentData.identificationField); alert('Código copiado!'); }} 
+                        <button 
+                          onClick={() => { 
+                            if (!paymentData.identificationField) {
+                              alert('Código do boleto não disponível no momento.');
+                              return;
+                            }
+                            navigator.clipboard.writeText(paymentData.identificationField); 
+                            alert('Linha digitável copiada!'); 
+                          }} 
                           className="flex-1 bg-white/5 hover:bg-white/10 text-white font-black py-4 uppercase text-[10px] tracking-widest transition-colors rounded">
-                          Copiar Código
+                          Copiar Linha Digitável
                         </button>
                         <a href={paymentData.bankSlipUrl} target="_blank" rel="noreferrer"
                           className="flex-1 bg-primary text-black font-black py-4 uppercase text-[10px] tracking-widest transition-colors rounded flex items-center justify-center gap-2">

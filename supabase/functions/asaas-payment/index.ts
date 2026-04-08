@@ -200,8 +200,20 @@ Deno.serve(async (req: Request) => {
 
     if (billingType === 'BOLETO') {
       responseData.bankSlipUrl = payment.bankSlipUrl;
-      responseData.identificationField = payment.identificationField;
-      responseData.barCode = payment.barCode;
+      
+      // Fallback: Se identificationField não veio no objeto principal, buscar no endpoint específico
+      if (!payment.identificationField) {
+        const idenRes = await fetch(`${ASAAS_API_URL}/payments/${payment.id}/identificationField`, {
+          method: 'GET',
+          headers: { 'access_token': ASAAS_API_KEY },
+        });
+        const idenJson = await idenRes.json();
+        responseData.identificationField = idenJson.identificationField || idenJson.nossoNumero;
+        responseData.barCode = idenJson.barCode;
+      } else {
+        responseData.identificationField = payment.identificationField;
+        responseData.barCode = payment.barCode;
+      }
     }
 
     // ─────────────────────────────────────────────────────────────────────
