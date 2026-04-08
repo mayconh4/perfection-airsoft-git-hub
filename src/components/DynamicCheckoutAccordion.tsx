@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 type PaymentMethod = 'pix' | 'credit_card' | 'boleto' | 'wallet';
 
@@ -6,120 +6,192 @@ interface Props {
   amount: number;
   loading: boolean;
   pixOnly?: boolean;
-  onCommitPayment: (method: PaymentMethod) => void;
-  // Labels personalizadas
+  onCommitPayment: (method: PaymentMethod, data?: any) => void;
   actionLabel?: string;
 }
 
 export function DynamicCheckoutAccordion({ amount, loading, pixOnly = false, onCommitPayment, actionLabel = 'PAGAR AGORA' }: Props) {
   const [selected, setSelected] = useState<PaymentMethod>('pix');
+  
+  // Estados para Cartão
+  const [cardData, setCardData] = useState({
+    number: '',
+    name: '',
+    expiry: '',
+    cvv: '',
+    installments: 1
+  });
+
+  const handleCardChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setCardData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  // Cálculo de parcelas com juros (deve bater com o backend)
+  const installmentOptions = useMemo(() => {
+    const rates: Record<number, number> = {
+      1: 1, 2: 1.05, 3: 1.07, 4: 1.09, 5: 1.11, 6: 1.13,
+      7: 1.15, 8: 1.17, 9: 1.19, 10: 1.21, 11: 1.23, 12: 1.25
+    };
+    
+    return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => {
+      const totalPrice = amount * (rates[n] || 1);
+      const installmentValue = totalPrice / n;
+      return {
+        count: n,
+        value: installmentValue,
+        total: totalPrice,
+        label: `${n}x de R$ ${installmentValue.toFixed(2)} ${n > 1 ? `(Total: R$ ${totalPrice.toFixed(2)})` : ''}`
+      };
+    });
+  }, [amount]);
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-6">
-      <h2 className="text-xl font-black text-center text-white mb-6 uppercase tracking-widest">
-        Escolha como você quer pagar
+    <div className="w-full max-w-2xl mx-auto space-y-4">
+      <h2 className="text-xl font-black text-center text-white mb-6 uppercase tracking-widest italic">
+        Configuração de <span className="text-primary">Pagamento</span>
       </h2>
 
-      {/* Opção: Saldo / Wallet (Desabilitado por enquanto visando V2) */}
-      <div className="bg-surface/20 border border-white/5 p-4 flex items-center justify-between opacity-50 cursor-not-allowed">
-        <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-primary">account_balance_wallet</span>
-          <span className="text-[11px] font-black uppercase text-slate-400">Saldo da Carteira: R$ 0,00</span>
-        </div>
-        <span className="material-symbols-outlined text-slate-600 text-sm">info</span>
-      </div>
-
-      {/* Opção PIX (Sempre Ativa e Padrão) */}
-      <div className={`border ${selected === 'pix' ? 'border-primary' : 'border-white/10'} bg-surface/40 overflow-hidden transition-all duration-300`}>
-        <div 
-          className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5"
-          onClick={() => setSelected('pix')}
-        >
+      {/* Opção PIX */}
+      <div className={`border-2 ${selected === 'pix' ? 'border-primary bg-primary/5' : 'border-white/5 bg-surface/20'} transition-all duration-300 rounded-lg overflow-hidden`}>
+        <div className="p-4 flex items-center justify-between cursor-pointer" onClick={() => setSelected('pix')}>
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-[#00bdae]">pix</span>
-            <span className={`text-[12px] font-black uppercase tracking-wider ${selected === 'pix' ? 'text-white' : 'text-slate-400'}`}>Pague com Pix</span>
+            <span className="material-symbols-outlined text-[#00bdae] scale-125">pix</span>
+            <span className={`text-sm font-black uppercase tracking-wider ${selected === 'pix' ? 'text-white' : 'text-slate-400'}`}>Pix Instantâneo</span>
           </div>
-          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selected === 'pix' ? 'border-primary bg-primary' : 'border-white/20'}`}>
-            {selected === 'pix' && <div className="w-1.5 h-1.5 bg-background-dark rounded-full"></div>}
+          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selected === 'pix' ? 'border-primary' : 'border-white/20'}`}>
+            {selected === 'pix' && <div className="w-2.5 h-2.5 bg-primary rounded-full"></div>}
           </div>
         </div>
 
-        {/* Conteúdo Expansível do PIX */}
         {selected === 'pix' && (
-          <div className="p-6 border-t border-white/5 bg-background-dark/30">
-            <div className="flex flex-col md:flex-row gap-8">
-              <div className="flex-1 space-y-4">
-                <h3 className="text-[#00bdae] font-black uppercase tracking-widest text-sm mb-4">Pagou, liberou!</h3>
-                <ul className="space-y-3">
-                  <li className="flex items-center gap-3 text-[11px] text-slate-300 font-mono">
-                    <span className="w-5 h-5 rounded-full border border-[#00bdae]/30 flex items-center justify-center text-[#00bdae] text-[9px]">1</span>
-                    Aprovação quase instantânea
-                  </li>
-                  <li className="flex items-center gap-3 text-[11px] text-slate-300 font-mono">
-                    <span className="w-5 h-5 rounded-full border border-[#00bdae]/30 flex items-center justify-center text-[#00bdae] text-[9px]">2</span>
-                    Sem taxas adicionais
-                  </li>
-                  <li className="flex items-center gap-3 text-[11px] text-slate-300 font-mono">
-                    <span className="w-5 h-5 rounded-full border border-[#00bdae]/30 flex items-center justify-center text-[#00bdae] text-[9px]">3</span>
-                    Pague usando seu banco de preferência
-                  </li>
-                </ul>
-
-                <div className="mt-8 bg-[#00bdae]/5 border-l-2 border-[#00bdae] p-4 flex gap-3">
-                  <span className="material-symbols-outlined text-[#00bdae] text-lg">info</span>
-                  <div>
-                    <strong className="block text-[10px] text-white uppercase tracking-widest mb-1">Prazo de aprovação do Pix</strong>
-                    <span className="text-[10px] text-slate-400 font-mono">Instantâneo na maioria das vezes.</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* QR Code Illustration (Visual Only for the UI structure) */}
-              <div className="hidden md:flex items-center justify-center w-40 opacity-80">
-                <span className="material-symbols-outlined text-[100px] text-[#00bdae]/20">qr_code_scanner</span>
-              </div>
-            </div>
-
+          <div className="px-6 pb-6 pt-2 space-y-4 animate-in fade-in slide-in-from-top-2">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
+              Liberação imediata após a confirmação. O QR Code será gerado no próximo passo.
+            </p>
             <button
               onClick={() => onCommitPayment('pix')}
               disabled={loading}
-              className="mt-8 w-full bg-primary text-background-dark font-black py-5 text-[11px] uppercase tracking-[.3em] hover:bg-white transition-all disabled:opacity-50"
+              className="w-full bg-primary text-background-dark font-black py-4 text-xs uppercase tracking-[.2em] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 rounded"
             >
-              {loading ? 'PROCESSANDO...' : `${actionLabel} - R$ ${amount.toFixed(2)}`}
+              {loading ? 'GERANDO PIX...' : `${actionLabel} VIA PIX`}
             </button>
           </div>
         )}
       </div>
 
-      {/* Opção Cartão de Crédito (Apenas Loja) */}
+      {/* Opção Cartão de Crédito */}
       {!pixOnly && (
-        <div className={`border ${selected === 'credit_card' ? 'border-primary' : 'border-white/10'} bg-surface/40 overflow-hidden transition-all duration-300`}>
-          <div 
-            className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 opacity-50"
-            // onClick={() => setSelected('credit_card')} // Desativado até implementarmos tela de cartão no E-commerce
-          >
+        <div className={`border-2 ${selected === 'credit_card' ? 'border-primary bg-primary/5' : 'border-white/5 bg-surface/20'} transition-all duration-300 rounded-lg overflow-hidden`}>
+          <div className="p-4 flex items-center justify-between cursor-pointer" onClick={() => setSelected('credit_card')}>
             <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-slate-400">credit_card</span>
-              <span className="text-[12px] font-black uppercase tracking-wider text-slate-400">Cartão de Crédito <span className="text-[9px] text-primary ml-2 border border-primary/20 px-2 py-0.5 rounded-full">EM BREVE</span></span>
+              <span className="material-symbols-outlined text-amber-500 scale-125">credit_card</span>
+              <span className={`text-sm font-black uppercase tracking-wider ${selected === 'credit_card' ? 'text-white' : 'text-slate-400'}`}>Cartão de Crédito</span>
+            </div>
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selected === 'credit_card' ? 'border-primary' : 'border-white/20'}`}>
+              {selected === 'credit_card' && <div className="w-2.5 h-2.5 bg-primary rounded-full"></div>}
             </div>
           </div>
+
+          {selected === 'credit_card' && (
+            <div className="px-6 pb-6 pt-2 space-y-6 animate-in fade-in slide-in-from-top-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-[9px] font-black text-slate-500 mb-1.5 uppercase tracking-widest">Número do Cartão</label>
+                  <input name="number" value={cardData.number} onChange={handleCardChange} placeholder="0000 0000 0000 0000"
+                    className="w-full bg-black/40 border border-white/10 px-4 py-3 rounded text-xs text-white outline-none focus:border-primary transition-colors font-mono"/>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-[9px] font-black text-slate-500 mb-1.5 uppercase tracking-widest">Nome do Titular (Como no cartão)</label>
+                  <input name="name" value={cardData.name} onChange={handleCardChange} placeholder="NOME IMPRESSO NO CARTÃO"
+                    className="w-full bg-black/40 border border-white/10 px-4 py-3 rounded text-xs text-white outline-none focus:border-primary transition-colors uppercase"/>
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black text-slate-500 mb-1.5 uppercase tracking-widest">Validade</label>
+                  <input name="expiry" value={cardData.expiry} onChange={handleCardChange} placeholder="MM/AA"
+                    className="w-full bg-black/40 border border-white/10 px-4 py-3 rounded text-xs text-white outline-none focus:border-primary transition-colors font-mono"/>
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black text-slate-500 mb-1.5 uppercase tracking-widest">CVV</label>
+                  <input name="cvv" value={cardData.cvv} onChange={handleCardChange} placeholder="000"
+                    className="w-full bg-black/40 border border-white/10 px-4 py-3 rounded text-xs text-white outline-none focus:border-primary transition-colors font-mono"/>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-[9px] font-black text-slate-500 mb-1.5 uppercase tracking-widest">Parcelamento (Com Juros)</label>
+                  <select name="installments" value={cardData.installments} onChange={handleCardChange}
+                    className="w-full bg-black/40 border border-white/10 px-4 py-3 rounded text-xs text-white outline-none focus:border-primary transition-colors">
+                    {installmentOptions.map(opt => (
+                      <option key={opt.count} value={opt.count} className="bg-background-dark">{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <button
+                onClick={() => onCommitPayment('credit_card', cardData)}
+                disabled={loading || !cardData.number || !cardData.cvv}
+                className="w-full bg-primary text-background-dark font-black py-4 text-xs uppercase tracking-[.2em] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 rounded shadow-[0_5px_15px_rgba(255,193,7,0.2)]"
+              >
+                {loading ? 'PROCESSANDO CARTÃO...' : `CONFIRMAR PAGAMENTO - R$ ${installmentOptions.find(o => o.count == cardData.installments)?.total.toFixed(2)}`}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Opção Boleto (Apenas Loja) */}
+      {/* Opção Boleto */}
       {!pixOnly && (
-        <div className={`border ${selected === 'boleto' ? 'border-primary' : 'border-white/10'} bg-surface/40 overflow-hidden transition-all duration-300`}>
-          <div 
-            className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 opacity-50"
-            // onClick={() => setSelected('boleto')} // Desativado
-          >
+        <div className={`border-2 ${selected === 'boleto' ? 'border-primary bg-primary/5' : 'border-white/5 bg-surface/20'} transition-all duration-300 rounded-lg overflow-hidden`}>
+          <div className="p-4 flex items-center justify-between cursor-pointer" onClick={() => setSelected('boleto')}>
             <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-slate-400">receipt_long</span>
-              <span className="text-[12px] font-black uppercase tracking-wider text-slate-400">Boleto Bancário <span className="text-[9px] text-primary ml-2 border border-primary/20 px-2 py-0.5 rounded-full">EM BREVE</span></span>
+              <span className="material-symbols-outlined text-slate-400 scale-125">receipt_long</span>
+              <span className={`text-sm font-black uppercase tracking-wider ${selected === 'boleto' ? 'text-white' : 'text-slate-400'}`}>Boleto Bancário</span>
+            </div>
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selected === 'boleto' ? 'border-primary' : 'border-white/20'}`}>
+              {selected === 'boleto' && <div className="w-2.5 h-2.5 bg-primary rounded-full"></div>}
             </div>
           </div>
+
+          {selected === 'boleto' && (
+            <div className="px-6 pb-6 pt-2 space-y-4 animate-in fade-in slide-in-from-top-2">
+              <div className="bg-black/20 p-4 border-l-2 border-primary space-y-2">
+                <p className="text-[10px] text-white/80 font-bold uppercase tracking-widest">Informação Importante</p>
+                <p className="text-[9px] text-slate-500 uppercase leading-relaxed font-medium">Boleto pode levar até 3 dias úteis para compensar. Seus tickets serão reservados, mas a confirmação virá apenas após a liquidação bancária.</p>
+              </div>
+              <button
+                onClick={() => onCommitPayment('boleto')}
+                disabled={loading}
+                className="w-full bg-primary text-background-dark font-black py-4 text-xs uppercase tracking-[.2em] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 rounded"
+              >
+                {loading ? 'GERANDO BOLETO...' : `${actionLabel} VIA BOLETO`}
+              </button>
+            </div>
+          )}
         </div>
       )}
+
+      {/* Trust Badges - Estilo Profissional Google/SSL */}
+      <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 opacity-40 hover:opacity-100 transition-opacity duration-500">
+        <div className="flex flex-col items-center gap-2">
+          <span className="material-symbols-outlined text-primary text-xl">verified_user</span>
+          <span className="text-[7px] font-black uppercase tracking-widest text-center">Google Safe<br/>Browsing</span>
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <span className="material-symbols-outlined text-primary text-xl">lock</span>
+          <span className="text-[7px] font-black uppercase tracking-widest text-center">SSL 256-bit<br/>Encryption</span>
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <span className="material-symbols-outlined text-primary text-xl">shield_check</span>
+          <span className="text-[7px] font-black uppercase tracking-widest text-center">PCI DSS<br/>Compliant</span>
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <span className="material-symbols-outlined text-primary text-xl">security</span>
+          <span className="text-[7px] font-black uppercase tracking-widest text-center">Anti-Fraud<br/>Intelligence</span>
+        </div>
+      </div>
+      
+      <p className="text-[7px] text-center text-slate-600 font-bold uppercase tracking-[.2em] pt-4">
+        Ao confirmar, você aceita nossos Termos de Engajamento e a Política de Operações.
+      </p>
     </div>
   );
 }

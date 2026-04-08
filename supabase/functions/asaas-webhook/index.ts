@@ -3,8 +3,6 @@ import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 /** 
  * Polyfill para Deno.writeAll 
- * O Supabase atualizou o Edge Runtime dele recentemente e removeu essa função globalmente,
- * o que quebra bibliotecas de SMTP mais antigas. Este código restaura a função.
  */
 if (!(Deno as any).writeAll) {
   (Deno as any).writeAll = async (w: any, data: Uint8Array) => {
@@ -106,29 +104,19 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     console.log('[ASAAS-WEBHOOK] Payload recebido:', JSON.stringify(body));
 
-    // Monitoramento tático: Verificar se o token bate (apenas logamos agora para não travar o Pix do Maycon)
     const asaasToken = req.headers.get('asaas-access-token');
     if (asaasToken && asaasToken !== ASAAS_WEBHOOK_TOKEN) {
-      console.warn(`[ASAAS-WEBHOOK] Token Divergente: ${asaasToken || 'ausente'} vs esperado ${ASAAS_WEBHOOK_TOKEN.slice(0, 10)}... (Prosseguindo em Modo Manutenção)`);
+      console.warn(`[ASAAS-WEBHOOK] Token Divergente.`);
     }
-    console.log('[ASAAS-WEBHOOK] Payload recebido:', JSON.stringify(body));
 
     const event = body.event;
     const payment = body.payment;
     const orderId = payment?.externalReference;
 
-    if (!orderId) {
-      console.log('[ASAAS-WEBHOOK] Sem externalReference. Ignorando.');
-      return new Response(JSON.stringify({ status: 'ignored' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    if (!orderId) return new Response(JSON.stringify({ status: 'ignored' }), { headers: corsHeaders });
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // ─────────────────────────────────────────────────────────────────────
-    // EVENTOS: PAYMENT_CONFIRMED | PAYMENT_RECEIVED | PAYMENT_SETTLED
-    // ─────────────────────────────────────────────────────────────────────
     if (
       event === 'PAYMENT_CONFIRMED' ||
       event === 'PAYMENT_RECEIVED' ||
@@ -136,209 +124,86 @@ Deno.serve(async (req: Request) => {
     ) {
       console.log(`[ASAAS-WEBHOOK] SINAL DETECTADO: ${event} para Pedido: ${orderId}`);
 
-      // ── 1. ATUALIZAR STATUS DO PEDIDO ──────────────────────────────────
-      const { data: updatedOrder, error: orderErr } = await supabase
+      // Mapear billingType para payment_type do banco
+      const billingTypeMap: Record<string, string> = {
+        'PIX': 'pix',
+        'BOLETO': 'boleto',
+        'CREDIT_CARD': 'credit_card'
+      };
+      const paymentType = billingTypeMap[payment.billingType] || 'asaas';
+
+      // ── 1. ATUALIZAR STATUS DO PEDIDO ──
+      await supabase
         .from('orders')
         .update({
           status: 'pago',
-          payment_type: 'pix',
+          payment_type: paymentType,
+          payment_id: payment.id
         })
-        .eq('id', orderId)
-        .select();
+        .eq('id', orderId);
 
-      if (orderErr) {
-        console.error('[WEBHOOK] Erro tático ao atualizar order:', orderErr.message);
-      } else {
-        console.log('[WEBHOOK] Pedido atualizado com sucesso no banco:', updatedOrder?.[0]?.id);
-      }
-
-      // ── 2. BUSCAR ITENS DO PEDIDO ───────────────────────
-      const { data: orderItems, error: itemsErr } = await supabase
+      // ── 2. PROCESSAR ITENS ──
+      const { data: orderItems } = await supabase
         .from('order_items')
         .select('*')
         .eq('order_id', orderId);
 
-      if (itemsErr) {
-        console.error('[WEBHOOK] Erro ao buscar order_items:', itemsErr.message);
-      }
-
       if (orderItems && orderItems.length > 0) {
-        // Separar por tipo
-        const ticketItems = orderItems.filter(
-          (i: any) => i.metadata?.brand === 'TICKET' || i.metadata?.type === 'ticket'
-        );
-        const raffleItems = orderItems.filter(
-          (i: any) => i.metadata?.brand === 'DROP' || i.metadata?.type === 'raffle'
-        );
-
-        console.log(`[ASAAS-WEBHOOK] Itens: ${ticketItems.length} ticket(s), ${raffleItems.length} rifa(s)`);
-
-        // ── 2a. PROCESSAR INGRESSOS DE EVENTOS ───────────────────────────
+        // Tickets de Eventos
+        const ticketItems = orderItems.filter((i: any) => i.metadata?.brand === 'TICKET' || i.metadata?.type === 'ticket');
         for (const item of ticketItems) {
           const eventId = item.metadata?.event_id;
-          const quantity = item.quantity || 1;
-
           if (!eventId) continue;
 
-          // Buscar dados do comprador
-          const { data: order } = await supabase
-            .from('orders')
-            .select('user_id, customer_data')
-            .eq('id', orderId)
-            .single();
+          const { data: order } = await supabase.from('orders').select('user_id, customer_data').eq('id', orderId).single();
+          const buyerName = order?.customer_data?.name || 'Operador';
+          const buyerEmail = order?.customer_data?.email || '';
 
-          const buyerName = order?.customer_data?.name || item.metadata?.buyer_name || 'Operador';
-          const buyerEmail = order?.customer_data?.email || item.metadata?.buyer_email || '';
-          const buyerCpf = order?.customer_data?.cpf || item.metadata?.buyer_cpf || '';
-          const buyerPhone = order?.customer_data?.phone || item.metadata?.buyer_phone || '';
-          const pricePaid = Number(item.product_price) || 0;
-
-          // Criar tickets
-          for (let i = 0; i < quantity; i++) {
+          // Gerar tickets
+          for (let i = 0; i < (item.quantity || 1); i++) {
             await supabase.from('tickets').insert({
               event_id: eventId,
               order_id: orderId,
               buyer_id: order?.user_id || null,
               buyer_name: buyerName,
               buyer_email: buyerEmail,
-              buyer_cpf: buyerCpf,
-              buyer_phone: buyerPhone,
-              quantity: 1,
-              price_paid: pricePaid,
-              payment_id: payment.id || orderId,
+              buyer_cpf: order?.customer_data?.cpf || '',
+              buyer_phone: order?.customer_data?.phone || '',
               status: 'confirmed',
               qr_uuid: crypto.randomUUID(),
             });
           }
 
-          // Atualizar Saldo e Enviar E-mail
-          const { data: ev } = await supabase
-            .from('events')
-            .select('title, date, location, organizer_id, platform_fee')
-            .eq('id', eventId)
-            .single();
-
+          // Saldo do Organizador
+          const { data: ev } = await supabase.from('events').select('title, date, location, organizer_id, platform_fee').eq('id', eventId).single();
           if (ev) {
-            const totalAmount = Number(payment.value);
-            const platformFeeAmt = (ev.platform_fee / 100) * totalAmount;
-            const asaasPixCost = 0.99 * quantity;
-            const operatorShare = totalAmount - platformFeeAmt - asaasPixCost;
-
-            // Saldo
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('trust_level, kyc_status')
-              .eq('id', ev.organizer_id)
-              .single();
-
-            const isElite = (profile?.trust_level || 0) >= 3 && profile?.kyc_status === 'approved';
-            const creditField = isElite ? 'available_balance' : 'pending_balance';
-
+            const amount = Number(payment.value);
+            const netAmount = amount - (amount * (ev.platform_fee / 100)) - (payment.billingType === 'PIX' ? 0.99 : 2.49);
+            
             const { data: balance } = await supabase.from('user_balances').select('*').eq('user_id', ev.organizer_id).single();
             if (balance) {
-              const upstate: any = { total_earned: Number(balance.total_earned || 0) + operatorShare };
-              upstate[creditField] = Number(balance[creditField] || 0) + operatorShare;
-              await supabase.from('user_balances').update(upstate).eq('user_id', ev.organizer_id);
-            } else {
-              const instate: any = { user_id: ev.organizer_id, total_earned: operatorShare };
-              instate[creditField] = operatorShare;
-              await supabase.from('user_balances').insert(instate);
-            }
-
-            // E-mail SMTP Hostinger
-            if (buyerEmail && buyerEmail.includes('@') && SMTP_PASSWORD) {
-              try {
-                const { data: ticketsCreated } = await supabase
-                  .from('tickets')
-                  .select('id, qr_uuid')
-                  .eq('order_id', orderId)
-                  .eq('event_id', eventId);
-
-                if (ticketsCreated && ticketsCreated.length > 0) {
-                  const eventInfo = {
-                    buyerName,
-                    eventName: ev.title,
-                    eventDate: ev.date,
-                    eventLocation: ev.location,
-                    tickets: ticketsCreated.map(t => ({ id: t.id, qrUuid: t.qr_uuid }))
-                  };
-
-                  const emailHtml = getTicketEmailHtml(eventInfo);
-                  const client = new SmtpClient();
-
-                  await client.connectTLS({
-                    hostname: SMTP_HOSTNAME,
-                    port: SMTP_PORT,
-                    username: SMTP_USERNAME,
-                    password: SMTP_PASSWORD,
-                  });
-
-                  await client.send({
-                    from: `Perfection Airsoft <${SMTP_USERNAME}>`,
-                    to: buyerEmail,
-                    subject: `🎫 Ingressos Confirmados: ${eventInfo.eventName}`,
-                    content: 'Por favor, visualize este e-mail em um cliente HTML.',
-                    html: emailHtml,
-                  });
-
-                  await client.close();
-                  console.log('[ASAAS-WEBHOOK] E-mail enviado via SMTP.');
-                }
-              } catch (e: any) {
-                console.error('[ASAAS-WEBHOOK] Erro no SMTP:', e.message);
-              }
+              await supabase.from('user_balances').update({ 
+                total_earned: Number(balance.total_earned || 0) + netAmount,
+                available_balance: Number(balance.available_balance || 0) + netAmount 
+              }).eq('user_id', ev.organizer_id);
             }
           }
         }
 
-        // ── 2b. PROCESSAR TICKETS DE RIFAS ──────────────────────────────
+        // Tickets de Rifas
+        const raffleItems = orderItems.filter((i: any) => i.metadata?.brand === 'DROP' || i.metadata?.type === 'raffle');
         if (raffleItems.length > 0) {
-          const { data: tickets } = await supabase
-            .from('raffle_tickets')
+          await supabase.from('raffle_tickets')
             .update({ payment_status: 'pago', purchased_at: new Date().toISOString() })
-            .eq('payment_id', orderId)
-            .select('raffle_id');
-
-          if (tickets && tickets.length > 0) {
-            const raffleId = tickets[0].raffle_id;
-            await supabase.rpc('increment_raffle_sold_tickets', { rid: raffleId, count_add: tickets.length });
-
-            const { data: raffle } = await supabase.from('raffles').select('creator_id').eq('id', raffleId).single();
-            if (raffle) {
-              const amount = Number(payment.value);
-              const operatorShare = amount - (amount * 0.07) - 0.99;
-
-              const { data: profile } = await supabase.from('profiles').select('trust_level, kyc_status').eq('id', raffle.creator_id).single();
-              const isElite = (profile?.trust_level || 0) >= 3 && profile?.kyc_status === 'approved';
-              const creditField = isElite ? 'available_balance' : 'pending_balance';
-
-              const { data: balance } = await supabase.from('user_balances').select('*').eq('user_id', raffle.creator_id).single();
-              if (balance) {
-                const upstate: any = { total_earned: Number(balance.total_earned || 0) + operatorShare };
-                upstate[creditField] = Number(balance[creditField] || 0) + operatorShare;
-                await supabase.from('user_balances').update(upstate).eq('user_id', raffle.creator_id);
-              }
-            }
-          }
+            .eq('payment_id', orderId);
         }
       }
-
-      // ── CANCELAMENTO ─────────────────────────────────────────────────────
-    } else if (event === 'PAYMENT_CANCELLED' || event === 'PAYMENT_OVERDUE') {
-      await supabase.from('orders').update({ status: 'cancelado', payment_status: 'cancelado' }).eq('id', orderId);
-      await supabase.from('tickets').update({ status: 'cancelled' }).eq('order_id', orderId).eq('status', 'pending');
-      await supabase.from('raffle_tickets').update({ payment_status: 'cancelado' }).eq('payment_id', orderId).eq('payment_status', 'pendente');
+    } else if (event === 'PAYMENT_CANCELLED' || event === 'PAYMENT_OVERDUE' || event === 'PAYMENT_REFUNDED') {
+      await supabase.from('orders').update({ status: 'cancelado' }).eq('id', orderId);
     }
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
+    return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
   } catch (err: any) {
-    console.error('[WEBHOOK CRITICAL ERROR]', err.message);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
   }
 });
