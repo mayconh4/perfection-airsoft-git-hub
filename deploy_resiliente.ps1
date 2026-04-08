@@ -108,7 +108,7 @@ while ($deployAsaasAttempts -lt 3 -and -not $deployAsaasSuccess) {
     }
 }
 # 4.3 Outras Funções Asaas
-$asaasFunctions = @("asaas-payment", "asaas-webhook", "asaas-request-payout", "asaas-release-funds")
+$asaasFunctions = @("asaas-payment", "asaas-webhook", "asaas-request-payout", "asaas-release-funds", "cep-lookup")
 foreach ($func in $asaasFunctions) {
     $deployAttempts = 0
     $deploySuccess = $false
