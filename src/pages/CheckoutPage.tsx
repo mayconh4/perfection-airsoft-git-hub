@@ -191,7 +191,11 @@ export function CheckoutPage() {
       }
 
     } catch (err: any) {
-      setError(err.message);
+      if (err.message.includes('Erro 307')) {
+        setError('Erro 307: Não foi possível processar o pagamento no momento.');
+      } else {
+        setError(err.message);
+      }
     } finally {
       setProcessing(false);
     }

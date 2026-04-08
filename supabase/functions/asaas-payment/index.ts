@@ -220,8 +220,23 @@ Deno.serve(async (req: Request) => {
     });
 
   } catch (err: any) {
-    console.error('[ASAAS ERROR]', err.message);
-    return new Response(JSON.stringify({ error: err.message }), {
+    const errorMessage = err.message || '';
+    const isLimitError = errorMessage.toLowerCase().includes('excede o seu limite autorizado');
+
+    if (isLimitError) {
+      console.error('[CORE-307] ASAAS_LIMIT_EXCEEDED:', errorMessage);
+      return new Response(JSON.stringify({ 
+        error: 'Erro 307',
+        errorCode: 307,
+        type: 'ASAAS_LIMIT_EXCEEDED'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.error('[ASAAS ERROR]', errorMessage);
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
