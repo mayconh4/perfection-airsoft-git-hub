@@ -65,10 +65,7 @@ export function useShipping() {
     if (cleanCep.length !== 8) return null;
 
     try {
-      const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const cepUrl = isDev 
-        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cep-lookup?cep=${cleanCep}` // Em local usamos direto a URL do Supabase ou proxy
-        : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cep-lookup?cep=${cleanCep}`;
+      const cepUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cep-lookup?cep=${cleanCep}`;
 
       const response = await fetch(cepUrl, {
         method: 'GET',
@@ -78,11 +75,38 @@ export function useShipping() {
         }
       });
 
-      if (!response.ok) return null;
+      // Se a Edge Function falhar (404 ou erro), usamos o fallback ViaCEP para efeito em tempo real
+      if (!response.ok) {
+        console.warn('[useShipping] Edge Function não respondeu. Ativando fallback ViaCEP...');
+        const fallbackResp = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const viaData = await fallbackResp.json();
+        
+        if (viaData.erro) return null;
+        
+        return {
+          street: viaData.logradouro,
+          district: viaData.bairro,
+          city: viaData.localidade,
+          state: viaData.uf
+        };
+      }
+      
       return await response.json();
     } catch (err) {
-      console.error('[useShipping] Erro ao consultar CEP:', err);
-      return null;
+      console.error('[useShipping] Erro ao consultar CEP. Tentando fallback ViaCEP...', err);
+      try {
+        const fallbackResp = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const viaData = await fallbackResp.json();
+        if (viaData.erro) return null;
+        return {
+          street: viaData.logradouro,
+          district: viaData.bairro,
+          city: viaData.localidade,
+          state: viaData.uf
+        };
+      } catch (fErr) {
+        return null;
+      }
     }
   };
 
