@@ -61,16 +61,16 @@ export function CartPage() {
                   </Link>
                   <p className="text-primary font-black text-base mt-2 font-mono">{formatPrice(item.product?.price || 0)}</p>
                   <div className="flex items-center gap-0 mt-3 border border-white/10 w-fit">
-                    <button onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
+                    <button onClick={() => updateQuantity(item.id, item.quantity - 1)}
                       className="w-8 h-8 flex items-center justify-center text-white/50 hover:text-primary hover:bg-primary/10 transition-all text-lg font-black border-r border-white/10">−</button>
                     <span className="text-sm font-bold w-10 text-center font-mono">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
+                    <button onClick={() => updateQuantity(item.id, item.quantity + 1)}
                       className="w-8 h-8 flex items-center justify-center text-white/50 hover:text-primary hover:bg-primary/10 transition-all text-lg font-black border-l border-white/10">+</button>
                   </div>
                 </div>
                 <div className="flex flex-col items-end justify-between">
-                  <button onClick={() => removeItem(item.product_id)}
-                    className="text-white/20 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100">
+                  <button onClick={() => removeItem(item.id)}
+                    className="text-white/40 hover:text-red-500 transition-colors p-2 bg-background-dark/80 rounded-sm">
                     <span className="material-symbols-outlined text-xl">delete</span>
                   </button>
                   <span className="text-sm font-black text-white font-mono">{formatPrice((item.product?.price || 0) * item.quantity)}</span>
