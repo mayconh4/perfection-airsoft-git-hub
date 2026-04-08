@@ -42,14 +42,14 @@ export function useCreateOrder() {
 
   const createOrder = async (customerData: Record<string, string>, shippingAddress: Record<string, string>, userId?: string) => {
     const finalUserId = userId || user?.id;
-    if (!finalUserId || cartItems.length === 0) return null;
+    if (cartItems.length === 0) return null;
     setCreating(true);
 
     // 1. Criar pedido
     const { data: order, error } = await supabase
       .from('orders')
       .insert({
-        user_id: finalUserId,
+        user_id: finalUserId || null,
         total: grandTotal,
         status: 'pendente',
         customer_data: customerData,
