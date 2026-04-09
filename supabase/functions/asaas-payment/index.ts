@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+// import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const ASAAS_API_KEY             = Deno.env.get('ASAAS_API_KEY') || '';
@@ -9,7 +9,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-bypass-token, asaas-access-token',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-bypass-token, asaas-access-token, x-application-name, prefer-status',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
@@ -61,6 +61,20 @@ Deno.serve(async (req: Request) => {
       
       const successEvents = ['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED_IN_CASH'];
       
+      // Registrar evento na fila para garantir zero perda
+      const orderId = payment.externalReference;
+      
+      try {
+        await supabaseAdmin.from('payment_events').insert({
+          external_reference: orderId || 'unknown',
+          event_type: event,
+          payload: payload,
+          status: 'pending'
+        });
+      } catch (e) {
+        console.error('[Webhook Queue Insert Error]', e);
+      }
+
       if (successEvents.includes(event)) {
         const orderId = payment.externalReference;
         
@@ -74,15 +88,21 @@ Deno.serve(async (req: Request) => {
         // Atualizar status no banco de dados principal
         const { error: updateError } = await supabaseAdmin
           .from('orders')
-          .update({ 
-            status: 'pago',
-            updated_at: new Date().toISOString()
-          })
+          .update({ status: 'pago' })
           .eq('id', orderId);
+
+        // Marca o evento como processado
+        try {
+          await supabaseAdmin.from('payment_events')
+            .update({ status: 'processed', processed_at: new Date().toISOString() })
+            .eq('external_reference', orderId)
+            .eq('event_type', event)
+            .eq('status', 'pending');
+        } catch (e) {}
 
         if (updateError) {
           console.error('[Webhook DB Error]', updateError);
-          return new Response(JSON.stringify({ error: 'DB Update failed' }), { status: 500 });
+          return new Response(JSON.stringify({ error: 'DB Update failed', details: updateError }), { status: 500 });
         }
         
         // Buscar itens para mensagem (opcional, para e-mail/whats)
@@ -124,13 +144,64 @@ Deno.serve(async (req: Request) => {
       const isPaid = ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'].includes(payment.status);
 
       if (isPaid) {
-        await supabaseAdmin.from('orders').update({ status: 'pago' }).eq('id', payment.externalReference);
-        return new Response(JSON.stringify({ status: 'pago', success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        const orderId = payment.externalReference;
+        console.log(`[asaas-payment] CHECK_STATUS: Pedido ${orderId} confirmado. Sincronizando DB...`);
+        
+        // Atualizar status no banco com 'pago' conforme arquitetura anterior para alinhar enum
+        const { error: syncError } = await supabaseAdmin.from('orders').update({ status: 'pago' }).eq('id', orderId);
+        
+        if (syncError) {
+          console.error(`[asaas-payment] Erro na sincronização forçada:`, syncError);
+        } else {
+          console.log(`[asaas-payment] Sincronização forçada concluída com sucesso.`);
+        }
+        
+        // Buscar itens para compor a mensagem personalizada solicitada
+        const { data: orderItems } = await supabaseAdmin
+          .from('order_items')
+          .select('product_name')
+          .eq('order_id', orderId);
+          
+        const itemsList = orderItems?.map((i: any) => i.product_name).join(', ') || 'Equipamento';
+        
+        return new Response(JSON.stringify({ 
+          status: 'pago', 
+          success: true,
+          pixConfirmado: true,
+          mensagem: `Pix realizado com sucesso! Iniciando protocolo de extração: ${itemsList}`
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
-      return new Response(JSON.stringify({ status: payment.status }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      
+      return new Response(JSON.stringify({ 
+        status: payment.status,
+        pixConfirmado: false 
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // CRIAR PAGAMENTO
+    
+    // MOCK MODE PARA HOMOLOGAÇÃO
+    if (customerData.cpf?.replace(/\D/g, '') === '00000000000') {
+      console.log('[MOCK] Ativando protocolo de simulação Pix.');
+      const mockAsaasId = `mock_pay_${Date.now()}`;
+      
+      // Criar pedido mock no banco
+      const { data: mockOrder, error: mockError } = await supabaseAdmin.from('orders').insert({
+        id: orderId,
+        status: 'pendente',
+        total_amount: total,
+        customer_email: customerData.email
+      }).select().single();
+
+      return new Response(JSON.stringify({
+        asaas_id: mockAsaasId,
+        status: 'PENDING',
+        billingType: 'PIX',
+        qr_code: '00020101021226870014BR.GOV.BCB.PIX0165asaas.sandbox.pix.random.code520400005303986540510.005802BR5925Teste6009SAO PAULO62070503***6304ABCD',
+        qr_code_base64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // a. Criar Cliente
     const customerRes = await fetch(`${ASAAS_API_URL}/customers`, {
       method: 'POST',

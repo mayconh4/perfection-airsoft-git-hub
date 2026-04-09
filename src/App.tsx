@@ -44,6 +44,7 @@ import { CreateClassPage } from './pages/CreateClassPage';
 import BlogListingPage from './pages/BlogListingPage';
 import BlogDetailPage from './pages/BlogDetailPage';
 
+
 import { PricingProvider } from './context/PricingContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -64,6 +65,7 @@ function App() {
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/carrinho" element={<CartPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
+
                   <Route path="/sucesso/:id" element={<OrderSuccessPage />} />
                   <Route path="/busca" element={<SearchPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />

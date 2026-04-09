@@ -133,7 +133,8 @@ Deno.serve(async (req: Request) => {
       const paymentType = billingTypeMap[payment.billingType] || 'asaas';
 
       // ── 1. ATUALIZAR STATUS DO PEDIDO ──
-      await supabase
+      console.log(`[ASAAS-WEBHOOK] Atualizando banco de dados para ID: ${orderId} -> pago`);
+      const { error: updateError } = await supabase
         .from('orders')
         .update({
           status: 'pago',
@@ -141,6 +142,12 @@ Deno.serve(async (req: Request) => {
           payment_id: payment.id
         })
         .eq('id', orderId);
+
+      if (updateError) {
+        console.error(`[ASAAS-WEBHOOK] Erro ao atualizar pedido ${orderId}:`, updateError);
+        throw updateError;
+      }
+      console.log(`[ASAAS-WEBHOOK] Pedido ${orderId} marcado como pago.`);
 
       // ── 2. PROCESSAR ITENS ──
       const { data: orderItems } = await supabase

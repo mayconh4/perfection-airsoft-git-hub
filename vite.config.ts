@@ -2,8 +2,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 // @ts-ignore
 import { melhorEnvioProxy } from './server/melhorEnvioProxy.js'
+// @ts-ignore
+import { asaasStatusProxy } from './server/asaasStatusProxy.js'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), melhorEnvioProxy()],
+  plugins: [react(), melhorEnvioProxy(), asaasStatusProxy()],
 })
