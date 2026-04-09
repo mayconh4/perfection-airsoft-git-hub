@@ -23,35 +23,35 @@ export function CheckoutPage() {
   const [boletoData, setBoletoData] = useState<any>(null);
   const [pixConfirmed, setPixConfirmed] = useState(false);
 
-  // Formulários com persistência robusta
-  const [form, setForm] = useState({
-    name: '', 
-    cpf: '13561055648', // CPF padrão para testes do Maycon
-    email: user?.email || '', 
-    phone: ''
-  });
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  // 1. Carregar dados salvos ao iniciar (uma única vez)
-  useEffect(() => {
+  // 1. Estado do Formulário com carragamento instantâneo (Persistent Store)
+  const [form, setForm] = useState(() => {
     const saved = localStorage.getItem('checkout_customer_data');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setForm(prev => ({ ...prev, ...parsed }));
+        return {
+          name: '', 
+          cpf: '13561055648', 
+          email: user?.email || '', 
+          phone: '',
+          ...parsed // Dados salvos têm prioridade
+        };
       } catch (e) {
-        console.error("Erro ao carregar dados salvos:", e);
+        console.error("Erro ao recuperar cache:", e);
       }
     }
-    setIsLoaded(true); // Marca que o carregamento inicial terminou
-  }, []);
+    return {
+      name: '', 
+      cpf: '13561055648', 
+      email: user?.email || '', 
+      phone: ''
+    };
+  });
 
-  // 2. Salvar dados ao mudar (após carregamento inicial)
+  // 2. Salvar dados instantaneamente ao mudar
   useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('checkout_customer_data', JSON.stringify(form));
-    }
-  }, [form, isLoaded]);
+    localStorage.setItem('checkout_customer_data', JSON.stringify(form));
+  }, [form]);
 
   const [cardForm, setCardForm] = useState({
     number: '', holder: '', expiry: '', ccv: '', installments: 1
