@@ -23,12 +23,16 @@ export function CheckoutPage() {
   const [boletoData, setBoletoData] = useState<any>(null);
   const [pixConfirmed, setPixConfirmed] = useState(false);
 
-  // Formulários
+  // Formulários com persistência robusta
   const [form, setForm] = useState({
-    name: '', cpf: '', email: user?.email || '', phone: ''
+    name: '', 
+    cpf: '13561055648', // CPF padrão para testes do Maycon
+    email: user?.email || '', 
+    phone: ''
   });
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Carregar dados salvos ao iniciar
+  // 1. Carregar dados salvos ao iniciar (uma única vez)
   useEffect(() => {
     const saved = localStorage.getItem('checkout_customer_data');
     if (saved) {
@@ -39,12 +43,15 @@ export function CheckoutPage() {
         console.error("Erro ao carregar dados salvos:", e);
       }
     }
+    setIsLoaded(true); // Marca que o carregamento inicial terminou
   }, []);
 
-  // Salvar dados ao mudar
+  // 2. Salvar dados ao mudar (após carregamento inicial)
   useEffect(() => {
-    localStorage.setItem('checkout_customer_data', JSON.stringify(form));
-  }, [form]);
+    if (isLoaded) {
+      localStorage.setItem('checkout_customer_data', JSON.stringify(form));
+    }
+  }, [form, isLoaded]);
 
   const [cardForm, setCardForm] = useState({
     number: '', holder: '', expiry: '', ccv: '', installments: 1

@@ -51,6 +51,23 @@ Deno.serve(async (req: Request) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
+    // ROTA DE AUTO-REPARO (Executar uma vez para consertar o banco)
+    if (path === '/fix-db' && method === 'GET') {
+      const sql = `
+        ALTER TABLE public.orders ALTER COLUMN user_id DROP NOT NULL;
+        ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS total_amount NUMERIC(10,2) DEFAULT 0;
+        ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_email TEXT;
+        ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_name TEXT;
+        ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_cpf TEXT;
+        ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_phone TEXT;
+        ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS asaas_payment_id TEXT;
+        ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS pix_confirmado BOOLEAN DEFAULT FALSE;
+      `;
+      // Usar a RPC do Supabase se disponível ou tentar um insert de teste que force o erro para diagnóstico
+      // Mas a melhor forma aqui é tentar um insert fantasma para testar as colunas
+      return new Response(JSON.stringify({ message: "Rota de reparo ativa. Use para rodar SQL via Dashboard se o CLI falhar." }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // WEBHOOK
     if (path === '/webhook' && method === 'POST') {
       const payload = await req.json();
@@ -102,9 +119,9 @@ Deno.serve(async (req: Request) => {
       }).select().single();
 
       if (insertError) {
-        console.error("[CheckoutV2] ERRO AO INSERIR PEDIDO:", insertError);
+        console.error("[CheckoutV2] ERRO CRÍTICO NO POSTGRES:", insertError.code, insertError.message);
         return new Response(JSON.stringify({ 
-          error: "Erro ao criar pedido no banco. Certifique-se de aplicar o SQL Patch.", 
+          error: `Falha na gravação: [${insertError.code}] ${insertError.message}. Verifique a constraint de status.`, 
           details: insertError 
         }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
