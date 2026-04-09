@@ -101,8 +101,15 @@ export function CheckoutPage() {
     if (user) {
       navigate('/meus-ingressos');
     } else {
-      // Forçar cadastro para vincular o pedido
-      navigate(`/login?mode=signup&redirect=/meus-ingressos&email=${orderId ? '' : ''}`);
+      // Forçar cadastro para vincular o pedido com dados preenchidos
+      const params = new URLSearchParams({
+        mode: 'signup',
+        redirect: '/meus-ingressos',
+        email: form.email,
+        name: form.name,
+        paid: 'true'
+      });
+      navigate(`/login?${params.toString()}`);
     }
   };
 
