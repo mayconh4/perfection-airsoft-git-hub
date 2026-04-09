@@ -1,0 +1,9 @@
+﻿
+C:\Users\mayco\.gemini\antigravity\playground\crystal-armstrong\src\pages\CheckoutPage.tsx
+   22:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   23:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   36:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  148:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Ô£û 4 problems (4 errors, 0 warnings)
+

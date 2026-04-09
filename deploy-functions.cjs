@@ -12,7 +12,8 @@ const FUNCTIONS = [
     'asaas-create-subaccount',
     'asaas-payment',
     'asaas-webhook',
-    'cep-lookup'
+    'cep-lookup',
+    'asaas-checkout-v2'
 ];
 
 // Lê o token

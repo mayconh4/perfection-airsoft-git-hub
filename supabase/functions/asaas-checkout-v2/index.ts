@@ -1,4 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+// import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
+
+/** 
+ * LÓGICA SIMPLIFICADA PARA DEPLOY
+ * Comentado SMTP e polyfills experimentais para isolar erro 500
+ */
 
 const ASAAS_API_KEY             = Deno.env.get('ASAAS_API_KEY') || '';
 const ASAAS_API_URL             = 'https://sandbox.asaas.com/api/v3';
@@ -11,84 +17,80 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
-const ASAAS_WEBHOOK_TOKEN = "whsec_Ebnb6Ee92odJ-cuC3rABYmkD-Sopi45TrJn3nqDiRHk";
-
 // Configurações de Notificação
-const SMTP_CONFIG = { user: Deno.env.get('SMTP_USER') || '' };
+const SMTP_HOSTNAME = Deno.env.get("SMTP_HOSTNAME") || "smtp.hostinger.com";
+const SMTP_PORT = parseInt(Deno.env.get("SMTP_PORT") || "465");
+const SMTP_USERNAME = Deno.env.get("SMTP_USERNAME");
+const SMTP_PASSWORD = Deno.env.get("SMTP_PASSWORD");
+
 const WHATSAPP_CONFIG = {
   token: Deno.env.get('WHATSAPP_ACCESS_TOKEN') || '',
   phoneId: Deno.env.get('WHATSAPP_PHONE_ID') || '',
   template: "confirmacao_pagamento"
 };
 
+// Tabela de Juros
+function calculateInterest(baseAmount: number, installments: number): number {
+  if (installments <= 1) return baseAmount;
+  const rates: Record<number, number> = {
+    2: 1.05, 3: 1.07, 4: 1.09, 5: 1.11, 6: 1.13, 
+    7: 1.15, 8: 1.17, 9: 1.19, 10: 1.21, 11: 1.23, 12: 1.25
+  };
+  return Number((baseAmount * (rates[installments] || 1)).toFixed(2));
+}
+
 Deno.serve(async (req: Request) => {
   const method = req.method;
   if (method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   const url = new URL(req.url);
-  // Remove o prefixo da função para roteamento limpo
   const path = url.pathname.replace(/\/functions\/v1\/asaas-checkout-v2/, '');
-  
-  console.log(`[asaas-v2] Request: ${method} ${path}`);
-
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
-    // ─────────────────────────────────────────────────────────────────────
-    // 1. WEBHOOK (POST /webhook)
-    // ─────────────────────────────────────────────────────────────────────
+    // WEBHOOK
     if (path === '/webhook' && method === 'POST') {
       const payload = await req.json();
-      console.log("[asaas-v2] Webhook received:", payload.event);
-
       const event = payload.event;
       const payment = payload.payment;
 
-      if (event === 'PAYMENT_CONFIRMED' || event === 'PAYMENT_RECEIVED') {
-        const asaasPaymentId = payment.id;
-        
-        const { data: order, error: updateErr } = await supabase
+      if (['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED'].includes(event)) {
+        const { data: order } = await supabase
           .from('orders')
           .update({ status: 'confirmed', pix_confirmado: true })
-          .eq('asaas_payment_id', asaasPaymentId)
+          .eq('asaas_payment_id', payment.id)
           .select()
           .single();
 
-        if (updateErr) {
-          console.error(`[asaas-v2] Webhook update error:`, updateErr);
-        } else if (order) {
-          console.log(`[asaas-v2] Order ${order.id} confirmed via webhook.`);
+        if (order) {
+          console.log("PAGAMENTO CONFIRMADO PARA PEDIDO:", order.id);
+          // Chamadas de notificação comentadas temporariamente
+          /*
           const tacticalMessage = `CONFIRMAÇÃO TÁTICA: Pagamento aprovado. Pedido ${order.id.slice(0,8)} ATIVADO.`;
           await Promise.all([
             notifyEmail(order.customer_email, tacticalMessage),
             notifyWhatsApp(payment.mobilePhone, tacticalMessage)
           ]);
+          */
         }
       }
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // 2. CREATE ORDER (POST /create-order)
-    // ─────────────────────────────────────────────────────────────────────
+    // CREATE ORDER
     if (path === '/create-order' && method === 'POST') {
       const { customerData, total, items } = await req.json();
-      console.log(`[asaas-v2] Creating order for: ${customerData.email}`);
-
-      // Identificar usuário se houver token
       let userId = null;
       const authHeader = req.headers.get("Authorization");
-      if (authHeader && authHeader.startsWith("Bearer ")) {
-          const token = authHeader.replace("Bearer ", "");
-          // Tenta pegar o user, se falhar continua como guest
-          const { data: { user } } = await supabase.auth.getUser(token);
+      if (authHeader?.startsWith("Bearer ")) {
+          const { data: { user } } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
           if (user) userId = user.id;
       }
       
-      const { data: order, error } = await supabase.from('orders').insert({
+      console.log("[CheckoutV2] Criando pedido para:", customerData.email);
+      const { data: order, error: insertError } = await supabase.from('orders').insert({
         user_id: userId,
         status: 'pending',
-        pix_confirmado: false,
         total_amount: total,
         customer_email: customerData.email,
         customer_name: customerData.name,
@@ -96,13 +98,16 @@ Deno.serve(async (req: Request) => {
         customer_phone: customerData.phone
       }).select().single();
 
-      if (error) {
-          console.error("[asaas-v2] Database error creating order:", error);
-          throw error;
+      if (insertError) {
+        console.error("[CheckoutV2] ERRO AO INSERIR PEDIDO:", insertError);
+        return new Response(JSON.stringify({ 
+          error: "Erro ao criar pedido no banco. Certifique-se de aplicar o SQL Patch.", 
+          details: insertError 
+        }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
+      console.log("[CheckoutV2] Pedido gerado:", order.id);
 
-      // Inserir itens
-      if (items && items.length > 0) {
+      if (items?.length > 0) {
         const orderItems = items.map((item: any) => ({
             order_id: order.id,
             product_id: item.id,
@@ -116,16 +121,11 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify(order), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // 3. GENERATE PIX (POST /generate-pix)
-    // ─────────────────────────────────────────────────────────────────────
-    if (path === '/generate-pix' && method === 'POST') {
-      const { orderId, customerData, total } = await req.json();
-      console.log(`[asaas-v2] Generating PIX for order: ${orderId}`);
-
-      if (!ASAAS_API_KEY) throw new Error("ASAAS_API_KEY is not configured in Edge Function secrets.");
-
-      // a. Criar/Buscar Cliente
+    // GENERATE PAYMENT (Unified)
+    if (['/generate-pix', '/generate-card', '/generate-boleto'].includes(path) && method === 'POST') {
+      const { orderId, customerData, total, creditCard, creditCardHolderInfo, installmentCount } = await req.json();
+      
+      // 1. Cliente
       const customerRes = await fetch(`${ASAAS_API_URL}/customers?cpfCnpj=${customerData.cpf.replace(/\D/g, '')}`, {
         headers: { 'access_token': ASAAS_API_KEY }
       });
@@ -147,94 +147,76 @@ Deno.serve(async (req: Request) => {
         customerId = newCust.id;
       }
 
-      // b. Criar Cobrança Pix
+      // 2. Cobrança
+      const billingType = path === '/generate-pix' ? 'PIX' : path === '/generate-boleto' ? 'BOLETO' : 'CREDIT_CARD';
+      let finalValue = total;
+      if (billingType === 'CREDIT_CARD' && (installmentCount || 1) > 1) {
+        finalValue = calculateInterest(total, installmentCount);
+      }
+
+      const asaasPayload: any = {
+        customer: customerId,
+        billingType: billingType,
+        value: finalValue,
+        dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+        description: `Pedido ${orderId.slice(0,8)}`,
+        externalReference: orderId
+      };
+
+      if (billingType === 'CREDIT_CARD') {
+        asaasPayload.creditCard = creditCard;
+        asaasPayload.creditCardHolderInfo = creditCardHolderInfo;
+        if (installmentCount > 1) asaasPayload.installmentCount = installmentCount;
+      }
+
       const paymentRes = await fetch(`${ASAAS_API_URL}/payments`, {
         method: 'POST',
         headers: { 'access_token': ASAAS_API_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customer: customerId,
-          billingType: 'PIX',
-          value: total,
-          dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-          description: `Pedido ${orderId.slice(0,8)}`,
-          externalReference: orderId
-        })
+        body: JSON.stringify(asaasPayload)
       });
       const payment = await paymentRes.json();
-      if (!paymentRes.ok) throw new Error(payment.errors?.[0]?.description || 'Erro Asaas ao criar cobrança');
+      if (!paymentRes.ok) throw new Error(payment.errors?.[0]?.description || 'Erro Asaas');
 
-      // c. Salvar asaas_payment_id
       await supabase.from('orders').update({ asaas_payment_id: payment.id }).eq('id', orderId);
 
-      // d. Gerar QR Code
-      const qrRes = await fetch(`${ASAAS_API_URL}/payments/${payment.id}/pixQrCode`, {
-        headers: { 'access_token': ASAAS_API_KEY }
-      });
-      const qrData = await qrRes.json();
+      // 3. Resultado Específico
+      const result: any = { paymentId: payment.id, orderId };
 
-      return new Response(JSON.stringify({
-        paymentId: payment.id,
-        qrCode: qrData.payload,
-        qrCodeBase64: qrData.encodedImage,
-        orderId: orderId
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (billingType === 'PIX') {
+        const qrRes = await fetch(`${ASAAS_API_URL}/payments/${payment.id}/pixQrCode`, { headers: { 'access_token': ASAAS_API_KEY } });
+        const qrData = await qrRes.json();
+        result.qrCode = qrData.payload;
+        result.qrCodeBase64 = qrData.encodedImage;
+      }
+
+      if (billingType === 'BOLETO') {
+        result.bankSlipUrl = payment.bankSlipUrl;
+        const idenRes = await fetch(`${ASAAS_API_URL}/payments/${payment.id}/identificationField`, { headers: { 'access_token': ASAAS_API_KEY } });
+        const idenJson = await idenRes.json();
+        result.identificationField = idenJson.identificationField;
+      }
+
+      return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // 4. STATUS (GET /status/{id})
-    // ─────────────────────────────────────────────────────────────────────
+    // STATUS
     if (path.startsWith('/status/') && method === 'GET') {
-      const parts = path.split('/');
-      const orderId = parts[parts.length - 1];
-
-      const { data, error } = await supabase
-        .from('orders')
-        .select('status, pix_confirmado')
-        .eq('id', orderId)
-        .single();
-
-      if (error) throw error;
+      const orderId = path.split('/').pop();
+      const { data } = await supabase.from('orders').select('status, pix_confirmado').eq('id', orderId).single();
       return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    return new Response(JSON.stringify({ error: 'Rota não encontrada' }), { status: 404, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404, headers: corsHeaders });
 
   } catch (err: any) {
-    console.error("[asaas-v2] ERROR:", err.message);
-    return new Response(JSON.stringify({ error: err.message }), { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    });
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
 
 async function notifyEmail(email: string, message: string) {
-  if (!email || !SMTP_CONFIG.user) return;
-  console.log(`[SMTP-NOTIFICATION] E-mail para ${email}: ${message}`);
+  console.log("Email skip:", email, message);
 }
 
 async function notifyWhatsApp(phone: string, message: string) {
-  if (!phone || !WHATSAPP_CONFIG.token || !WHATSAPP_CONFIG.phoneId) return;
-  const cleanPhone = phone.replace(/\D/g, '');
-  const formattedPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
-  
-  try {
-    const res = await fetch(`https://graph.facebook.com/v18.0/${WHATSAPP_CONFIG.phoneId}/messages`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${WHATSAPP_CONFIG.token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: formattedPhone,
-        type: "template",
-        template: {
-          name: WHATSAPP_CONFIG.template,
-          language: { code: "pt_BR" },
-          components: [{ type: "body", parameters: [{ type: "text", text: message }] }]
-        }
-      })
-    });
-    console.log(`[WHATS_API] Status: ${res.status}`);
-  } catch (e) {
-    console.error('[WHATS_ERROR]', e);
-  }
+  console.log("WhatsApp skip:", phone, message);
 }
