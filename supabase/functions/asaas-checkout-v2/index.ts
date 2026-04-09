@@ -44,7 +44,10 @@ Deno.serve(async (req: Request) => {
   if (method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   const url = new URL(req.url);
-  const path = url.pathname.replace(/\/functions\/v1\/asaas-checkout-v2/, '');
+  // Extrai o path após o nome da função para evitar erros de prefixo (v1/functions vs direct)
+  const path = url.pathname.split('asaas-checkout-v2').pop() || '/';
+  
+  console.log(`[CheckoutV2] Requisição recebida - Método: ${method}, Path: ${path}`);
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {

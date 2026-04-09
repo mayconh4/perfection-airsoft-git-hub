@@ -27,6 +27,25 @@ export function CheckoutPage() {
   const [form, setForm] = useState({
     name: '', cpf: '', email: user?.email || '', phone: ''
   });
+
+  // Carregar dados salvos ao iniciar
+  useEffect(() => {
+    const saved = localStorage.getItem('checkout_customer_data');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setForm(prev => ({ ...prev, ...parsed }));
+      } catch (e) {
+        console.error("Erro ao carregar dados salvos:", e);
+      }
+    }
+  }, []);
+
+  // Salvar dados ao mudar
+  useEffect(() => {
+    localStorage.setItem('checkout_customer_data', JSON.stringify(form));
+  }, [form]);
+
   const [cardForm, setCardForm] = useState({
     number: '', holder: '', expiry: '', ccv: '', installments: 1
   });
@@ -197,6 +216,27 @@ export function CheckoutPage() {
         onClose={handleFinish}
         message="PAGAMENTO CONFIRMADO. Seus itens já foram processados. Como você é um novo operador, finalize seu cadastro para acessar seu painel."
       />
+    );
+  }
+
+  // Trava de Carrinho Vazio
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
+        <div className="max-w-md w-full p-8 bg-red-500/10 border border-red-500/20 text-center space-y-6">
+           <div className="text-6xl animate-bounce">⚠️</div>
+           <h1 className="text-2xl font-black italic tracking-tighter text-red-500 uppercase leading-none">CARRINHO VAZIO</h1>
+           <p className="text-[10px] font-black tracking-[0.2em] text-white/60 uppercase leading-relaxed">
+             MENSAGEM TÁTICA: ADICIONE EQUIPAMENTOS AO CARRINHO ANTES DE PROSSEGUIR COM A OPERAÇÃO DE CHECKOUT.
+           </p>
+           <button 
+            onClick={() => navigate('/')}
+            className="w-full bg-red-500 text-white font-black py-4 text-[10px] tracking-[0.3em] uppercase hover:bg-white hover:text-black transition-all"
+           >
+             ← VOLTAR AO ARSENAL
+           </button>
+        </div>
+      </div>
     );
   }
 
