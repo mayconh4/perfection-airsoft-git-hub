@@ -70,11 +70,21 @@ Deno.serve(async (req: Request) => {
 
     // WEBHOOK
     if (path === '/webhook' && method === 'POST') {
+      const webhookSecret = Deno.env.get('ASAAS_WEBHOOK_SECRET');
+      const incomingToken = req.headers.get('asaas-access-token');
+
+      if (webhookSecret && incomingToken !== webhookSecret) {
+        console.error("[CheckoutV2] TOKEN DE WEBHOOK INVÁLIDO");
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+      }
+
       const payload = await req.json();
       const event = payload.event;
       const payment = payload.payment;
 
       if (['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED'].includes(event)) {
+        console.log(`[CheckoutV2] Processando Webhook: ${event} para Pagamento ${payment.id}`);
+        // ... resta da lógica ...
         const { data: order } = await supabase
           .from('orders')
           .update({ status: 'confirmed', pix_confirmado: true })
