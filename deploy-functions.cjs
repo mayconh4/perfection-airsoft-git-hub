@@ -39,42 +39,23 @@ async function deployFunction(funcName) {
     }
 
     const code = fs.readFileSync(funcPath, 'utf8');
-    const metadata = JSON.stringify({ name: funcName, verify_jwt: false });
-
-    // Cria o multipart/form-data manualmente
-    const boundary = '----FormBoundary' + Math.random().toString(36).slice(2);
-    const crlf = '\r\n';
-    const parts = [
-        `--${boundary}`,
-        'Content-Disposition: form-data; name="metadata"',
-        'Content-Type: application/json',
-        '',
-        metadata,
-        `--${boundary}`,
-        'Content-Disposition: form-data; name="file"; filename="index.ts"',
-        'Content-Type: application/typescript',
-        '',
-        code,
-        `--${boundary}--`,
-        ''
-    ].join(crlf);
-
-    const bodyBuffer = Buffer.from(parts, 'utf8');
-
+    
     // Tenta PUT primeiro (atualizar), depois POST (criar)
     for (const [method, url] of [
         ['PUT', `https://api.supabase.com/v1/projects/${PROJECT_REF}/functions/${funcName}`],
         ['POST', `https://api.supabase.com/v1/projects/${PROJECT_REF}/functions`]
     ]) {
         try {
+            const formData = new FormData();
+            formData.append('metadata', JSON.stringify({ name: funcName, verify_jwt: false }));
+            formData.append('file', new Blob([code], { type: 'application/typescript' }), 'index.ts');
+
             const resp = await fetch(url, {
                 method,
                 headers: {
-                    'Authorization': `Bearer ${TOKEN}`,
-                    'Content-Type': `multipart/form-data; boundary=${boundary}`,
-                    'Content-Length': bodyBuffer.length.toString()
+                    'Authorization': `Bearer ${TOKEN}`
                 },
-                body: bodyBuffer
+                body: formData
             });
 
             const responseText = await resp.text();
@@ -83,6 +64,8 @@ async function deployFunction(funcName) {
                 console.log(`  OK [${method}]: ${funcName} (status ${resp.status})`);
                 return;
             } else {
+                // Se for 404 no PUT, ignoramos e tentamos o POST
+                if (method === 'PUT' && resp.status === 404) continue;
                 console.log(`  FALHA [${method}] ${resp.status}: ${responseText.slice(0, 200)}`);
             }
         } catch (e) {

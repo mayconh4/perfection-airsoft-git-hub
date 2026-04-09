@@ -21,17 +21,17 @@ interface EventData {
 export function gerarLinkWhatsApp(evento: EventData): string {
   const texto = `🔥 MISSÃO CONFIRMADA 🔥
 
-📌 Nome da missão: ${evento.nome}
-🏢 Organização: ${evento.organizacao}
-📅 Data: ${evento.data}
-🕗 Briefing: ${evento.horario}
-📍 Local: ${evento.local}
+✅ Nome da missão: ${evento.nome}
+✅ Organização: ${evento.organizacao}
+✅ Data: ${evento.data}
+✅ Briefing: ${evento.horario}
+✅ Local: ${evento.local}
 
-💰 Valor: ${evento.valor}
+✅ Valor: ${evento.valor}
 
-⚠️ Vagas limitadas!
+✅ Vagas limitadas!
 
-👉 Garanta sua vaga agora:
+✅ Garanta sua vaga agora:
 ${evento.link}`;
 
   return `https://wa.me/?text=${encodeURIComponent(texto)}`;

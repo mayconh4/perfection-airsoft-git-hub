@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -6,6 +6,8 @@ import { useCreateOrder } from '../hooks/useOrders';
 import { useShipping } from '../hooks/useShipping';
 import { formatPrice } from '../types/database';
 import { DynamicCheckoutAccordion } from '../components/DynamicCheckoutAccordion';
+import { TacticalSuccessModal } from '../components/TacticalSuccessModal';
+import { supabase } from '../lib/supabase';
 
 const STEPS = ['Identificação', 'Endereço', 'Pagamento', 'Finalização'];
 
@@ -30,8 +32,8 @@ const InputField = ({ name, label, type = 'text', placeholder = '', className = 
 );
 
 export function CheckoutPage() {
-  const { items, total, selectedShipping, clearCart, setSelectedShipping } = useCart();
-  const { lookupCep, calculateShipping, loading: shippingLoading } = useShipping();
+  const { items, total, selectedShipping, clearCart } = useCart();
+  const { lookupCep, calculateShipping } = useShipping();
   const { user } = useAuth();
   const { createOrder } = useCreateOrder();
   const navigate = useNavigate();
@@ -42,6 +44,10 @@ export function CheckoutPage() {
   const [paymentData, setPaymentData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  
+  // Estados para Modal de Sucesso Tático
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [form, setForm] = useState({
     name: '', cpf: '', email: user?.email || '', phone: '',
     street: '', number: '', complement: '', district: '', city: '', state: '', cep: '',
@@ -75,21 +81,26 @@ export function CheckoutPage() {
       const cleanCep = value.replace(/\D/g, '');
       if (cleanCep.length === 8) {
         setProcessing(true);
-        const address = await lookupCep(cleanCep);
-        if (address && !address.error) {
-          setForm(prev => ({
-            ...prev,
-            street: address.street || prev.street,
-            district: address.district || prev.district,
-            city: address.city || prev.city,
-            state: address.state || prev.state
-          }));
-          // Também já dispara o cálculo de frete
-          await calculateShipping(cleanCep);
-        } else if (address?.error) {
-          setError(address.error);
+        try {
+          const address = await lookupCep(cleanCep);
+          if (address && !address.error) {
+            setForm(prev => ({
+              ...prev,
+              street: address.street || prev.street,
+              district: address.district || prev.district,
+              city: address.city || prev.city,
+              state: address.state || prev.state
+            }));
+            await calculateShipping(cleanCep);
+          } else if (address?.error) {
+            setError(address.error);
+          }
+        } catch (err) {
+          console.error('[CEP] Erro ao buscar dados:', err);
+          setError('Erro ao validar CEP. Verifique sua conexão.');
+        } finally {
+          setProcessing(false);
         }
-        setProcessing(false);
       }
     }
   };
@@ -112,8 +123,12 @@ export function CheckoutPage() {
   };
 
   const handleSubmit = async (method: string, cardMeta?: any) => {
+    console.log(`[Checkout] handleSubmit iniciado para o método: ${method}`);
     setError(null);
-    if (items.length === 0) return;
+    if (items.length === 0) {
+      console.warn('[Checkout] Carrinho vazio, abortando handleSubmit');
+      return;
+    }
 
     const cpfDigits = form.cpf.replace(/\D/g, '');
     if (cpfDigits.length !== 11) {
@@ -146,7 +161,7 @@ export function CheckoutPage() {
             shipping_method: isDigitalOnly ? 'Entrega Digital' : selectedShipping?.name,
             shipping_price: isDigitalOnly ? 0 : selectedShipping?.price
           },
-          currentUserId || null
+          currentUserId || undefined
         );
 
         if (!order) throw new Error('Falha ao registrar pedido.');
@@ -205,30 +220,123 @@ export function CheckoutPage() {
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Erro no processamento do pagamento.');
+        const errText = await response.text();
+        console.error('[Checkout] Erro na resposta do pagamento:', errText);
+        try {
+          const errJson = JSON.parse(errText);
+          throw new Error(errJson.error || 'Erro no processamento do pagamento.');
+        } catch {
+          throw new Error(`Erro ${response.status}: Falha na comunicação com o servidor de pagamentos.`);
+        }
       }
 
       const payment = await response.json();
+      console.log('[Checkout] Resposta do pagamento recebida:', payment);
       setPaymentData(payment);
       setPaymentMethod(method);
 
+      // No cartao confirmado, vai direto. No PIX/Boleto, permanece no Accordion
       if (method === 'credit_card' && (payment.status === 'CONFIRMED' || payment.status === 'RECEIVED')) {
         await clearCart();
         navigate(`/sucesso/${payment.order_id}`);
-      } else {
-        setStep(3); // Mostra Boleto ou PIX
       }
 
     } catch (err: any) {
       if (err.message.includes('Erro 307')) {
         setError('Erro 307: Não foi possível processar o pagamento no momento.');
+        alert('Erro 307: Não foi possível processar o pagamento no momento.');
       } else {
         setError(err.message);
+        alert('Falha no Pagamento: ' + err.message);
       }
     } finally {
       setProcessing(false);
     }
+  };
+
+  // Efeito de Polling & Realtime para detecção de pagamento aprovado
+  useEffect(() => {
+    let interval: any;
+    let subscription: any;
+
+    const orderId = paymentData?.order_id;
+    const asaasId = paymentData?.asaas_id;
+    const isPaymentActive = !!(paymentData && (orderId || asaasId));
+
+    if (isPaymentActive && !showSuccessModal) {
+      console.log('[Checkout] Iniciando monitoramento tático. Order:', orderId, 'Asaas:', asaasId);
+
+      // 1. REALTIME SUBSCRIPTION (Preferencial)
+      // Escuta mudanças na tabela 'orders' para o ID específico do pedido
+      if (orderId) {
+        subscription = supabase
+          .channel(`order-updates-${orderId}`)
+          .on('postgres_changes', { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'orders', 
+            filter: `id=eq.${orderId}` 
+          }, (payload) => {
+            console.log('[Checkout] Mudança detectada via Realtime:', payload.new.status);
+            if (payload.new.status === 'pago' || payload.new.status === 'confirmed') {
+              setSuccessMessage('Pix confirmado');
+              setShowSuccessModal(true);
+              clearCart();
+            }
+          })
+          .subscribe();
+      }
+      
+      // 2. POLLING FALLBACK (A cada 4 segundos)
+      interval = setInterval(async () => {
+        try {
+          // Tenta verificar via Edge Function (mais robusto para integrações externas)
+          if (asaasId) {
+            const { data, error } = await supabase.functions.invoke('asaas-payment', {
+              body: { action: 'CHECK_STATUS', asaasId: asaasId }
+            });
+
+            if (!error && (data?.status === 'pago' || data?.success)) {
+              console.log('[Checkout] PAGAMENTO CONFIRMADO via Polling!');
+              setSuccessMessage('Pix confirmado');
+              setShowSuccessModal(true);
+              clearCart();
+              clearInterval(interval);
+              return;
+            }
+          }
+
+          // Fallback: Verifica direto na tabela se o status mudou (caso o webhook já tenha batido)
+          if (orderId) {
+             const { data: order } = await supabase
+              .from('orders')
+              .select('status')
+              .eq('id', orderId)
+              .single();
+            
+            if (order?.status === 'pago' || order?.status === 'confirmed') {
+              console.log('[Checkout] PAGAMENTO CONFIRMADO via DB Direct!');
+              setSuccessMessage('Pix confirmado');
+              setShowSuccessModal(true);
+              clearCart();
+              clearInterval(interval);
+            }
+          }
+        } catch (err) {
+          console.warn('[Checkout] Erro no ciclo de polling:', err);
+        }
+      }, 4000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+      if (subscription) supabase.removeChannel(subscription);
+    };
+  }, [step, paymentData, showSuccessModal, supabase]);
+
+  const handleModalClose = () => {
+    setShowSuccessModal(false);
+    navigate('/'); // Redireciona para home ou painel após confirmar
   };
 
   return (
@@ -308,68 +416,9 @@ export function CheckoutPage() {
                 loading={processing}
                 pixOnly={false}
                 onCommitPayment={handleSubmit}
+                paymentData={paymentData}
+                activeMethod={paymentData ? paymentMethod : undefined}
               />
-            </div>
-          )}
-
-          {step === 3 && paymentData && (
-            <div className="bg-surface/30 border border-primary/20 p-8 text-center space-y-6 max-w-2xl mx-auto rounded-lg backdrop-blur-md">
-              {paymentMethod === 'pix' ? (
-                <>
-                  <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">PIX Gerado!</h2>
-                  <div className="flex justify-center p-4 bg-white rounded-xl w-fit mx-auto shadow-xl">
-                    <img src={`data:image/png;base64,${paymentData.qr_code_base64}`} alt="QR PIX" className="w-48 h-48" />
-                  </div>
-                  <div className="space-y-3 max-w-sm mx-auto">
-                    <p className="text-[9px] font-black tracking-widest text-slate-500 uppercase">Pix Copia e Cola</p>
-                    <div className="flex gap-2">
-                      <input readOnly value={paymentData.qr_code} className="flex-1 bg-black/40 border border-white/10 px-3 py-2 text-[10px] font-mono text-white/50 truncate rounded" />
-                      <button onClick={() => { navigator.clipboard.writeText(paymentData.qr_code); alert('Copiado!'); }} className="px-4 py-2 bg-primary text-black font-black uppercase text-[10px] rounded">Copiar</button>
-                    </div>
-                  </div>
-                </>
-              ) : paymentMethod === 'boleto' ? (
-                <>
-                  <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Boleto Gerado!</h2>
-                  <div className="bg-black/40 p-6 border border-white/10 rounded-xl space-y-4">
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Linha Digitável</p>
-                    <div className="flex flex-col gap-3">
-                      <input 
-                        readOnly 
-                        value={paymentData.identificationField || 'Código não disponível'} 
-                        className="w-full bg-black/60 border border-white/10 px-4 py-3 text-xs font-mono text-primary text-center rounded focus:ring-1 focus:ring-primary/30" 
-                      />
-                      <div className="flex gap-3">
-                        <button 
-                          onClick={() => { 
-                            if (!paymentData.identificationField) {
-                              alert('Código do boleto não disponível no momento.');
-                              return;
-                            }
-                            navigator.clipboard.writeText(paymentData.identificationField); 
-                            alert('Linha digitável copiada!'); 
-                          }} 
-                          className="flex-1 bg-white/5 hover:bg-white/10 text-white font-black py-4 uppercase text-[10px] tracking-widest transition-colors rounded">
-                          Copiar Linha Digitável
-                        </button>
-                        <a href={paymentData.bankSlipUrl} target="_blank" rel="noreferrer"
-                          className="flex-1 bg-primary text-black font-black py-4 uppercase text-[10px] tracking-widest transition-colors rounded flex items-center justify-center gap-2">
-                          <span className="material-symbols-outlined text-sm">download</span> Imprimir PDF
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="py-10">
-                  <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Processando...</h2>
-                  <p className="text-slate-500 uppercase tracking-widest text-xs mt-2">Verificando status da transação</p>
-                </div>
-              )}
-              
-              <div className="pt-6 border-t border-white/5 text-[10px] text-slate-500 font-bold uppercase tracking-widest italic">
-                Aguardando confirmação do sistema Asaas
-              </div>
             </div>
           )}
         </div>
@@ -392,6 +441,12 @@ export function CheckoutPage() {
           </div>
         </div>
       </div>
+      {/* Modal de Sucesso Tático */}
+      <TacticalSuccessModal 
+        isOpen={showSuccessModal}
+        message={successMessage}
+        onClose={handleModalClose}
+      />
     </div>
   );
 }

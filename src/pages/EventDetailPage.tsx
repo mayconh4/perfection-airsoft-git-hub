@@ -388,6 +388,7 @@ export default function EventDetailPage() {
                         nome: event.title,
                         organizacao: organizerName,
                         data: new Date(event.event_date).toLocaleDateString('pt-BR'),
+                         // @ts-ignore - Horário formatado para 00:00
                         horario: new Date(event.event_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
                         local: event.location,
                         valor: `R$ ${event.ticket_price.toFixed(2)}`,
