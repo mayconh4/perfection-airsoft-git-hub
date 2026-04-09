@@ -8,7 +8,7 @@ param(
 )
 
 $PROJECT_REF = "seewdqetyolfmqsiyban"
-$FUNCTIONS = @("mercadopago-payment", "mercadopago-webhook")
+$FUNCTIONS = @("mercadopago-payment", "mercadopago-webhook", "asaas-checkout-v2")
 
 # Carrega o token do .env.deploy ou variável de ambiente
 $TOKEN = $env:SUPABASE_ACCESS_TOKEN

@@ -22,89 +22,84 @@ const WHATSAPP_CONFIG = {
 };
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const method = req.method;
+  if (method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   const url = new URL(req.url);
+  // Remove o prefixo da função para roteamento limpo
   const path = url.pathname.replace(/\/functions\/v1\/asaas-checkout-v2/, '');
+  
+  console.log(`[asaas-v2] Request: ${method} ${path}`);
+
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
     // ─────────────────────────────────────────────────────────────────────
     // 1. WEBHOOK (POST /webhook)
     // ─────────────────────────────────────────────────────────────────────
-    if (path === '/webhook' && req.method === 'POST') {
+    if (path === '/webhook' && method === 'POST') {
       const payload = await req.json();
-      console.log("[ASAAS-WEBHOOK-V2] Payload recebido:", JSON.stringify(payload));
-
-      const asaasToken = req.headers.get('asaas-access-token');
-      // No sandbox o token pode variar, mas validamos se fornecido
-      if (asaasToken && asaasToken !== ASAAS_WEBHOOK_TOKEN) {
-        console.warn("[ASAAS-WEBHOOK-V2] Alerta: Token de webhook divergente.");
-      }
+      console.log("[asaas-v2] Webhook received:", payload.event);
 
       const event = payload.event;
       const payment = payload.payment;
 
       if (event === 'PAYMENT_CONFIRMED' || event === 'PAYMENT_RECEIVED') {
         const asaasPaymentId = payment.id;
-        console.log(`[ASAAS-WEBHOOK-V2] Sucesso detectado para pagamento Asaas: ${asaasPaymentId}`);
-
-        let targetOrder = null;
-
-        // 1. Atualizar Pedido
-        const { data: order, error: findError } = await supabase
+        
+        const { data: order, error: updateErr } = await supabase
           .from('orders')
-          .update({ 
-            status: 'confirmed',
-            pix_confirmado: true 
-          })
+          .update({ status: 'confirmed', pix_confirmado: true })
           .eq('asaas_payment_id', asaasPaymentId)
           .select()
           .single();
 
-        if (findError) {
-          console.error(`[ASAAS-WEBHOOK-V2] Erro ao atualizar pedido via asaas_payment_id:`, findError);
-          // Fallback por externalReference se asaas_payment_id falhar
-          if (payment.externalReference) {
-              const { data: fbOrder } = await supabase.from('orders').update({ status: 'confirmed', pix_confirmado: true }).eq('id', payment.externalReference).select().single();
-              targetOrder = fbOrder;
-          }
-        } else {
-          console.log(`[ASAAS-WEBHOOK-V2] Pedido ${order.id} atualizado com sucesso.`);
-          targetOrder = order;
-        }
-
-        // 2. Notificações
-        if (targetOrder) {
-          const tacticalMessage = `CONFIRMAÇÃO TÁTICA: Pagamento aprovado. Protocolo ${targetOrder.id} ATIVADO. Acesso liberado no Painel de Controle.`;
-          const customerEmail = targetOrder.customer_email || payment.email;
-          const customerPhone = payment.mobilePhone;
-
+        if (updateErr) {
+          console.error(`[asaas-v2] Webhook update error:`, updateErr);
+        } else if (order) {
+          console.log(`[asaas-v2] Order ${order.id} confirmed via webhook.`);
+          const tacticalMessage = `CONFIRMAÇÃO TÁTICA: Pagamento aprovado. Pedido ${order.id.slice(0,8)} ATIVADO.`;
           await Promise.all([
-            notifyEmail(customerEmail, tacticalMessage),
-            notifyWhatsApp(customerPhone, tacticalMessage)
+            notifyEmail(order.customer_email, tacticalMessage),
+            notifyWhatsApp(payment.mobilePhone, tacticalMessage)
           ]);
         }
       }
-
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // ─────────────────────────────────────────────────────────────────────
     // 2. CREATE ORDER (POST /create-order)
     // ─────────────────────────────────────────────────────────────────────
-    if (path === '/create-order' && req.method === 'POST') {
+    if (path === '/create-order' && method === 'POST') {
       const { customerData, total, items } = await req.json();
+      console.log(`[asaas-v2] Creating order for: ${customerData.email}`);
+
+      // Identificar usuário se houver token
+      let userId = null;
+      const authHeader = req.headers.get("Authorization");
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+          const token = authHeader.replace("Bearer ", "");
+          // Tenta pegar o user, se falhar continua como guest
+          const { data: { user } } = await supabase.auth.getUser(token);
+          if (user) userId = user.id;
+      }
       
       const { data: order, error } = await supabase.from('orders').insert({
+        user_id: userId,
         status: 'pending',
         pix_confirmado: false,
         total_amount: total,
         customer_email: customerData.email,
-        customer_data: customerData // Assumindo que a coluna existe
+        customer_name: customerData.name,
+        customer_cpf: customerData.cpf,
+        customer_phone: customerData.phone
       }).select().single();
 
-      if (error) throw error;
+      if (error) {
+          console.error("[asaas-v2] Database error creating order:", error);
+          throw error;
+      }
 
       // Inserir itens
       if (items && items.length > 0) {
@@ -113,8 +108,7 @@ Deno.serve(async (req: Request) => {
             product_id: item.id,
             product_name: item.name,
             quantity: item.quantity,
-            unit_price: item.price,
-            metadata: item.metadata
+            unit_price: item.price
         }));
         await supabase.from('order_items').insert(orderItems);
       }
@@ -125,10 +119,13 @@ Deno.serve(async (req: Request) => {
     // ─────────────────────────────────────────────────────────────────────
     // 3. GENERATE PIX (POST /generate-pix)
     // ─────────────────────────────────────────────────────────────────────
-    if (path === '/generate-pix' && req.method === 'POST') {
+    if (path === '/generate-pix' && method === 'POST') {
       const { orderId, customerData, total } = await req.json();
+      console.log(`[asaas-v2] Generating PIX for order: ${orderId}`);
 
-      // a. Criar Cliente (ou buscar)
+      if (!ASAAS_API_KEY) throw new Error("ASAAS_API_KEY is not configured in Edge Function secrets.");
+
+      // a. Criar/Buscar Cliente
       const customerRes = await fetch(`${ASAAS_API_URL}/customers?cpfCnpj=${customerData.cpf.replace(/\D/g, '')}`, {
         headers: { 'access_token': ASAAS_API_KEY }
       });
@@ -159,14 +156,14 @@ Deno.serve(async (req: Request) => {
           billingType: 'PIX',
           value: total,
           dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-          description: `Pedido ${orderId}`,
+          description: `Pedido ${orderId.slice(0,8)}`,
           externalReference: orderId
         })
       });
       const payment = await paymentRes.json();
-      if (!paymentRes.ok) throw new Error(payment.errors?.[0]?.description || 'Erro Asaas');
+      if (!paymentRes.ok) throw new Error(payment.errors?.[0]?.description || 'Erro Asaas ao criar cobrança');
 
-      // c. Salvar asaas_payment_id no banco
+      // c. Salvar asaas_payment_id
       await supabase.from('orders').update({ asaas_payment_id: payment.id }).eq('id', orderId);
 
       // d. Gerar QR Code
@@ -186,7 +183,7 @@ Deno.serve(async (req: Request) => {
     // ─────────────────────────────────────────────────────────────────────
     // 4. STATUS (GET /status/{id})
     // ─────────────────────────────────────────────────────────────────────
-    if (path.startsWith('/status/') && req.method === 'GET') {
+    if (path.startsWith('/status/') && method === 'GET') {
       const parts = path.split('/');
       const orderId = parts[parts.length - 1];
 
@@ -203,8 +200,11 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: 'Rota não encontrada' }), { status: 404, headers: corsHeaders });
 
   } catch (err: any) {
-    console.error("[ASAAS-CHECKOUT-V2 ERROR]", err.message);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    console.error("[asaas-v2] ERROR:", err.message);
+    return new Response(JSON.stringify({ error: err.message }), { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    });
   }
 });
 
