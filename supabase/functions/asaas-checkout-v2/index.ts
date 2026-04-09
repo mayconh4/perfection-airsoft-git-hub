@@ -219,11 +219,39 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // STATUS
+    // STATUS e VERIFICAÇÃO DIRETA
     if (path.startsWith('/status/') && method === 'GET') {
       const orderId = path.split('/').pop();
       const { data } = await supabase.from('orders').select('status, pix_confirmado').eq('id', orderId).single();
       return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    if (path.startsWith('/verify/') && method === 'GET') {
+      const orderId = path.split('/').pop();
+      console.log(`[CheckoutV2] Verificação manual solicitada para pedido: ${orderId}`);
+      
+      // 1. Pegar o ID de pagamento Asaas
+      const { data: order } = await supabase.from('orders').select('asaas_payment_id, status').eq('id', orderId).single();
+      
+      if (!order?.asaas_payment_id) {
+        return new Response(JSON.stringify({ error: 'ID de pagamento não encontrado' }), { status: 404, headers: corsHeaders });
+      }
+
+      // 2. Consultar o Asaas
+      const res = await fetch(`${ASAAS_API_URL}/payments/${order.asaas_payment_id}`, {
+        headers: { 'access_token': ASAAS_API_KEY }
+      });
+      const asaasData = await res.json();
+
+      console.log(`[CheckoutV2] Status no Asaas para ${order.asaas_payment_id}: ${asaasData.status}`);
+
+      // 3. Se confirmado, atualizar Banco
+      if (['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'].includes(asaasData.status)) {
+        await supabase.from('orders').update({ status: 'confirmed', pix_confirmado: true }).eq('id', orderId);
+        return new Response(JSON.stringify({ confirmed: true, status: asaasData.status }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      return new Response(JSON.stringify({ confirmed: false, status: asaasData.status }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404, headers: corsHeaders });

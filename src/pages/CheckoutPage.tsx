@@ -22,6 +22,7 @@ export function CheckoutPage() {
   const [pixData, setPixData] = useState<any>(null);
   const [boletoData, setBoletoData] = useState<any>(null);
   const [pixConfirmed, setPixConfirmed] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Formulários com persistência robusta
   const [form, setForm] = useState({
@@ -83,6 +84,30 @@ export function CheckoutPage() {
     }
     return () => clearInterval(interval);
   }, [orderId, pixConfirmed]);
+
+  const handleManualVerify = async () => {
+    if (!orderId || isVerifying) return;
+    setIsVerifying(true);
+    try {
+      const resp = await fetch(`${API_V2}/verify/${orderId}`, {
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        }
+      });
+      const data = await resp.json();
+      if (data.confirmed) {
+        setPixConfirmed(true);
+      } else {
+        alert("PAGAMENTO AINDA NÃO DETECTADO: O Asaas pode levar até 60 segundos para processar. Se você já pagou, aguarde um momento e tente novamente.");
+      }
+    } catch (err) {
+      console.error("Erro ao verificar:", err);
+      alert("ERRO DE CONEXÃO: Tente verificar novamente em instantes.");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   const handleNextToPayment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -368,6 +393,20 @@ export function CheckoutPage() {
                                     <input readOnly value={pixData.qrCode} className="flex-1 bg-transparent text-[10px] font-mono text-white/50 outline-none truncate" />
                                     <button onClick={() => { navigator.clipboard.writeText(pixData.qrCode); alert("Copiado!"); }} className="bg-primary text-black text-[10px] font-black px-4 py-2 hover:bg-white transition-colors">COPIAR</button>
                                   </div>
+                                  <button 
+                                    onClick={handleManualVerify}
+                                    disabled={isVerifying}
+                                    className="w-full mt-4 py-4 bg-primary/10 border border-primary text-primary font-black text-[10px] tracking-[0.2em] uppercase hover:bg-primary hover:text-black transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                                  >
+                                    {isVerifying ? (
+                                      <>
+                                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                        ANALISANDO RECEBIMENTO...
+                                      </>
+                                    ) : (
+                                      'JÁ REALIZEI O PAGAMENTO'
+                                    )}
+                                  </button>
                                   <div className="mt-8 flex items-center gap-3 animate-pulse">
                                      <div className="w-2 h-2 rounded-full bg-[#00E5FF]" />
                                      <span className="text-[10px] font-black tracking-widest text-[#00E5FF]/80 uppercase">Aguardando confirmação tática...</span>
