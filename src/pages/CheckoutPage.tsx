@@ -22,6 +22,8 @@ export function CheckoutPage() {
   const [pixData, setPixData] = useState<any>(null);
   const [boletoData, setBoletoData] = useState<any>(null);
   const [pixConfirmed, setPixConfirmed] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const TIMEOUT_LIMIT = 5 * 60; // 5 minutos em segundos
 
   // 1. Estado do Formulário com carragamento instantâneo (Persistent Store)
   const [form, setForm] = useState(() => {
@@ -57,13 +59,11 @@ export function CheckoutPage() {
     number: '', holder: '', expiry: '', ccv: '', installments: 1
   });
 
-  // Monitoramento de Pagamento (Realtime + Polling Acelerado)
+  // 3. Monitoramento Automático (Radar Tático) com Timeout de 5 Minutos
   useEffect(() => {
     let interval: any;
     
-    if (orderId && !pixConfirmed) {
-      // 1. Polling de Alta Frequência (Plano de Backup)
-      // Reduzido para 2 segundos para maior agilidade
+    if (orderId && !pixConfirmed && elapsedTime < TIMEOUT_LIMIT) {
       interval = setInterval(async () => {
         try {
           const resp = await fetch(`${API_V2}/status/${orderId}`, {
@@ -72,27 +72,24 @@ export function CheckoutPage() {
               'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
             }
           });
+          
           if (resp.ok) {
             const data = await resp.json();
-            // Verifica múltiplos campos de confirmação para garantir
-            if (data.pix_confirmado || data.status === 'confirmed' || data.status === 'pago') {
-              console.log("[Checkout] Pagamento detectado via Polling!");
+            if (data.pix_confirmado || data.status === 'confirmed') {
               setPixConfirmed(true);
               clearInterval(interval);
+            } else {
+              setElapsedTime(prev => prev + 3);
             }
           }
         } catch (err) {
           console.error("Erro polling:", err);
         }
-      }, 2000); 
-
-      // 2. Realtime Listener (Opcional se configurado no banco)
-      // Se o Realtime estiver ativo na tabela 'orders', isso será instantâneo
-      // (Mantido como tentativa silenciosa)
+      }, 3000); // Polling de 3 segundos conforme diretriz
     }
     
     return () => clearInterval(interval);
-  }, [orderId, pixConfirmed]);
+  }, [orderId, pixConfirmed, elapsedTime]);
 
 
   const handleNextToPayment = (e: React.FormEvent) => {
@@ -232,7 +229,7 @@ export function CheckoutPage() {
       <TacticalSuccessModal 
         isOpen={true}
         onClose={handleFinish}
-        message="PAGAMENTO CONFIRMADO. Seus itens já foram processados. Como você é um novo operador, finalize seu cadastro para acessar seu painel."
+        message="PIX REALIZADO COM SUCESSO. PAGAMENTO APROVADO. Seus itens já foram processados. Como você é um novo operador, finalize seu cadastro para acessar seu painel."
       />
     );
   }
@@ -379,9 +376,17 @@ export function CheckoutPage() {
                                     <input readOnly value={pixData.qrCode} className="flex-1 bg-transparent text-[10px] font-mono text-white/50 outline-none truncate" />
                                     <button onClick={() => { navigator.clipboard.writeText(pixData.qrCode); alert("Copiado!"); }} className="bg-primary text-black text-[10px] font-black px-4 py-2 hover:bg-white transition-colors">COPIAR</button>
                                   </div>
-                                  <div className="mt-8 flex items-center justify-center gap-3 animate-pulse">
-                                     <div className="w-2 h-2 rounded-full bg-[#00E5FF]" />
-                                     <span className="text-[10px] font-black tracking-widest text-[#00E5FF]/80 uppercase">Aguardando confirmação tática...</span>
+                                  <div className="mt-8 flex flex-col items-center justify-center gap-3">
+                                     {elapsedTime >= TIMEOUT_LIMIT && !pixConfirmed ? (
+                                       <span className="text-[10px] font-black tracking-widest text-[#FFB800] uppercase animate-pulse text-center">
+                                          Pagamento em análise, aguarde ou atualize a página
+                                       </span>
+                                     ) : (
+                                       <div className="flex items-center gap-3 animate-pulse">
+                                          <div className="w-2 h-2 rounded-full bg-[#00E5FF]" />
+                                          <span className="text-[10px] font-black tracking-widest text-[#00E5FF]/80 uppercase">Aguardando confirmação tática...</span>
+                                       </div>
+                                     )}
                                   </div>
                                </div>
                              ) : (

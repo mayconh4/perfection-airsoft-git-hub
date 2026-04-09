@@ -82,28 +82,42 @@ Deno.serve(async (req: Request) => {
       const event = payload.event;
       const payment = payload.payment;
 
-      if (['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED'].includes(event)) {
-        console.log(`[CheckoutV2] Processando Webhook: ${event} para Pagamento ${payment.id}`);
-        // ... resta da lógica ...
-        const { data: order } = await supabase
+      console.log(`[WEBHOOK] Recebido evento: ${event} para Pagamento ID: ${payment.id}`);
+
+      if (event === 'PAYMENT_CONFIRMED') {
+        // 1. Verificar se já não foi processado (Proteção)
+        const { data: existingOrder } = await supabase
           .from('orders')
-          .update({ status: 'confirmed', pix_confirmado: true })
+          .select('id, pix_confirmado')
+          .eq('asaas_payment_id', payment.id)
+          .single();
+
+        if (existingOrder?.pix_confirmado) {
+          console.log(`[WEBHOOK] Pedido ${existingOrder.id} já estava confirmado. Ignorando.`);
+          return new Response(JSON.stringify({ success: true, message: 'Already processed' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        // 2. Atualizar exclusivamente por asaas_payment_id
+        const { data: order, error: updateError } = await supabase
+          .from('orders')
+          .update({ 
+            status: 'confirmed', 
+            pix_confirmado: true 
+          })
           .eq('asaas_payment_id', payment.id)
           .select()
           .single();
 
+        if (updateError) {
+          console.error("[WEBHOOK] Erro ao atualizar pedido:", updateError);
+          return new Response(JSON.stringify({ error: 'Update failed' }), { status: 500, headers: corsHeaders });
+        }
+
         if (order) {
-          console.log("PAGAMENTO CONFIRMADO PARA PEDIDO:", order.id);
-          // Chamadas de notificação comentadas temporariamente
-          /*
-          const tacticalMessage = `CONFIRMAÇÃO TÁTICA: Pagamento aprovado. Pedido ${order.id.slice(0,8)} ATIVADO.`;
-          await Promise.all([
-            notifyEmail(order.customer_email, tacticalMessage),
-            notifyWhatsApp(payment.mobilePhone, tacticalMessage)
-          ]);
-          */
+          console.log(`[WEBHOOK] SUCESSO: Pedido ${order.id} confirmado automaticamente.`);
         }
       }
+
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
