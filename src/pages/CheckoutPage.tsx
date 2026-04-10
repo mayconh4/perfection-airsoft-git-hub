@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { TacticalSuccessModal } from '../components/TacticalSuccessModal';
+import { supabase } from '../lib/supabase'; // Assumindo que este cliente existe
+import { motion, AnimatePresence } from 'framer-motion';
+
+/** 
+ * CHECKOUT PHOENIX V3 - THE TACTICAL HUD
+ * Design Premium, Realtime Listeners, Zero Polling.
+ */
 
 const API_V2 = "https://seewdqetyolfmqsiyban.supabase.co/functions/v1/asaas-checkout-v2";
 
@@ -11,195 +18,124 @@ export function CheckoutPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Fluxo de Etapas
+  // Estados de Fluxo
   const [step, setStep] = useState<'dados' | 'pagamento'>('dados');
+  const [method, setMethod] = useState<'pix' | 'card' | 'boleto' | null>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Estados do Pedido
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [selectedMethod, setSelectedMethod] = useState<'pix' | 'card' | 'boleto' | null>(null);
-  const [pixData, setPixData] = useState<any>(null);
-  const [boletoData, setBoletoData] = useState<any>(null);
-  const [pixConfirmed, setPixConfirmed] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const TIMEOUT_LIMIT = 5 * 60; // 5 minutos em segundos
+  // Estados de Negócio
+  const [order, setOrder] = useState<any>(null);
+  const [paymentData, setPaymentData] = useState<any>(null);
+  const [isConfirmed, setIsConfirmed] = useState(false);
 
-  // 1. Estado do Formulário com carragamento instantâneo (Persistent Store)
+  // Formulários
   const [form, setForm] = useState(() => {
-    const saved = localStorage.getItem('checkout_customer_data');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return {
-          name: '', 
-          cpf: '13561055648', 
-          email: user?.email || '', 
-          phone: '',
-          ...parsed // Dados salvos têm prioridade
-        };
-      } catch (e) {
-        console.error("Erro ao recuperar cache:", e);
-      }
-    }
-    return {
-      name: '', 
-      cpf: '13561055648', 
-      email: user?.email || '', 
-      phone: ''
-    };
+    const saved = localStorage.getItem('tactical_p_data');
+    return saved ? JSON.parse(saved) : { name: '', cpf: '', email: user?.email || '', phone: '' };
   });
-
-  // 2. Salvar dados instantaneamente ao mudar
-  useEffect(() => {
-    localStorage.setItem('checkout_customer_data', JSON.stringify(form));
-  }, [form]);
 
   const [cardForm, setCardForm] = useState({
     number: '', holder: '', expiry: '', ccv: '', installments: 1
   });
 
-  // 3. Monitoramento Automático (Radar Tático) com Timeout de 5 Minutos
+  // 1. Persistência de Dados
   useEffect(() => {
-    let interval: any;
+    localStorage.setItem('tactical_p_data', JSON.stringify(form));
+  }, [form]);
+
+  // 2. REALTIME LISTENER (A Mágica da v3)
+  useEffect(() => {
+    if (!order?.id || isConfirmed) return;
+
+    console.log(`[HUD] Iniciando rastreamento de radar para pedido: ${order.id}`);
     
-    if (orderId && !pixConfirmed && elapsedTime < TIMEOUT_LIMIT) {
-      interval = setInterval(async () => {
-        try {
-          const resp = await fetch(`${API_V2}/status/${orderId}`, {
-            headers: {
-              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-            }
-          });
-          
-          if (resp.ok) {
-            const data = await resp.json();
-            if (data.pix_confirmado || data.status === 'confirmed') {
-              setPixConfirmed(true);
-              clearInterval(interval);
-            } else {
-              setElapsedTime(prev => prev + 3);
-            }
+    const channel = supabase
+      .channel(`order-status-${order.id}`)
+      .on(
+        'postgres_changes',
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'orders', 
+          filter: `id=eq.${order.id}` 
+        },
+        (payload) => {
+          console.log('[HUD] Mudança de status detectada via satélite:', payload.new.status);
+          if (payload.new.status === 'confirmed' || payload.new.pix_confirmado) {
+            setIsConfirmed(true);
           }
-        } catch (err) {
-          console.error("Erro polling:", err);
         }
-      }, 3000); // Polling de 3 segundos conforme diretriz
-    }
-    
-    return () => clearInterval(interval);
-  }, [orderId, pixConfirmed, elapsedTime]);
+      )
+      .subscribe();
 
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [order?.id, isConfirmed]);
 
-  const handleNextToPayment = (e: React.FormEvent) => {
+  // 3. Handlers
+  const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.cpf || !form.name || !form.email) {
-      setError("Preencha todos os campos obrigatórios.");
-      return;
-    }
+    if (!form.name || !form.cpf || !form.email) return setError("Identificação obrigatória!");
     setStep('pagamento');
   };
 
-  const handleProcessOrder = async () => {
-    if (!selectedMethod) {
-      setError("Selecione um método de pagamento.");
-      return;
-    }
-
-    setError(null);
+  const generatePayment = async (selectedMethod: 'pix' | 'card' | 'boleto') => {
+    setMethod(selectedMethod);
     setProcessing(true);
+    setError(null);
 
     try {
-      // 1. Criar Pedido (Se ainda não foi criado)
-      let currentOrderId = orderId;
-      if (!currentOrderId) {
-        const orderResp = await fetch(`${API_V2}/create-order`, {
+      // Step A: Create Order if not exists
+      let currentOrder = order;
+      if (!currentOrder) {
+        const oResp = await fetch(`${API_V2}/create-order`, {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            customerData: form,
-            total: total,
-            items: items.map(i => ({
-              id: i.product.id,
-              name: i.product.name,
-              quantity: i.quantity,
-              price: i.product.price,
-              metadata: i.metadata
-            }))
-          })
-        });
-        const orderResult = await orderResp.json();
-        if (!orderResp.ok) throw new Error(orderResult.error || 'Erro ao criar protocolo');
-        currentOrderId = orderResult.id;
-        setOrderId(currentOrderId);
-      }
-
-      // 2. Gerar Pagamento baseado no método
-      if (selectedMethod === 'pix') {
-        const pResp = await fetch(`${API_V2}/generate-pix`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-          },
-          body: JSON.stringify({ orderId: currentOrderId, customerData: form, total })
-        });
-        const pData = await pResp.json();
-        if (!pResp.ok) throw new Error(pData.error || 'Erro ao gerar Pix');
-        setPixData(pData);
-      } else if (selectedMethod === 'boleto') {
-        const bResp = await fetch(`${API_V2}/generate-boleto`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-          },
-          body: JSON.stringify({ orderId: currentOrderId, customerData: form, total })
-        });
-        const bData = await bResp.json();
-        if (!bResp.ok) throw new Error(bData.error || 'Erro ao gerar Boleto');
-        setBoletoData(bData);
-      } else if (selectedMethod === 'card') {
-        const cResp = await fetch(`${API_V2}/generate-card`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-          },
-          body: JSON.stringify({
-            orderId: currentOrderId,
             customerData: form,
             total,
-            creditCard: {
+            items: items.map(i => ({ id: i.product.id, name: i.product.name, quantity: i.quantity, price: i.product.price }))
+          })
+        });
+        currentOrder = await oResp.json();
+        if (!oResp.ok) throw new Error(currentOrder.error || "Erro no protocolo do pedido");
+        setOrder(currentOrder);
+      }
+
+      // Step B: Generate Payment
+      const pResp = await fetch(`${API_V2}/generate-payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: currentOrder.id,
+          method: selectedMethod,
+          customerData: form,
+          total,
+          creditCard: selectedMethod === 'card' ? {
+            info: {
               holderName: cardForm.holder,
-              number: cardForm.number.replace(/\s/g, ''),
+              number: cardForm.number.replace(/\D/g, ''),
               expiryMonth: cardForm.expiry.split('/')[0],
               expiryYear: '20' + cardForm.expiry.split('/')[1],
               ccv: cardForm.ccv
             },
-            creditCardHolderInfo: {
+            holder: {
               name: form.name, email: form.email,
               cpfCnpj: form.cpf.replace(/\D/g, ''),
               postalCode: "01001000", addressNumber: "SN",
               phone: form.phone.replace(/\D/g, '')
-            },
-            installmentCount: cardForm.installments
-          })
-        });
-        if (!cResp.ok) {
-           const cData = await cResp.json();
-           throw new Error(cData.error || 'Pagamento recusado');
-        }
-        setPixConfirmed(true);
-      }
+            }
+          } : null,
+          installments: cardForm.installments
+        })
+      });
+
+      const pData = await pResp.json();
+      if (!pResp.ok) throw new Error(pData.error || "Operação negada pelo Gateway");
+      setPaymentData(pData);
+
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -207,358 +143,220 @@ export function CheckoutPage() {
     }
   };
 
-  const handleFinish = () => {
-    clearCart();
-    if (user) {
-      navigate('/meus-ingressos');
-    } else {
-      // Redireciona para cadastro forçado com dados preenchidos
-      const params = new URLSearchParams({
-        mode: 'signup',
-        redirect: '/meus-ingressos',
-        email: form.email,
-        name: form.name,
-        paid: 'true'
-      });
-      navigate(`/login?${params.toString()}`);
-    }
-  };
-
-  if (pixConfirmed) {
+  if (isConfirmed) {
     return (
       <TacticalSuccessModal 
         isOpen={true}
-        onClose={handleFinish}
-        message="PIX REALIZADO COM SUCESSO. PAGAMENTO APROVADO. Seus itens já foram processados. Como você é um novo operador, finalize seu cadastro para acessar seu painel."
+        onClose={() => { clearCart(); navigate('/meus-ingressos'); }}
+        message="MISSÃO CUMPRIDA! Pagamento confirmado em tempo real. Sua mercadoria tática já está em processamento."
       />
     );
   }
 
-  // Trava de Carrinho Vazio
-  if (items.length === 0) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full p-8 bg-red-500/10 border border-red-500/20 text-center space-y-6">
-           <div className="text-6xl animate-bounce">⚠️</div>
-           <h1 className="text-2xl font-black italic tracking-tighter text-red-500 uppercase leading-none">CARRINHO VAZIO</h1>
-           <p className="text-[10px] font-black tracking-[0.2em] text-white/60 uppercase leading-relaxed">
-             MENSAGEM TÁTICA: ADICIONE EQUIPAMENTOS AO CARRINHO ANTES DE PROSSEGUIR COM A OPERAÇÃO DE CHECKOUT.
-           </p>
-           <button 
-            onClick={() => navigate('/')}
-            className="w-full bg-red-500 text-white font-black py-4 text-[10px] tracking-[0.3em] uppercase hover:bg-white hover:text-black transition-all"
-           >
-             ← VOLTAR AO ARSENAL
-           </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-black text-white pt-24 pb-12 px-4 font-sans selection:bg-primary selection:text-black">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#050505] text-white pt-28 pb-20 px-4 overflow-hidden relative">
+      {/* Background Decor - Radar Lines */}
+      <div className="absolute inset-0 pointer-events-none opacity-5">
+        <div className="h-full w-full" style={{ backgroundImage: 'linear-gradient(rgba(255,184,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,184,0,0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+      </div>
+
+      <div className="max-w-6xl mx-auto relative z-10">
         
-        {/* HEADER TÁTICO */}
-        <div className="mb-12 text-center lg:text-left">
-          <h1 className="text-4xl lg:text-6xl font-black italic tracking-tighter text-primary uppercase leading-tight">
-            FINALIZAR <span className="text-white">OPERAÇÃO</span>
-          </h1>
-        </div>
+        {/* HUD HEADER */}
+        <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <span className="text-primary text-[10px] font-black tracking-[0.5em] uppercase mb-2 block">System Status: Operacional</span>
+            <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase leading-none">
+              Checkout <span className="text-primary">Phoenix</span>
+            </h1>
+          </div>
+          <div className="bg-white/5 border border-white/10 px-6 py-4 rounded-sm backdrop-blur-md">
+            <span className="text-[10px] font-bold text-white/40 uppercase block mb-1">Total da Operação</span>
+            <span className="text-3xl font-black italic text-primary">R$ {total.toFixed(2)}</span>
+          </div>
+        </header>
 
-        {/* STEPPER DINÂMICO */}
-        <div className="mb-12 flex bg-white/[0.03] border border-white/5 rounded-sm overflow-hidden text-[10px] font-black tracking-widest uppercase">
-           <div className={`flex-1 py-4 px-6 flex items-center justify-center gap-2 border-r border-white/5 ${step === 'dados' ? 'text-primary' : 'text-primary/40'}`}>
-              <span className="text-sm">✓</span> IDENTIFICAÇÃO
-           </div>
-           <div className={`flex-1 py-4 px-6 flex items-center justify-center gap-2 border-r border-white/5 ${step === 'pagamento' ? 'bg-primary text-black' : 'text-white/20'}`}>
-              03 PAGAMENTO
-           </div>
-           <div className="flex-1 py-4 px-6 flex items-center justify-center gap-2 text-white/10">
-              04 FINALIZAÇÃO
-           </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
           
-          {/* COLUNA ESQUERDA: FLUXO PRINCIPAL */}
-          <div className="lg:col-span-8 space-y-8">
+          {/* PAINEL DE COMANDO (Identificação & Pagamento) */}
+          <div className="lg:col-span-2 space-y-8">
             
-            {error && (
-              <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 flex items-center gap-3 animate-shake">
-                <span className="text-xl">⚠️</span>
-                <span className="text-[10px] font-black tracking-widest uppercase">{error}</span>
+            {/* STEP 1: DADOS */}
+            <section className={`transition-all duration-500 ${step === 'dados' ? 'opacity-100' : 'opacity-40 grayscale pointer-events-none'}`}>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-8 h-8 bg-primary text-black flex items-center justify-center font-black rounded-full">01</div>
+                <h2 className="text-xl font-black italic uppercase tracking-tight">Protocolo de Identidade</h2>
               </div>
-            )}
 
-            {step === 'dados' ? (
-              <div className="bg-white/[0.02] border border-white/5 p-8 lg:p-12">
-                 <h2 className="text-xl font-black italic tracking-tight text-white mb-8 border-l-4 border-primary pl-4">PROTOCOLOS DE IDENTIDADE</h2>
-                 <form onSubmit={handleNextToPayment} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <div className="space-y-2">
-                          <label className="text-[9px] font-black text-white/40 tracking-widest uppercase">Nome Completo</label>
-                          <input 
-                            required 
-                            value={form.name}
-                            onChange={e => setForm({...form, name: e.target.value})}
-                            className="w-full bg-white/[0.03] border border-white/10 px-4 py-4 text-sm font-medium outline-none focus:border-primary transition-all rounded-sm"
-                          />
-                       </div>
-                       <div className="space-y-2">
-                          <label className="text-[9px] font-black text-white/40 tracking-widest uppercase">CPF Operacional</label>
-                          <input 
-                            required 
-                            placeholder="000.000.000-00"
-                            value={form.cpf}
-                            onChange={e => setForm({...form, cpf: e.target.value})}
-                            className="w-full bg-white/[0.03] border border-white/10 px-4 py-4 text-sm font-medium outline-none focus:border-primary transition-all rounded-sm"
-                          />
-                       </div>
-                       <div className="space-y-2">
-                          <label className="text-[9px] font-black text-white/40 tracking-widest uppercase">E-mail de Contato</label>
-                          <input 
-                            required 
-                            type="email"
-                            value={form.email}
-                            onChange={e => setForm({...form, email: e.target.value})}
-                            className="w-full bg-white/[0.03] border border-white/10 px-4 py-4 text-sm font-medium outline-none focus:border-primary transition-all rounded-sm"
-                          />
-                       </div>
-                       <div className="space-y-2">
-                          <label className="text-[9px] font-black text-white/40 tracking-widest uppercase">WhatsApp (Opcional)</label>
-                          <input 
-                            placeholder="(00) 00000-0000"
-                            value={form.phone}
-                            onChange={e => setForm({...form, phone: e.target.value})}
-                            className="w-full bg-white/[0.03] border border-white/10 px-4 py-4 text-sm font-medium outline-none focus:border-primary transition-all rounded-sm"
-                          />
-                       </div>
-                    </div>
-                    <button type="submit" className="w-full bg-primary hover:bg-white text-black font-black py-5 text-xs tracking-[0.3em] uppercase transition-all mt-8">
-                       AVANÇAR PARA PAGAMENTO →
+              <div className="bg-white/[0.03] border border-white/10 p-8 clip-path-tactical">
+                <form onSubmit={handleNext} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input label="Nome Completo" value={form.name} onChange={v => setForm({...form, name: v})} />
+                  <Input label="CPF Operacional" value={form.cpf} onChange={v => setForm({...form, cpf: v})} placeholder="000.000.000-00" />
+                  <Input label="E-mail de Contato" value={form.email} onChange={v => setForm({...form, email: v})} type="email" />
+                  <Input label="WhatsApp / Rádio" value={form.phone} onChange={v => setForm({...form, phone: v})} placeholder="(00) 00000-0000" />
+                  {step === 'dados' && (
+                    <button className="col-span-1 md:col-span-2 bg-primary text-black font-black py-4 uppercase tracking-[0.2em] text-xs hover:bg-white transition-all mt-4">
+                      Configurar Pagamento →
                     </button>
-                 </form>
+                  )}
+                </form>
               </div>
-            ) : (
-              <div className="space-y-6">
-                 <h2 className="text-xl font-black italic tracking-tight text-white mb-8 border-l-4 border-primary pl-4 uppercase">Configuração de Pagamento</h2>
-                 
-                 {/* MÉTODOS ESTILO ACORDEÃO */}
-                 <div className="space-y-4">
-                    
-                    {/* PIX CONTAINER */}
-                    <div className={`border ${selectedMethod === 'pix' ? 'border-primary' : 'border-white/10'} bg-white/[0.02] overflow-hidden transition-all duration-300`}>
-                       <button 
-                        onClick={() => setSelectedMethod('pix')}
-                        className="w-full p-6 flex items-center justify-between text-left group"
-                       >
-                          <div className="flex items-center gap-6">
-                             <span className="text-2xl font-black italic tracking-tighter text-[#00E5FF] group-hover:scale-110 transition-transform">PIX</span>
-                             <div>
-                                <h3 className="text-xs font-black tracking-widest uppercase text-white">Pix Instantâneo</h3>
-                                <p className="text-[9px] font-bold text-[#00E5FF]/60 tracking-widest uppercase mt-1">Pagou, liberou!</p>
-                             </div>
-                          </div>
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedMethod === 'pix' ? 'border-primary' : 'border-white/20'}`}>
-                             {selectedMethod === 'pix' && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
-                          </div>
-                       </button>
+            </section>
 
-                       {selectedMethod === 'pix' && (
-                          <div className="px-6 pb-8 animate-in slide-in-from-top-4 duration-300">
-                             {pixData ? (
-                               <div className="pt-6 border-t border-white/5 flex flex-col items-center">
-                                  <div className="bg-white p-4 rounded-sm mb-6">
-                                    <img src={`data:image/png;base64,${pixData.qrCodeBase64}`} alt="QR Code" className="w-48 h-48" />
-                                  </div>
-                                  <div className="w-full bg-black/40 border border-white/10 p-4 flex gap-4 items-center">
-                                    <input readOnly value={pixData.qrCode} className="flex-1 bg-transparent text-[10px] font-mono text-white/50 outline-none truncate" />
-                                    <button onClick={() => { navigator.clipboard.writeText(pixData.qrCode); alert("Copiado!"); }} className="bg-primary text-black text-[10px] font-black px-4 py-2 hover:bg-white transition-colors">COPIAR</button>
-                                  </div>
-                                  <div className="mt-8 flex flex-col items-center justify-center gap-3">
-                                     {elapsedTime >= TIMEOUT_LIMIT && !pixConfirmed ? (
-                                       <span className="text-[10px] font-black tracking-widest text-[#FFB800] uppercase animate-pulse text-center">
-                                          Pagamento em análise, aguarde ou atualize a página
-                                       </span>
-                                     ) : (
-                                       <div className="flex items-center gap-3 animate-pulse">
-                                          <div className="w-2 h-2 rounded-full bg-[#00E5FF]" />
-                                          <span className="text-[10px] font-black tracking-widest text-[#00E5FF]/80 uppercase">Aguardando confirmação tática...</span>
-                                       </div>
-                                     )}
-                                  </div>
-                               </div>
-                             ) : (
-                               <div className="pt-6 border-t border-white/5 space-y-6">
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                     <div className="p-4 bg-white/[0.03] border border-white/5 flex flex-col gap-2">
-                                        <span className="text-lg">⚡</span>
-                                        <span className="text-[9px] font-black uppercase text-white/60">Aprovação Imediata</span>
-                                     </div>
-                                     <div className="p-4 bg-white/[0.03] border border-white/5 flex flex-col gap-2">
-                                        <span className="text-lg">🛡️</span>
-                                        <span className="text-[9px] font-black uppercase text-white/60">Zero Taxas</span>
-                                     </div>
-                                  </div>
-                                  <button 
-                                    onClick={handleProcessOrder}
-                                    disabled={processing}
-                                    className="w-full bg-primary text-black font-black py-5 text-xs tracking-[0.3em] uppercase hover:bg-white transition-all disabled:opacity-50"
-                                  >
-                                    {processing ? 'GERANDO PROTOCOLO...' : `PAGAR AGORA - R$ ${total.toFixed(2)}`}
-                                  </button>
-                               </div>
-                             )}
-                          </div>
-                       )}
-                    </div>
+            {/* STEP 2: PAGAMENTO */}
+            <AnimatePresence>
+              {step === 'pagamento' && (
+                <motion.section 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-8 h-8 bg-primary text-black flex items-center justify-center font-black rounded-full">02</div>
+                    <h2 className="text-xl font-black italic uppercase tracking-tight">Arsenal de Pagamento</h2>
+                  </div>
 
-                    {/* CARD CONTAINER */}
-                    <div className={`border ${selectedMethod === 'card' ? 'border-primary' : 'border-white/10'} bg-white/[0.02] overflow-hidden transition-all duration-300`}>
-                       <button 
-                        onClick={() => setSelectedMethod('card')}
-                        className="w-full p-6 flex items-center justify-between text-left"
-                       >
-                          <div className="flex items-center gap-6">
-                             <span className="text-2xl">💳</span>
-                             <div>
-                                <h3 className="text-xs font-black tracking-widest uppercase text-white">Cartão de Crédito</h3>
-                                <p className="text-[9px] font-bold text-white/30 tracking-widest uppercase mt-1">Até 12x com juros reduzidos</p>
-                             </div>
-                          </div>
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedMethod === 'card' ? 'border-primary' : 'border-white/20'}`}>
-                             {selectedMethod === 'card' && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
-                          </div>
-                       </button>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <PaymentOption active={method === 'pix'} onClick={() => generatePayment('pix')} title="Pix" desc="Aprovação Flash" icon="⚡" />
+                    <PaymentOption active={method === 'card'} onClick={() => setMethod('card')} title="Cartão" desc="Até 12x" icon="💳" />
+                    <PaymentOption active={method === 'boleto'} onClick={() => generatePayment('boleto')} title="Boleto" desc="3 dias úteis" icon="📄" />
+                  </div>
 
-                       {selectedMethod === 'card' && (
-                          <div className="px-6 pb-8 animate-in slide-in-from-top-4 duration-300">
-                             <div className="pt-6 border-t border-white/5 space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                   <input required placeholder="NÚMERO DO CARTÃO" value={cardForm.number} onChange={e => setCardForm({...cardForm, number: e.target.value})} className="col-span-1 md:col-span-2 bg-black/40 border border-white/10 px-4 py-4 text-xs font-mono outline-none focus:border-primary transition-all" />
-                                   <input required placeholder="NOME NO CARTÃO" value={cardForm.holder} onChange={e => setCardForm({...cardForm, holder: e.target.value})} className="bg-black/40 border border-white/10 px-4 py-4 text-xs font-mono outline-none focus:border-primary transition-all" />
-                                   <div className="flex gap-2">
-                                      <input required placeholder="MM/AA" value={cardForm.expiry} onChange={e => setCardForm({...cardForm, expiry: e.target.value})} className="bg-black/40 border border-white/10 px-4 py-4 text-xs font-mono outline-none focus:border-primary transition-all flex-1" />
-                                      <input required placeholder="CVV" value={cardForm.ccv} onChange={e => setCardForm({...cardForm, ccv: e.target.value})} className="bg-black/40 border border-white/10 px-4 py-4 text-xs font-mono outline-none focus:border-primary transition-all flex-1" />
-                                   </div>
-                                </div>
-                                <select 
-                                  value={cardForm.installments} 
-                                  onChange={e => setCardForm({...cardForm, installments: parseInt(e.target.value)})}
-                                  className="w-full bg-black/40 border border-white/10 px-4 py-4 text-xs font-mono outline-none focus:border-primary transition-all"
-                                >
-                                   {[1,2,3,4,5,6,10,12].map(i => (
-                                     <option key={i} value={i} className="bg-neutral-900 border-none">{i}x de R$ {(total * (i > 1 ? 1.05 : 1) / i).toFixed(2)}</option>
-                                   ))}
-                                </select>
-                                <button 
-                                  onClick={handleProcessOrder}
-                                  disabled={processing}
-                                  className="w-full bg-primary text-black font-black py-5 text-xs tracking-[0.3em] uppercase hover:bg-white transition-all disabled:opacity-50"
-                                >
-                                  {processing ? 'AUTORIZANDO OPERAÇÃO...' : `CONFIRMAR PAGAMENTO - R$ ${total.toFixed(2)}`}
-                                </button>
-                             </div>
-                          </div>
-                       )}
-                    </div>
-
-                    {/* BOLETO CONTAINER */}
-                    <div className={`border ${selectedMethod === 'boleto' ? 'border-primary' : 'border-white/10'} bg-white/[0.02] overflow-hidden transition-all duration-300`}>
-                       <button 
-                        onClick={() => setSelectedMethod('boleto')}
-                        className="w-full p-6 flex items-center justify-between text-left"
-                       >
-                          <div className="flex items-center gap-6">
-                             <span className="text-2xl">📄</span>
-                             <div>
-                                <h3 className="text-xs font-black tracking-widest uppercase text-white">Boleto Bancário</h3>
-                                <p className="text-[9px] font-bold text-white/30 tracking-widest uppercase mt-1">Vencimento em 3 dias úteis</p>
-                             </div>
-                          </div>
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedMethod === 'boleto' ? 'border-primary' : 'border-white/20'}`}>
-                             {selectedMethod === 'boleto' && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
-                          </div>
-                       </button>
-
-                       {selectedMethod === 'boleto' && (
-                          <div className="px-6 pb-8 animate-in slide-in-from-top-4 duration-300">
-                             <div className="pt-6 border-t border-white/5 space-y-6">
-                                {boletoData ? (
-                                  <div className="space-y-4">
-                                     <div className="bg-black/40 border border-white/10 p-6 text-center">
-                                        <p className="text-[10px] font-mono text-white/80 break-all mb-4">{boletoData.identificationField}</p>
-                                        <a href={boletoData.bankSlipUrl} target="_blank" rel="noreferrer" className="inline-block bg-primary text-black px-8 py-3 text-[10px] font-black uppercase">VISUALIZAR PDF</a>
-                                     </div>
-                                  </div>
-                                ) : (
-                                  <button 
-                                    onClick={handleProcessOrder}
-                                    disabled={processing}
-                                    className="w-full bg-primary text-black font-black py-5 text-xs tracking-[0.3em] uppercase transition-all disabled:opacity-50 hover:bg-white"
-                                  >
-                                    {processing ? 'EMITINDO...' : 'GERAR BOLETO'}
-                                  </button>
-                                )}
-                             </div>
-                          </div>
-                       )}
-                    </div>
-
-                 </div>
-
-                 <button 
-                  onClick={() => setStep('dados')}
-                  className="text-[10px] font-black text-white/40 hover:text-primary transition-colors tracking-widest uppercase flex items-center gap-2"
-                 >
-                   ← REVISAR DADOS DE IDENTIDADE
-                 </button>
-              </div>
-            )}
+                  {/* Detalhes do Pagamento Selecionado */}
+                  <div className="bg-white/[0.03] border border-white/10 p-8 min-h-[300px] flex flex-col items-center justify-center text-center">
+                    {processing ? (
+                      <div className="space-y-4">
+                         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                         <p className="text-[10px] font-black tracking-widest text-primary uppercase">Criptografando Dados...</p>
+                      </div>
+                    ) : error ? (
+                      <div className="text-red-500 space-y-4">
+                        <span className="text-4xl">⚠️</span>
+                        <p className="font-black uppercase text-xs tracking-widest">{error}</p>
+                        <button onClick={() => setMethod(null)} className="text-[10px] underline uppercase">Tentar outro método</button>
+                      </div>
+                    ) : method === 'pix' && paymentData ? (
+                      <div className="space-y-6 w-full">
+                        <div className="bg-white p-4 inline-block rounded-sm">
+                           <img src={`data:image/png;base64,${paymentData.qrCodeBase64}`} alt="QR Code" className="w-40 h-40" />
+                        </div>
+                        <div className="w-full max-w-sm mx-auto bg-black border border-white/10 p-3 flex gap-2">
+                          <input readOnly value={paymentData.qrCode} className="bg-transparent text-[9px] font-mono text-white/40 outline-none flex-1 truncate" />
+                          <button onClick={() => { navigator.clipboard.writeText(paymentData.qrCode); }} className="bg-primary text-black text-[9px] font-black px-4">COPIAR</button>
+                        </div>
+                        <div className="flex items-center justify-center gap-2 animate-pulse">
+                          <div className="w-2 h-2 bg-primary rounded-full" />
+                          <span className="text-[9px] font-black tracking-[0.3em] text-primary uppercase">Sintonizando confirmação via satélite...</span>
+                        </div>
+                      </div>
+                    ) : method === 'card' ? (
+                      <div className="w-full space-y-4 text-left">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           <Input label="Número do Cartão" value={cardForm.number} onChange={v => setCardForm({...cardForm, number: v})} />
+                           <Input label="Nome Impresso" value={cardForm.holder} onChange={v => setCardForm({...cardForm, holder: v})} />
+                           <Input label="Validade (MM/AA)" value={cardForm.expiry} onChange={v => setCardForm({...cardForm, expiry: v})} />
+                           <Input label="CVV" value={cardForm.ccv} onChange={v => setCardForm({...cardForm, ccv: v})} />
+                        </div>
+                        <select 
+                          className="w-full bg-black/50 border border-white/10 p-4 text-xs font-black uppercase outline-none focus:border-primary"
+                          value={cardForm.installments}
+                          onChange={e => setCardForm({...cardForm, installments: parseInt(e.target.value)})}
+                        >
+                           {[1,2,3,4,5,6,10,12].map(i => (
+                             <option key={i} value={i} className="bg-black text-white">{i}x de R$ {(total * (i > 1 ? 1.25 : 1) / i).toFixed(2)}</option>
+                           ))}
+                        </select>
+                        <button 
+                          onClick={() => generatePayment('card')}
+                          className="w-full bg-primary text-black font-black py-4 uppercase text-xs tracking-widest mt-4"
+                        >
+                          Efetuar Disparo Financeiro
+                        </button>
+                      </div>
+                    ) : method === 'boleto' && paymentData ? (
+                      <div className="space-y-6">
+                        <p className="text-xs font-black uppercase text-white/60">Boleto gerado com sucesso</p>
+                        <div className="bg-black/50 p-4 border border-white/5 font-mono text-[10px] break-all">{paymentData.identificationField}</div>
+                        <a href={paymentData.bankSlipUrl} target="_blank" className="inline-block bg-primary text-black font-black px-10 py-4 uppercase text-[10px] tracking-widest">Abrir PDF</a>
+                      </div>
+                    ) : (
+                      <p className="text-xs font-black uppercase text-white/20 tracking-widest leading-relaxed">Selecione um método acima para<br/>iniciar a autorização</p>
+                    )}
+                  </div>
+                </motion.section>
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* COLUNA DIREITA: RESUMO DA OPERAÇÃO */}
-          <div className="lg:col-span-4 sticky top-32">
-             <div className="bg-white/[0.02] border border-white/5 p-8">
-                <h2 className="text-sm font-black italic tracking-widest text-[#FFB800] uppercase mb-8 border-b border-white/5 pb-4">RESUMO DA OPERAÇÃO</h2>
+          {/* COLUNA RESUMO (RECON) */}
+          <aside className="lg:col-span-1">
+             <div className="bg-white/[0.02] border border-white/5 p-8 backdrop-blur-xl relative overflow-hidden">
+                {/* HUD Decoration */}
+                <div className="absolute top-0 right-0 p-2 text-[8px] font-mono text-primary/30 uppercase tracking-tighter">REF: {order?.id?.slice(0,8) || 'PENDING'}</div>
                 
-                <div className="space-y-4 mb-12">
-                   {items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center group">
-                         <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-white group-hover:text-primary transition-colors uppercase leading-none">{item.product.name}</span>
-                            <span className="text-[8px] font-bold text-white/20 uppercase tracking-widest mt-1">Qtde: {item.quantity}</span>
-                         </div>
-                         <span className="text-[10px] font-black italic text-white/60 uppercase">R$ {(item.product.price * item.quantity).toFixed(2)}</span>
-                      </div>
+                <h3 className="text-[10px] font-black tracking-[0.4em] text-primary uppercase mb-8 border-b border-primary/20 pb-4">Sumário da Carga</h3>
+                
+                <div className="space-y-6 mb-12">
+                   {items.map((item, i) => (
+                     <div key={i} className="flex justify-between items-start">
+                        <div>
+                           <p className="text-[10px] font-black uppercase text-white mb-1">{item.product.name}</p>
+                           <p className="text-[8px] font-bold text-white/30 uppercase">Quantidade: {item.quantity}</p>
+                        </div>
+                        <span className="text-[10px] font-mono text-white/60">R$ {(item.product.price * item.quantity).toFixed(2)}</span>
+                     </div>
                    ))}
                 </div>
 
-                <div className="border-t border-white/5 pt-8 space-y-4">
-                   <div className="flex justify-between items-center opacity-40">
-                      <span className="text-[10px] font-black tracking-widest uppercase">Subtotal</span>
-                      <span className="text-[10px] font-black tracking-widest uppercase italic font-mono">R$ {total.toFixed(2)}</span>
+                <div className="space-y-3 pt-6 border-t border-white/5">
+                   <div className="flex justify-between text-[10px] font-bold text-white/40 uppercase">
+                      <span>Logística</span>
+                      <span>Grátis</span>
                    </div>
-                   <div className="flex justify-between items-center text-primary pt-2 border-t border-white/5 border-dashed">
-                      <span className="text-xs font-black tracking-[0.2em] uppercase">TOTAL FINAL</span>
-                      <span className="text-2xl font-black tracking-tighter italic">R$ {total.toFixed(2)}</span>
+                   <div className="flex justify-between text-xl font-black italic text-primary pt-4">
+                      <span>Total</span>
+                      <span>R$ {total.toFixed(2)}</span>
                    </div>
                 </div>
 
-                <div className="mt-12 space-y-2 opacity-20">
-                   <p className="text-[8px] font-black tracking-[0.3em] uppercase text-center leading-relaxed">Operação segura • Criptografia militar Ativa</p>
+                <div className="mt-12 text-[8px] font-black text-white/10 uppercase tracking-[0.3em] leading-relaxed text-center">
+                   Acesso Criptografado • V3 Tactical System
                 </div>
              </div>
-          </div>
+          </aside>
 
         </div>
-
-        <div className="mt-20 pt-10 border-t border-white/5 text-center">
-           <p className="text-[9px] font-black text-white/10 tracking-[0.5em] uppercase">CRYSTAL ARMSTRONG • TACTICAL CHECKOUT V2 • 2026</p>
-        </div>
-
       </div>
     </div>
+  );
+}
+
+// Sub-components para manter o código limpo e premium
+function Input({ label, value, onChange, type = "text", placeholder = "" }: { label: string, value: string, onChange: (v: string) => void, type?: string, placeholder?: string }) {
+  return (
+    <div className="space-y-2">
+      <label className="text-[9px] font-black text-white/40 tracking-widest uppercase">{label}</label>
+      <input 
+        type={type} 
+        value={value} 
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full bg-black/60 border border-white/10 px-4 py-4 text-xs font-sans outline-none focus:border-primary transition-all rounded-sm placeholder:text-white/5"
+      />
+    </div>
+  );
+}
+
+function PaymentOption({ active, onClick, title, desc, icon }: { active: boolean, onClick: () => void, title: string, desc: string, icon: string }) {
+  return (
+    <button 
+      onClick={onClick}
+      className={`p-6 border text-left transition-all duration-300 relative overflow-hidden group ${active ? 'bg-primary border-primary' : 'bg-white/[0.02] border-white/10 hover:border-white/30'}`}
+    >
+       <div className={`text-2xl mb-4 group-hover:scale-110 transition-transform ${active ? 'grayscale-0' : 'grayscale'}`}>{icon}</div>
+       <div className={`text-xs font-black uppercase tracking-widest ${active ? 'text-black' : 'text-white'}`}>{title}</div>
+       <div className={`text-[8px] font-black uppercase tracking-tighter mt-1 ${active ? 'text-black/60' : 'text-white/30'}`}>{desc}</div>
+       {active && <div className="absolute top-0 right-0 w-8 h-8 bg-black/10 flex items-center justify-center text-[10px]">✔</div>}
+    </button>
   );
 }
