@@ -378,11 +378,12 @@ export function CheckoutPage() {
                             <Input label="CVV 🔒" name="cc-csc" autoComplete="cc-csc" value={cardForm.ccv} onChange={v => setCardForm({...cardForm, ccv: v})} type="tel" placeholder="•••" />
                           </div>
                         </div>
-                        <select className="w-full bg-black/50 border border-white/10 p-4 text-xs font-black uppercase outline-none focus:border-primary" value={cardForm.installments} onChange={e => setCardForm({...cardForm, installments: parseInt(e.target.value)})}>
-                          {[1,2,3,4,5,6,10,12].map(i => (
-                            <option key={i} value={i} className="bg-black text-white">{i}x de R$ {(total * (i > 1 ? 1.25 : 1) / i).toFixed(2)}</option>
-                          ))}
-                        </select>
+                        {/* Parcelamento com taxas reais */}
+                        <InstallmentSelect total={total} value={cardForm.installments} onChange={v => setCardForm({...cardForm, installments: v})} />
+
+                        {/* Tabela de taxas completa */}
+                        <FeeTable />
+
                         <div className="bg-green-950/40 border border-green-500/15 px-4 py-3 flex items-start gap-3">
                           <span className="material-symbols-outlined text-green-400 text-lg mt-0.5 shrink-0">verified_user</span>
                           <p className="text-[8px] text-green-400/80 leading-relaxed uppercase tracking-wider">
@@ -460,6 +461,113 @@ export function CheckoutPage() {
           </aside>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Fee constants ─────────────────────────────────────────────────
+// Taxas reais do backend (calculateInterest em asaas-checkout-v2)
+const INSTALLMENT_RATES: Record<number, number> = {
+  1: 1.000, 2: 1.050, 3: 1.070, 4: 1.090,  5: 1.110,
+  6: 1.130, 7: 1.150, 8: 1.170, 9: 1.190, 10: 1.210,
+  11: 1.230, 12: 1.250,
+};
+// Taxa de gateway Asaas sobre cartão de crédito
+const ASAAS_CC_FEE = 0.0249; // 2,49%
+
+function calcInstallment(total: number, n: number) {
+  const withInterest = total * (INSTALLMENT_RATES[n] ?? 1);
+  const withGateway  = withInterest * (1 + ASAAS_CC_FEE);
+  return { perInstallment: withGateway / n, totalFinal: withGateway };
+}
+
+function InstallmentSelect({ total, value, onChange }: { total: number; value: number; onChange: (v: number) => void }) {
+  const selected = calcInstallment(total, value);
+  return (
+    <div className="space-y-1">
+      <select
+        className="w-full bg-black/50 border border-white/10 p-4 text-xs font-black uppercase outline-none focus:border-primary"
+        value={value}
+        onChange={e => onChange(parseInt(e.target.value))}
+      >
+        {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
+          const { perInstallment, totalFinal } = calcInstallment(total, n);
+          const interestPct = ((INSTALLMENT_RATES[n] ?? 1) - 1 + ASAAS_CC_FEE) * 100;
+          return (
+            <option key={n} value={n} className="bg-[#111] text-white">
+              {n}x de R$ {perInstallment.toFixed(2)}{n > 1 ? ` — Total R$ ${totalFinal.toFixed(2)} (+${interestPct.toFixed(1)}%)` : ' — Sem juros'}
+            </option>
+          );
+        })}
+      </select>
+      {/* Linha de resumo abaixo do select */}
+      <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-white/40 px-1">
+        <span>{value}x de R$ {selected.perInstallment.toFixed(2)}</span>
+        <span>Total: R$ {selected.totalFinal.toFixed(2)}</span>
+      </div>
+    </div>
+  );
+}
+
+function FeeTable() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-white/10 text-left">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-all"
+      >
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-primary text-sm">receipt_long</span>
+          <span className="text-[9px] font-black uppercase tracking-widest text-white/60">Ver todas as taxas aplicadas</span>
+        </div>
+        <span className="material-symbols-outlined text-white/30 text-sm">{open ? 'expand_less' : 'expand_more'}</span>
+      </button>
+
+      {open && (
+        <div className="border-t border-white/10 px-4 py-4 space-y-4">
+          {/* Cartão de Crédito */}
+          <div>
+            <p className="text-[8px] font-black text-primary uppercase tracking-[0.3em] mb-2">Cartão de Crédito</p>
+            <div className="space-y-1">
+              {[1,2,3,4,5,6,7,8,9,10,11,12].map(n => {
+                const juros = ((INSTALLMENT_RATES[n] ?? 1) - 1) * 100;
+                const total_fee = juros + ASAAS_CC_FEE * 100;
+                return (
+                  <div key={n} className="flex justify-between text-[8px] font-mono text-white/50">
+                    <span>{n}x</span>
+                    <span>{n === 1 ? `Gateway Asaas: ${(ASAAS_CC_FEE*100).toFixed(2)}%` : `Juros: ${juros.toFixed(0)}% + Gateway: ${(ASAAS_CC_FEE*100).toFixed(2)}% = ${total_fee.toFixed(2)}% total`}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* PIX */}
+          <div className="border-t border-white/5 pt-3">
+            <p className="text-[8px] font-black text-primary uppercase tracking-[0.3em] mb-2">PIX</p>
+            <div className="space-y-1 text-[8px] font-mono text-white/50">
+              <div className="flex justify-between"><span>Recebimento PIX</span><span className="text-green-400">Gratuito</span></div>
+              <div className="flex justify-between"><span>Saque PIX (transferência)</span><span>R$ 2,00 por saque</span></div>
+              <div className="flex justify-between"><span>Dinheiro Imediato (antecipação)</span><span>2,99% do valor antecipado</span></div>
+            </div>
+          </div>
+
+          {/* Boleto */}
+          <div className="border-t border-white/5 pt-3">
+            <p className="text-[8px] font-black text-primary uppercase tracking-[0.3em] mb-2">Boleto Bancário</p>
+            <div className="space-y-1 text-[8px] font-mono text-white/50">
+              <div className="flex justify-between"><span>Taxa de emissão</span><span>R$ 1,99 por boleto</span></div>
+              <div className="flex justify-between"><span>Vencimento</span><span>3 dias úteis</span></div>
+            </div>
+          </div>
+
+          <p className="text-[7px] text-white/20 uppercase tracking-widest pt-2 border-t border-white/5">
+            Taxas cobradas pela Asaas Pagamentos S.A. — CNPJ 19.540.550/0001-21 · Processador parceiro certificado PCI DSS Nível 1
+          </p>
+        </div>
+      )}
     </div>
   );
 }
