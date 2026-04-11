@@ -41,6 +41,7 @@ export function HomePage() {
       buttonText: "Cadastrar Campo",
       link: "/eventos",
       image: "/images/field-banner.jpg",
+      fallback: "https://images.unsplash.com/photo-1595590424283-b8f17842773f?q=80&w=2070&auto=format&fit=crop",
       accent: "text-green-500",
       accentBg: "bg-green-500",
       shadow: "shadow-[0_0_40px_rgba(34,197,94,0.4)]"
@@ -53,6 +54,7 @@ export function HomePage() {
       buttonText: "Criar Missão",
       link: "/eventos",
       image: "/images/mission-banner.jpg",
+      fallback: "https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=2070&auto=format&fit=crop",
       accent: "text-orange-500",
       accentBg: "bg-orange-500",
       shadow: "shadow-[0_0_40px_rgba(249,115,22,0.4)]"
@@ -65,6 +67,7 @@ export function HomePage() {
       buttonText: "Solicitar Manutenção",
       link: "/contato",
       image: "/images/maintenance-banner.jpg",
+      fallback: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=2070&auto=format&fit=crop",
       accent: "text-slate-400",
       accentBg: "bg-slate-400",
       shadow: "shadow-[0_0_40px_rgba(148,163,184,0.4)]"
@@ -77,6 +80,7 @@ export function HomePage() {
       buttonText: "Acessar Loja",
       link: "/produtos",
       image: "/images/shop-banner.jpg",
+      fallback: "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=2070&auto=format&fit=crop",
       accent: "text-primary",
       accentBg: "bg-primary",
       shadow: "shadow-[0_0_40px_rgba(255,193,7,0.4)]"
@@ -175,10 +179,11 @@ export function HomePage() {
               >
                 {/* Background Image */}
                 <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden">
-                  <img 
-                    src={slide.image} 
-                    alt={slide.subtitle} 
-                    className="w-full h-full object-cover object-center opacity-40 lg:opacity-60 transition-transform duration-[20s] scale-105 group-hover:scale-110" 
+                  <img
+                    src={slide.image}
+                    alt={slide.subtitle}
+                    onError={(e) => { if ((slide as any).fallback) (e.currentTarget as HTMLImageElement).src = (slide as any).fallback; }}
+                    className="w-full h-full object-cover object-center opacity-40 lg:opacity-60 transition-transform duration-[20s] scale-105 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-background-dark/80 via-transparent to-background-dark"></div>
                 </div>
