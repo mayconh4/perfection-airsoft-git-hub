@@ -30,7 +30,10 @@ export default function AuthCallbackPage() {
         const { data, error } = await supabase.auth.getSession();
         if (error) throw error;
 
-        const next = urlParams.get('next') || '/dashboard';
+        // Usa ?next= da URL (passado via emailRedirectTo) ou fallback do localStorage
+        // (caso o Supabase não preserve query params customizados no link de confirmação)
+        const next = urlParams.get('next') || localStorage.getItem('signup_redirect') || '/dashboard';
+        localStorage.removeItem('signup_redirect');
         if (data.session) {
           // SUCESSO: Sessão estabelecida e e-mail confirmado.
           // Pequeno delay para garantir propagação de estado no AuthContext

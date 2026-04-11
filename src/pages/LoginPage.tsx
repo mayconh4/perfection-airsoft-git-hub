@@ -89,6 +89,12 @@ export function LoginPage() {
     } else {
       const params = new URLSearchParams(location.search);
       const redirectTo = params.get('redirect') || undefined;
+      // Salva o destino em localStorage como fallback caso o Supabase não preserve o ?next= no link do e-mail
+      if (redirectTo) {
+        localStorage.setItem('signup_redirect', redirectTo);
+      } else {
+        localStorage.removeItem('signup_redirect');
+      }
       const { error } = await signUp(email, password, name, redirectTo);
       if (error) { setMessage(error.message); }
       else { setMessage('🛡️ OPERADOR EM ASCENSÃO! Verifique seu e-mail e a sua caixa de SPAM.'); }

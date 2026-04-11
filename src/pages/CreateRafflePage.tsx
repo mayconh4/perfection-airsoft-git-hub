@@ -228,8 +228,8 @@ export default function CreateRafflePage() {
                 </p>
               </div>
 
-              <Link 
-                to="/login?redirect=/criar-rifa"
+              <Link
+                to="/login?redirect=/drop/criar"
                 className="bg-primary text-background-dark font-black py-4 px-12 text-[11px] uppercase tracking-[0.3em] hover:bg-white transition-all shadow-[0_0_30px_rgba(255,193,7,0.2)] hover:scale-105 active:scale-95 mt-4"
               >
                 REGISTRE-SE PARA COMANDAR
