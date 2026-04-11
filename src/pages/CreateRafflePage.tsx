@@ -276,7 +276,16 @@ export default function CreateRafflePage() {
                         placeholder="EX: RIFLE M4A1 GBB FULL METAL"
                         className="w-full bg-black/40 border border-white/10 p-4 text-white font-mono text-sm focus:border-primary outline-none transition-all placeholder:opacity-20"
                         value={formData.title}
-                        onChange={e => setFormData({ ...formData, title: e.target.value })}
+                        onChange={e => {
+                          const title = e.target.value;
+                          const slug = title
+                            .toLowerCase()
+                            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                            .replace(/[^a-z0-9\s-]/g, '')
+                            .trim()
+                            .replace(/\s+/g, '-');
+                          setFormData({ ...formData, title, slug });
+                        }}
                     />
                 </div>
 
@@ -292,22 +301,6 @@ export default function CreateRafflePage() {
                     />
                 </div>
 
-                <div>
-                    <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-3 italic">LINK AMIGÁVEL (URL SLUG)</label>
-                    <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 font-mono text-[10px]">/drop/</span>
-                        <input 
-                            type="text" 
-                            placeholder="ex: rifle-sniper-pro"
-                            className="w-full bg-black/40 border border-white/10 p-4 pl-16 text-primary font-mono text-sm focus:border-primary outline-none transition-all placeholder:opacity-20"
-                            value={formData.slug}
-                            onChange={e => {
-                                const clean = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
-                                setFormData({ ...formData, slug: clean });
-                            }}
-                        />
-                    </div>
-                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
