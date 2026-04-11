@@ -2,7 +2,8 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/api/og"
+      "destination": "/api/og",
+      "missing": [{ "type": "header", "key": "x-og-internal" }]
     },
     {
       "source": "/drop",
