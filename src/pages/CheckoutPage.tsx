@@ -245,40 +245,40 @@ export function CheckoutPage() {
           </div>
         </header>
 
-        {/* STEPPER */}
-        <div className="mb-10 flex items-center gap-0">
-          {STEPS.map((s, i) => (
-            <React.Fragment key={s}>
-              <div className={`flex items-center gap-2 px-4 py-2 border transition-all ${
-                s === step
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : i < stepIndex
-                  ? 'border-green-500/30 bg-green-500/5 text-green-400'
-                  : 'border-white/10 text-white/20'
-              }`}>
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black ${
-                  i < stepIndex ? 'bg-green-500 text-black' : s === step ? 'bg-primary text-black' : 'bg-white/10'
-                }`}>
-                  {i < stepIndex ? '✓' : String(i + 1).padStart(2, '0')}
-                </span>
-                <span className="text-[9px] font-black uppercase tracking-widest hidden sm:block">{STEP_LABELS[s]}</span>
-              </div>
-              {i < STEPS.length - 1 && <div className={`h-px flex-1 ${i < stepIndex ? 'bg-green-500/30' : 'bg-white/5'}`} />}
-            </React.Fragment>
-          ))}
-        </div>
-
-        {error && (
-          <div className="mb-6 bg-red-500/10 border border-red-500/30 px-4 py-3 text-red-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-            <span className="material-symbols-outlined text-base">warning</span>
-            {error}
-          </div>
-        )}
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
 
           {/* PAINEL PRINCIPAL */}
           <div className="lg:col-span-2 space-y-6">
+
+            {/* STEPPER — alinhado com o conteúdo */}
+            <div className="flex items-center gap-0">
+              {STEPS.map((s, i) => (
+                <React.Fragment key={s}>
+                  <div className={`flex items-center gap-2 px-4 py-2 border transition-all ${
+                    s === step
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : i < stepIndex
+                      ? 'border-green-500/30 bg-green-500/5 text-green-400'
+                      : 'border-white/10 text-white/20'
+                  }`}>
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black ${
+                      i < stepIndex ? 'bg-green-500 text-black' : s === step ? 'bg-primary text-black' : 'bg-white/10'
+                    }`}>
+                      {i < stepIndex ? '✓' : String(i + 1).padStart(2, '0')}
+                    </span>
+                    <span className="text-[9px] font-black uppercase tracking-widest hidden sm:block">{STEP_LABELS[s]}</span>
+                  </div>
+                  {i < STEPS.length - 1 && <div className={`h-px flex-1 ${i < stepIndex ? 'bg-green-500/30' : 'bg-white/5'}`} />}
+                </React.Fragment>
+              ))}
+            </div>
+
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/30 px-4 py-3 text-red-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                <span className="material-symbols-outlined text-base">warning</span>
+                {error}
+              </div>
+            )}
 
             {/* ETAPA 1: DADOS PESSOAIS */}
             <AnimatePresence mode="wait">
