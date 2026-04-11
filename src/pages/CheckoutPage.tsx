@@ -250,26 +250,23 @@ export function CheckoutPage() {
           {/* PAINEL PRINCIPAL */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* STEPPER — alinhado com o conteúdo */}
-            <div className="flex items-center gap-0">
+            {/* STEPPER — mesma largura do conteúdo abaixo */}
+            <div className="flex items-stretch w-full">
               {STEPS.map((s, i) => (
-                <React.Fragment key={s}>
-                  <div className={`flex items-center gap-2 px-4 py-2 border transition-all ${
-                    s === step
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : i < stepIndex
-                      ? 'border-green-500/30 bg-green-500/5 text-green-400'
-                      : 'border-white/10 text-white/20'
+                <div key={s} className={`flex-1 flex items-center gap-2 px-4 py-3 border transition-all ${
+                  s === step
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : i < stepIndex
+                    ? 'border-green-500/30 bg-green-500/5 text-green-400'
+                    : 'border-white/10 text-white/20'
+                } ${i > 0 ? '-ml-px' : ''}`}>
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 ${
+                    i < stepIndex ? 'bg-green-500 text-black' : s === step ? 'bg-primary text-black' : 'bg-white/10'
                   }`}>
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black ${
-                      i < stepIndex ? 'bg-green-500 text-black' : s === step ? 'bg-primary text-black' : 'bg-white/10'
-                    }`}>
-                      {i < stepIndex ? '✓' : String(i + 1).padStart(2, '0')}
-                    </span>
-                    <span className="text-[9px] font-black uppercase tracking-widest hidden sm:block">{STEP_LABELS[s]}</span>
-                  </div>
-                  {i < STEPS.length - 1 && <div className={`h-px flex-1 ${i < stepIndex ? 'bg-green-500/30' : 'bg-white/5'}`} />}
-                </React.Fragment>
+                    {i < stepIndex ? '✓' : String(i + 1).padStart(2, '0')}
+                  </span>
+                  <span className="text-[9px] font-black uppercase tracking-widest">{STEP_LABELS[s]}</span>
+                </div>
               ))}
             </div>
 
