@@ -81,13 +81,40 @@ export function CartDrawer() {
 
         {items.length > 0 && (
           <div className="p-6 border-t border-primary/20 bg-surface shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-10">
+            {/* Free shipping progress bar */}
+            {total < 500 && (
+              <div className="mb-5">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-white/40">
+                    Frete grátis acima de R$&nbsp;500
+                  </span>
+                  <span className="text-[9px] font-black text-primary tracking-widest">
+                    faltam {formatPrice(500 - total)}
+                  </span>
+                </div>
+                <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all duration-500"
+                    style={{ width: `${Math.min((total / 500) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            {total >= 500 && (
+              <div className="flex items-center gap-2 mb-5 py-2 px-3 bg-primary/10 border border-primary/20">
+                <span className="material-symbols-outlined text-primary text-[16px]">local_shipping</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-primary">
+                  Frete grátis desbloqueado!
+                </span>
+              </div>
+            )}
              <div className="flex justify-between items-center mb-6">
                <span className="text-xs font-bold uppercase text-white/50 tracking-widest">Subtotal:</span>
                <span className="text-xl font-mono text-primary font-black">{formatPrice(total, true)}</span>
              </div>
-             <Link 
-               to="/checkout" 
-               onClick={() => setIsCartOpen(false)} 
+             <Link
+               to="/checkout"
+               onClick={() => setIsCartOpen(false)}
                className="w-full bg-primary text-black font-black uppercase tracking-[0.2em] py-4 flex items-center justify-center gap-2 hover:bg-white transition-all text-xs border border-primary hover:border-white shadow-[0_0_20px_rgba(255,193,7,0.15)]"
              >
                Finalizar Operação <span className="material-symbols-outlined text-sm">arrow_forward</span>
