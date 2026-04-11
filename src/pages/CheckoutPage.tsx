@@ -492,65 +492,45 @@ export function CheckoutPage() {
 }
 
 // ─── Fee constants ─────────────────────────────────────────────────
-// Juros aplicados apenas em 7-12x (cliente paga; 1-6x sem juros)
+// Tabela de juros por parcelamento
 const INSTALLMENT_RATES: Record<number, number> = {
-  7: 1.060, 8: 1.080, 9: 1.100, 10: 1.120, 11: 1.140, 12: 1.160,
+  1: 1.000, 2: 1.050, 3: 1.070, 4: 1.090,  5: 1.110,
+  6: 1.130, 7: 1.150, 8: 1.170, 9: 1.190, 10: 1.210,
+  11: 1.230, 12: 1.250,
 };
-// Taxa do gateway de cartão (absorvida no spread — cliente não vê)
+// Taxa de operação sobre cartão de crédito
 const ASAAS_CC_FEE = 0.0249; // 2,49%
 
-/**
- * Calcula o parcelamento a partir do preço PIX/à vista.
- * cardBase = pixTotal / (1 - 2.49%) → garante que o lojista recebe
- * o mesmo valor independente do método.
- * 1-6x: sem juros sobre cardBase
- * 7-12x: juros progressivos sobre cardBase
- */
-function calcInstallment(pixTotal: number, n: number) {
-  const cardBase = pixTotal / (1 - ASAAS_CC_FEE); // ex: R$3,630 → R$3,724
-  const semJuros = n <= 6;
-  const totalFinal = semJuros ? cardBase : cardBase * (INSTALLMENT_RATES[n] ?? 1);
-  return { perInstallment: totalFinal / n, totalFinal, cardBase, semJuros };
+function calcInstallment(total: number, n: number) {
+  const withInterest = total * (INSTALLMENT_RATES[n] ?? 1);
+  const withGateway  = withInterest * (1 + ASAAS_CC_FEE);
+  return { perInstallment: withGateway / n, totalFinal: withGateway };
 }
 
 function InstallmentSelect({ total, value, onChange }: { total: number; value: number; onChange: (v: number) => void }) {
   const selected = calcInstallment(total, value);
-  const cardBase = total / (1 - ASAAS_CC_FEE);
   return (
-    <div className="space-y-2">
-      <div className="text-[9px] font-black uppercase tracking-widest text-white/30 px-1 flex justify-between">
-        <span>Parcelamento</span>
-        <span className="text-green-400">1-6x sem juros</span>
-      </div>
+    <div className="space-y-1">
       <select
         className="w-full bg-black/50 border border-white/10 p-4 text-xs font-black uppercase outline-none focus:border-primary"
         value={value}
         onChange={e => onChange(parseInt(e.target.value))}
       >
         {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
-          const { perInstallment, totalFinal, semJuros } = calcInstallment(total, n);
-          const interestPct = semJuros ? 0 : ((INSTALLMENT_RATES[n] ?? 1) - 1) * 100;
+          const { perInstallment, totalFinal } = calcInstallment(total, n);
+          const interestPct = ((INSTALLMENT_RATES[n] ?? 1) - 1 + ASAAS_CC_FEE) * 100;
           return (
             <option key={n} value={n} className="bg-[#111] text-white">
-              {n}x de R$ {perInstallment.toFixed(2)}{semJuros
-                ? ' — Sem juros'
-                : ` — Total R$ ${totalFinal.toFixed(2)} (+${interestPct.toFixed(0)}%)`}
+              {n}x de R$ {perInstallment.toFixed(2)}{n > 1 ? ` — Total R$ ${totalFinal.toFixed(2)} (+${interestPct.toFixed(1)}%)` : ' — Sem juros'}
             </option>
           );
         })}
       </select>
-      {/* Linha de resumo */}
-      <div className="flex justify-between text-[9px] font-black uppercase tracking-widest px-1">
-        <span className={selected.semJuros ? 'text-green-400' : 'text-yellow-400'}>
-          {selected.semJuros ? '✓ Sem juros' : `+${(((INSTALLMENT_RATES[value] ?? 1) - 1) * 100).toFixed(0)}% juros`}
-        </span>
-        <span className="text-white/40">Total: R$ {selected.totalFinal.toFixed(2)}</span>
+      {/* Linha de resumo abaixo do select */}
+      <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-white/40 px-1">
+        <span>{value}x de R$ {selected.perInstallment.toFixed(2)}</span>
+        <span>Total: R$ {selected.totalFinal.toFixed(2)}</span>
       </div>
-      {value === 1 && (
-        <div className="text-[8px] text-green-400/70 px-1">
-          💡 No Pix você paga R$ {total.toFixed(2)} — economia de R$ {(cardBase - total).toFixed(2)}
-        </div>
-      )}
     </div>
   );
 }
