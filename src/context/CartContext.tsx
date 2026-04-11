@@ -97,15 +97,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // Ingresso de evento (TICKET) - product_id pode ser null (produto virtual)
       if (item.metadata?.type === 'ticket') {
         const virtualId = item.metadata._virtual_id || item.product_id || item.metadata.event_id;
+        // Busca imagem do evento se não veio no metadata
+        let eventImageUrl: string | null = item.metadata.image_url || null;
+        if (!eventImageUrl && item.metadata.event_id) {
+          const { data: eventData } = await supabase
+            .from('events')
+            .select('image_url, images')
+            .eq('id', item.metadata.event_id)
+            .single();
+          eventImageUrl = eventData?.image_url || eventData?.images?.[0] || null;
+        }
         return {
           ...item,
-          product_id: virtualId || item.product_id, // restaura o ID virtual para o estado local
+          product_id: virtualId || item.product_id,
           product: {
             id: virtualId,
             name: item.metadata.event_title || 'Ingresso de Evento',
             brand: 'TICKET',
             price: item.metadata.unit_price || 0,
-            image_url: null,
+            image_url: eventImageUrl,
             stock: 1,
             event_id: item.metadata.event_id,
             event_date: item.metadata.event_date,
@@ -156,12 +166,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     // Ingresso de evento (TICKET) — produto virtual, não existe na tabela products
     if (metadata?.type === 'ticket') {
+      // Busca imagem do evento no banco
+      let eventImageUrl: string | null = metadata.image_url || null;
+      if (!eventImageUrl && (metadata.event_id || productId)) {
+        const { data: eventData } = await supabase
+          .from('events')
+          .select('image_url, images')
+          .eq('id', metadata.event_id || productId)
+          .single();
+        eventImageUrl = eventData?.image_url || eventData?.images?.[0] || null;
+      }
       productData = {
         id: productId,
         name: metadata.event_title || 'Ingresso de Evento',
         brand: 'TICKET',
         price: metadata.unit_price || 0,
-        image_url: null,
+        image_url: eventImageUrl,
         stock: 1,
         event_id: metadata.event_id,
         event_date: metadata.event_date,
