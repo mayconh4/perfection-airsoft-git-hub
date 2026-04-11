@@ -239,10 +239,10 @@ export function CheckoutPage() {
           </h1>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
 
           {/* PAINEL PRINCIPAL */}
-          <div className="lg:col-span-2 space-y-0">
+          <div className="lg:col-span-2 space-y-6">
 
             {/* STEPPER — mesma largura do conteúdo abaixo */}
             <div className="flex items-stretch w-full">
@@ -274,7 +274,7 @@ export function CheckoutPage() {
             {/* ETAPA 1: DADOS PESSOAIS */}
             <AnimatePresence mode="wait">
               {step === 'dados' && (
-                <motion.section key="dados" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="pt-6">
+                <motion.section key="dados" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                   <StepHeader num="01" title="Protocolo de Identidade" />
                   <div className="bg-white/[0.03] border border-white/10 p-8">
                     <form onSubmit={handleNextStep} autoComplete="on" className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -293,7 +293,7 @@ export function CheckoutPage() {
 
               {/* ETAPA 2: ENDEREÇO (só físicos) */}
               {step === 'endereco' && isPhysical && (
-                <motion.section key="endereco" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="pt-6">
+                <motion.section key="endereco" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                   <StepHeader num="02" title="Endereço de Entrega" />
                   <div className="bg-white/[0.03] border border-white/10 p-8">
                     <form onSubmit={handleNextStep} autoComplete="on" className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -331,7 +331,7 @@ export function CheckoutPage() {
 
               {/* ETAPA PAGAMENTO */}
               {step === 'pagamento' && (
-                <motion.section key="pagamento" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-6 pt-6">
+                <motion.section key="pagamento" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-6">
                   <div className="flex items-center justify-between">
                     <StepHeader num={isPhysical ? '03' : '02'} title="Arsenal de Pagamento" />
                     <button onClick={() => setStep(isPhysical ? 'endereco' : 'dados')} className="text-[9px] text-white/30 uppercase tracking-widest hover:text-white transition-all">
@@ -439,8 +439,8 @@ export function CheckoutPage() {
           </div>
 
           {/* RESUMO */}
-          <aside className="lg:col-span-1 lg:border-l lg:border-white/10">
-            <div className="bg-white/[0.02] p-8 backdrop-blur-xl relative overflow-hidden sticky top-28 min-h-full">
+          <aside className="lg:col-span-1">
+            <div className="bg-white/[0.02] border border-white/5 p-8 backdrop-blur-xl relative overflow-hidden sticky top-28">
               <div className="absolute top-0 right-0 p-2 text-[8px] font-mono text-primary/30 uppercase tracking-tighter">REF: {order?.id?.slice(0, 8) || 'PENDING'}</div>
               {/* Total — alinhado com o topo do painel principal */}
               <div className="mb-6 pb-6 border-b border-white/5">
