@@ -12,6 +12,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const API_V2 = "https://seewdqetyolfmqsiyban.supabase.co/functions/v1/asaas-checkout-v2";
 
+// ─── Pricing constants ─────────────────────────────────────────────
+// PIX = preço base do produto (ex: R$3.630)
+// Cartão 1x = R$3.720 (spread fixo definido pelo lojista)
+// CARD_SPREAD = 3720/3630 → aplica proporcionalmente a qualquer produto
+const CARD_SPREAD = 3720 / 3630; // ≈ 1.0248
+
+const INSTALLMENT_RATES: Record<number, number> = {
+  1: 1.000, 2: 1.050, 3: 1.070, 4: 1.090,  5: 1.110,
+  6: 1.130, 7: 1.150, 8: 1.170, 9: 1.190, 10: 1.210,
+  11: 1.230, 12: 1.250,
+};
+
+// Preço PIX → base cartão → + juros do plano
+function calcInstallment(pixTotal: number, n: number) {
+  const cardBase = pixTotal * CARD_SPREAD; // ex: 3630 → 3720
+  const withInterest = cardBase * (INSTALLMENT_RATES[n] ?? 1);
+  return { perInstallment: withInterest / n, totalFinal: withInterest, cardBase };
+}
+// ──────────────────────────────────────────────────────────────────
+
 type Step = 'dados' | 'endereco' | 'pagamento';
 
 export function CheckoutPage() {
@@ -465,8 +485,8 @@ export function CheckoutPage() {
                     <span className="text-xl font-black italic text-primary">R$ {total.toFixed(2)}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[8px] font-bold text-white/30 uppercase block">💳 Cartão (1-6x)</span>
-                    <span className="text-sm font-black text-white/50">R$ {(total / (1 - 0.0249)).toFixed(2)}</span>
+                    <span className="text-[8px] font-bold text-white/30 uppercase block">💳 Cartão 1x</span>
+                    <span className="text-sm font-black text-white/50">R$ {(total * CARD_SPREAD).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -491,22 +511,6 @@ export function CheckoutPage() {
   );
 }
 
-// ─── Fee constants ─────────────────────────────────────────────────
-// Tabela de juros por parcelamento
-const INSTALLMENT_RATES: Record<number, number> = {
-  1: 1.000, 2: 1.050, 3: 1.070, 4: 1.090,  5: 1.110,
-  6: 1.130, 7: 1.150, 8: 1.170, 9: 1.190, 10: 1.210,
-  11: 1.230, 12: 1.250,
-};
-// Taxa de operação sobre cartão de crédito
-const ASAAS_CC_FEE = 0.0249; // 2,49%
-
-function calcInstallment(total: number, n: number) {
-  const withInterest = total * (INSTALLMENT_RATES[n] ?? 1);
-  const withGateway  = withInterest * (1 + ASAAS_CC_FEE);
-  return { perInstallment: withGateway / n, totalFinal: withGateway };
-}
-
 function InstallmentSelect({ total, value, onChange }: { total: number; value: number; onChange: (v: number) => void }) {
   const selected = calcInstallment(total, value);
   return (
@@ -518,7 +522,7 @@ function InstallmentSelect({ total, value, onChange }: { total: number; value: n
       >
         {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
           const { perInstallment, totalFinal } = calcInstallment(total, n);
-          const interestPct = ((INSTALLMENT_RATES[n] ?? 1) - 1 + ASAAS_CC_FEE) * 100;
+          const interestPct = ((INSTALLMENT_RATES[n] ?? 1) - 1) * 100;
           return (
             <option key={n} value={n} className="bg-[#111] text-white">
               {n}x de R$ {perInstallment.toFixed(2)}{n > 1 ? ` — Total R$ ${totalFinal.toFixed(2)} (+${interestPct.toFixed(1)}%)` : ' — Sem juros'}
