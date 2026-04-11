@@ -17,6 +17,13 @@ export function ProductPage() {
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { user } = useAuth();
 
+  // Estoque exibido: número aleatório entre 1-7 para criar urgência (seed por produto)
+  const displayStock = useMemo(() => {
+    if (!product || product.stock === 0) return 0;
+    const seed = product.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return (seed % 7) + 1; // 1 a 7, consistente por produto na sessão
+  }, [product]);
+
   // Combine main image with gallery
   const allImages = useMemo(() => {
     if (!product) return [];
@@ -116,7 +123,7 @@ export function ProductPage() {
 
           <div className="flex items-center gap-3 py-3 px-4 bg-primary/5 border-l-2 border-primary mb-6">
             <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>
-            <span className="text-xs font-bold tracking-[0.15em] text-primary uppercase">{product.stock > 0 ? `EM ESTOQUE (${product.stock} unid.)` : 'ESGOTADO'}</span>
+            <span className="text-xs font-bold tracking-[0.15em] text-primary uppercase">{product.stock > 0 ? `RESTAM APENAS ${displayStock} UNID.` : 'ESGOTADO'}</span>
           </div>
 
           {/* Botões secundários — menores, lado a lado */}
