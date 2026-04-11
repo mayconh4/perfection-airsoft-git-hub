@@ -75,6 +75,8 @@ export function AdminProducts() {
   const [firecrawlUrl, setFirecrawlUrl] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [dollarUpdating, setDollarUpdating] = useState(false);
+  const [dollarLastUpdate, setDollarLastUpdate] = useState<string | null>(null);
 
   const brands = ['G&G Armament', 'VFC', 'Tokyo Marui', 'Krytac', 'Lancer Tactical', 'Cybergun', 'Rossi', 'Ares', 'KWA', 'Outras'];
 
@@ -269,6 +271,30 @@ export function AdminProducts() {
     }
   };
 
+  const handleDollarUpdate = async () => {
+    setDollarUpdating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-dollar-rate`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
+          }
+        }
+      );
+      const result = await res.json();
+      if (!result.success) throw new Error(result.error);
+      setDollarLastUpdate(new Date().toLocaleTimeString('pt-BR'));
+    } catch (err: any) {
+      alert('Erro ao buscar cotação: ' + err.message);
+    } finally {
+      setDollarUpdating(false);
+    }
+  };
+
   const handleGlobalSync = async () => {
     if (!confirm(`Sincronizar todo o arsenal com o dólar a R$ ${config.dollarRate.toFixed(2)}?`)) return;
     setLoading(true);
@@ -351,9 +377,28 @@ export function AdminProducts() {
             
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="space-y-1">
-                <label className="text-[7px] text-slate-500 font-bold uppercase tracking-widest">Dólar do Dia (R$)</label>
+                <label className="text-[7px] text-slate-500 font-bold uppercase tracking-widest flex items-center justify-between">
+                  <span>Dólar do Dia (R$)</span>
+                  <button
+                    type="button"
+                    onClick={handleDollarUpdate}
+                    disabled={dollarUpdating}
+                    title="Buscar cotação atual e adicionar +R$0,50"
+                    className="flex items-center gap-1 text-primary/60 hover:text-primary transition-colors disabled:opacity-40"
+                  >
+                    <span className={`material-symbols-outlined text-sm ${dollarUpdating ? 'animate-spin' : ''}`}>
+                      {dollarUpdating ? 'progress_activity' : 'currency_exchange'}
+                    </span>
+                  </button>
+                </label>
                 <input type="number" step="0.01" value={config.dollarRate} onChange={e => updateConfig({ dollarRate: parseFloat(e.target.value) })}
-                       className="w-full bg-background-dark border border-white/10 px-3 py-2 text-xs font-black text-white outline-none focus:border-primary/50"/>
+                       className="w-full bg-background-dark border border-primary/30 px-3 py-2 text-xs font-black text-primary outline-none focus:border-primary"/>
+                {dollarLastUpdate && (
+                  <p className="text-[7px] text-green-400/70 flex items-center gap-1">
+                    <span className="size-1 rounded-full bg-green-400 inline-block"></span>
+                    Atualizado às {dollarLastUpdate}
+                  </p>
+                )}
               </div>
               <div className="space-y-1">
                 <label className="text-[7px] text-slate-500 font-bold uppercase tracking-widest">Taxa do Importador (%)</label>
@@ -372,10 +417,14 @@ export function AdminProducts() {
               </div>
             </div>
             
-            <div className="pt-2 flex justify-end">
-               <div className="text-[8px] font-bold text-white/30 uppercase tracking-widest">
-                 Dólar Base: <span className="text-primary italic">R$ {config.dollarRate.toFixed(2)}</span>
-               </div>
+            <div className="pt-2 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[7px] text-white/20 uppercase tracking-widest">
+                <span className="size-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                Auto-sync diário 09:00 BRT · cotação real + R$ 0,50 de margem
+              </div>
+              <div className="text-[8px] font-bold text-white/30 uppercase tracking-widest">
+                Dólar Operacional: <span className="text-primary italic">R$ {config.dollarRate.toFixed(2)}</span>
+              </div>
             </div>
           </div>
           
