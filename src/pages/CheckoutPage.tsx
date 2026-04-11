@@ -360,11 +360,9 @@ export function CheckoutPage() {
                       </div>
                     </div>
                     <InstallmentSelect total={total} value={cardForm.installments} onChange={v => setCardForm({...cardForm, installments: v})} />
-                    <div className="bg-green-950/40 border border-green-500/15 px-4 py-3 flex items-start gap-3">
-                      <span className="material-symbols-outlined text-green-400 text-lg mt-0.5 shrink-0">verified_user</span>
-                      <p className="text-[8px] text-green-400/80 leading-relaxed uppercase tracking-wider">
-                        Seus dados de pagamento são criptografados e protegidos. A Perfection Airsoft nunca armazena os dados do seu cartão.
-                      </p>
+                    <div className="flex items-center justify-center gap-2 py-1">
+                      <span className="material-symbols-outlined text-green-400 text-base">shield</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-green-400">Compra Segura</span>
                     </div>
                     <button type="submit" className="w-full bg-primary text-black font-black py-4 uppercase text-xs tracking-widest flex items-center justify-center gap-2 hover:bg-amber-300 active:scale-[0.98] transition-all">
                       <span className="material-symbols-outlined text-base">lock</span>
