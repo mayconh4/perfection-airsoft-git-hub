@@ -60,9 +60,9 @@ export function AdminProducts() {
     condition: 'novo' as const, 
     specs: {}, 
     usd_price: '',
-    tax_importer: 25,
-    tax_admin: 25,
-    tax_nf: 3,
+    tax_importer: config.tax_importer,
+    tax_admin: config.tax_admin,
+    tax_nf: config.tax_nf,
     source_url: '',
     is_available: true,
     stock: 10,
@@ -84,6 +84,18 @@ export function AdminProducts() {
       setShowForm(true);
     }
   }, [searchParams]);
+
+  // Sincronizar taxas do form com config global (apenas produtos novos)
+  useEffect(() => {
+    if (!editingId) {
+      setForm(prev => ({
+        ...prev,
+        tax_importer: config.tax_importer,
+        tax_admin: config.tax_admin,
+        tax_nf: config.tax_nf
+      }));
+    }
+  }, [config.tax_importer, config.tax_admin, config.tax_nf]);
 
   // Cálculo em Tempo Real
   useEffect(() => {
