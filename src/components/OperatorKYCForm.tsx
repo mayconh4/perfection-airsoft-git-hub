@@ -396,9 +396,14 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
                 </p>
             </div>
 
-            <button 
+            <button
                 type="button"
-                onClick={handleNext}
+                onClick={() => {
+                  const a = new Audio('/sounds/laptop-intel.mp3');
+                  a.volume = 0.7;
+                  a.play().catch(() => {});
+                  handleNext();
+                }}
                 className="w-full max-w-sm bg-primary text-background-dark font-black py-5 px-8 text-[11px] uppercase tracking-[0.4em] hover:bg-white transition-all shadow-[0_0_20px_rgba(255,193,1,0.2)]"
             >
                 INICIAR PROTOCOLO
