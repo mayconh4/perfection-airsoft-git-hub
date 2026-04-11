@@ -32,17 +32,42 @@ export function CheckoutPage() {
   // Formulários
   const [form, setForm] = useState(() => {
     const saved = localStorage.getItem('tactical_p_data');
-    return saved ? JSON.parse(saved) : { name: '', cpf: '', email: user?.email || '', phone: '' };
+    return saved ? JSON.parse(saved) : { name: '', cpf: '', email: user?.email || '', phone: '', cep: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '' };
   });
 
   const [cardForm, setCardForm] = useState({
     number: '', holder: '', expiry: '', ccv: '', installments: 1
   });
 
+  const [cepLoading, setCepLoading] = useState(false);
+
   // 1. Persistência de Dados
   useEffect(() => {
     localStorage.setItem('tactical_p_data', JSON.stringify(form));
   }, [form]);
+
+  // Busca endereço pelo CEP (ViaCEP)
+  const handleCepChange = async (cep: string) => {
+    const clean = cep.replace(/\D/g, '');
+    setForm(f => ({ ...f, cep }));
+    if (clean.length === 8) {
+      setCepLoading(true);
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setForm(f => ({
+            ...f,
+            street: data.logradouro || f.street,
+            neighborhood: data.bairro || f.neighborhood,
+            city: data.localidade || f.city,
+            state: data.uf || f.state,
+          }));
+        }
+      } catch { /* silently ignore */ }
+      finally { setCepLoading(false); }
+    }
+  };
 
   // 2. REALTIME LISTENER (A Mágica da v3)
   useEffect(() => {
@@ -211,6 +236,23 @@ export function CheckoutPage() {
                   <Input label="CPF Operacional" name="cpf" autoComplete="off" value={form.cpf} onChange={v => setForm({...form, cpf: v})} placeholder="000.000.000-00" />
                   <Input label="E-mail de Contato" name="email" autoComplete="email" value={form.email} onChange={v => setForm({...form, email: v})} type="email" />
                   <Input label="WhatsApp / Rádio" name="tel" autoComplete="tel" value={form.phone} onChange={v => setForm({...form, phone: v})} placeholder="(00) 00000-0000" />
+
+                  {/* Endereço de entrega */}
+                  <div className="col-span-1 md:col-span-2 border-t border-white/5 pt-4">
+                    <p className="text-[9px] font-black text-primary/60 tracking-[0.4em] uppercase mb-4">Endereço de Entrega</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="relative">
+                        <Input label={cepLoading ? "CEP — buscando..." : "CEP"} name="postal-code" autoComplete="postal-code" value={form.cep} onChange={handleCepChange} placeholder="00000-000" />
+                        {cepLoading && <div className="absolute right-3 top-9 w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
+                      </div>
+                      <Input label="Número" name="address-line2" autoComplete="address-line2" value={form.number} onChange={v => setForm({...form, number: v})} placeholder="123" />
+                      <Input label="Rua" name="address-line1" autoComplete="address-line1" value={form.street} onChange={v => setForm({...form, street: v})} placeholder="Preenchido automaticamente" />
+                      <Input label="Complemento" name="address-level3" autoComplete="address-level3" value={form.complement} onChange={v => setForm({...form, complement: v})} placeholder="Apto, bloco..." />
+                      <Input label="Bairro" name="address-level4" autoComplete="address-level4" value={form.neighborhood} onChange={v => setForm({...form, neighborhood: v})} />
+                      <Input label="Cidade" name="address-level2" autoComplete="address-level2" value={form.city} onChange={v => setForm({...form, city: v})} />
+                    </div>
+                  </div>
+
                   {step === 'dados' && (
                     <button className="col-span-1 md:col-span-2 bg-primary text-black font-black py-4 uppercase tracking-[0.2em] text-xs hover:bg-white transition-all mt-4">
                       Configurar Pagamento →
