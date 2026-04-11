@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useProduct } from '../hooks/useProducts';
 import { useCart } from '../context/CartContext';
@@ -13,6 +13,8 @@ export function ProductPage() {
   const { product, loading } = useProduct(idOrSlug || '');
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  const mainCtaRef = useRef<HTMLButtonElement>(null);
   const { addItem } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { user } = useAuth();
@@ -22,6 +24,13 @@ export function ProductPage() {
     if (!product || product.stock === 0) return 0;
     const seed = product.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
     return (seed % 7) + 1; // 1 a 7, consistente por produto na sessão
+  }, [product]);
+
+  // Visualizações hoje: número aleatório entre 8-23 (seed por produto)
+  const viewersToday = useMemo(() => {
+    if (!product) return 0;
+    const seed = product.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return (seed % 16) + 8; // 8 a 23
   }, [product]);
 
   // Combine main image with gallery
@@ -50,6 +59,16 @@ export function ProductPage() {
 
     return () => clearInterval(interval);
   }, [isAutoPlaying, allImages]);
+
+  // Show sticky bottom bar when main CTA scrolls out of view
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowStickyBar(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    if (mainCtaRef.current) observer.observe(mainCtaRef.current);
+    return () => observer.disconnect();
+  }, [loading]);
 
   if (loading) return <div className="py-20 text-center text-primary animate-pulse uppercase tracking-widest">Carregando produto...</div>;
   if (!product) return <div className="py-20 text-center text-slate-500 uppercase tracking-widest">Produto não encontrado</div>;
@@ -121,10 +140,20 @@ export function ProductPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 py-3 px-4 bg-primary/5 border-l-2 border-primary mb-6">
+          <div className="flex items-center gap-3 py-3 px-4 bg-primary/5 border-l-2 border-primary mb-3">
             <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>
             <span className="text-xs font-bold tracking-[0.15em] text-primary uppercase">{product.stock > 0 ? `RESTAM APENAS ${displayStock} UNID.` : 'ESGOTADO'}</span>
           </div>
+
+          {/* Urgency: viewers today */}
+          {product.stock > 0 && (
+            <div className="flex items-center gap-2 mb-6">
+              <span className="material-symbols-outlined text-[14px] text-slate-400">visibility</span>
+              <span className="text-[10px] font-bold tracking-[0.15em] text-slate-400 uppercase">
+                {viewersToday} pessoas viram este item hoje
+              </span>
+            </div>
+          )}
 
           {/* Botões secundários — menores, lado a lado */}
           <div className="flex gap-3 mb-3">
