@@ -161,7 +161,30 @@ export function CheckoutPage() {
       </div>
 
       <div className="max-w-6xl mx-auto relative z-10">
-        
+
+        {/* SECURITY TRUST BAR */}
+        <div className="mb-8 bg-green-950/60 border border-green-500/20 px-5 py-3 flex flex-wrap items-center justify-center gap-4 md:gap-8">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-green-400 text-lg">lock</span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-green-400">Conexão SSL 256-bit</span>
+          </div>
+          <div className="hidden md:block w-px h-4 bg-green-500/20" />
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-green-400 text-lg">verified_user</span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-green-400">Pagamento PCI DSS</span>
+          </div>
+          <div className="hidden md:block w-px h-4 bg-green-500/20" />
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-green-400 text-lg">encrypted</span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-green-400">Dados Criptografados</span>
+          </div>
+          <div className="hidden md:block w-px h-4 bg-green-500/20" />
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-green-400 text-lg">shield_with_heart</span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-green-400">Compra 100% Protegida</span>
+          </div>
+        </div>
+
         {/* HUD HEADER */}
         <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
@@ -251,13 +274,32 @@ export function CheckoutPage() {
                       </div>
                     ) : method === 'card' ? (
                       <div className="w-full space-y-4 text-left">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                           <Input label="Número do Cartão" value={cardForm.number} onChange={v => setCardForm({...cardForm, number: v})} />
-                           <Input label="Nome Impresso" value={cardForm.holder} onChange={v => setCardForm({...cardForm, holder: v})} />
-                           <Input label="Validade (MM/AA)" value={cardForm.expiry} onChange={v => setCardForm({...cardForm, expiry: v})} />
-                           <Input label="CVV" value={cardForm.ccv} onChange={v => setCardForm({...cardForm, ccv: v})} />
+                        {/* Card Security Header */}
+                        <div className="flex items-center justify-between mb-2 pb-3 border-b border-white/5">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-green-400 text-base">lock</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-green-400">Ambiente Seguro — SSL 256-bit</span>
+                          </div>
+                          {/* Card brand icons */}
+                          <div className="flex items-center gap-2 opacity-60">
+                            <div className="bg-white px-2 py-0.5 text-[8px] font-black text-blue-800 tracking-widest">VISA</div>
+                            <div className="bg-[#EB001B] px-1.5 py-0.5 rounded-full w-5 h-5 -mr-2.5 opacity-90" />
+                            <div className="bg-[#F79E1B] px-1.5 py-0.5 rounded-full w-5 h-5 opacity-90" />
+                          </div>
                         </div>
-                        <select 
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           <div className="md:col-span-2">
+                             <Input label="Número do Cartão" value={cardForm.number} onChange={v => setCardForm({...cardForm, number: v})} type="tel" placeholder="0000 0000 0000 0000" />
+                           </div>
+                           <Input label="Nome Impresso no Cartão" value={cardForm.holder} onChange={v => setCardForm({...cardForm, holder: v})} />
+                           <div className="grid grid-cols-2 gap-3">
+                             <Input label="Validade (MM/AA)" value={cardForm.expiry} onChange={v => setCardForm({...cardForm, expiry: v})} type="tel" placeholder="MM/AA" />
+                             <Input label="CVV 🔒" value={cardForm.ccv} onChange={v => setCardForm({...cardForm, ccv: v})} type="tel" placeholder="•••" />
+                           </div>
+                        </div>
+
+                        <select
                           className="w-full bg-black/50 border border-white/10 p-4 text-xs font-black uppercase outline-none focus:border-primary"
                           value={cardForm.installments}
                           onChange={e => setCardForm({...cardForm, installments: parseInt(e.target.value)})}
@@ -266,11 +308,21 @@ export function CheckoutPage() {
                              <option key={i} value={i} className="bg-black text-white">{i}x de R$ {(total * (i > 1 ? 1.25 : 1) / i).toFixed(2)}</option>
                            ))}
                         </select>
-                        <button 
+
+                        {/* Pre-submit security notice */}
+                        <div className="bg-green-950/40 border border-green-500/15 px-4 py-3 flex items-start gap-3">
+                          <span className="material-symbols-outlined text-green-400 text-lg mt-0.5 shrink-0">verified_user</span>
+                          <p className="text-[8px] text-green-400/80 leading-relaxed uppercase tracking-wider">
+                            Seus dados de cartão são criptografados com protocolo SSL e processados pela <strong>Asaas</strong> — certificada PCI DSS nível 1. A Perfection Airsoft nunca armazena os dados do seu cartão.
+                          </p>
+                        </div>
+
+                        <button
                           onClick={() => generatePayment('card')}
-                          className="w-full bg-primary text-black font-black py-4 uppercase text-xs tracking-widest mt-4"
+                          className="w-full bg-primary text-black font-black py-4 uppercase text-xs tracking-widest mt-2 flex items-center justify-center gap-2 hover:bg-amber-300 active:scale-[0.98] transition-all"
                         >
-                          Efetuar Disparo Financeiro
+                          <span className="material-symbols-outlined text-base">lock</span>
+                          Confirmar Pagamento Seguro
                         </button>
                       </div>
                     ) : method === 'boleto' && paymentData ? (
@@ -319,8 +371,27 @@ export function CheckoutPage() {
                    </div>
                 </div>
 
-                <div className="mt-12 text-[8px] font-black text-white/10 uppercase tracking-[0.3em] leading-relaxed text-center">
-                   Acesso Criptografado • V3 Tactical System
+                {/* Trust Badges */}
+                <div className="mt-10 pt-6 border-t border-white/5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-green-400 text-sm">lock</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-green-400/80">Checkout 100% Seguro</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-green-400 text-sm">verified_user</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-green-400/80">PCI DSS Certificado</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-green-400 text-sm">encrypted</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-green-400/80">Criptografia SSL 256-bit</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-green-400 text-sm">shield_with_heart</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-green-400/80">Dados protegidos pela Asaas</span>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-white/5 text-[7px] font-bold text-white/20 uppercase tracking-[0.2em] leading-relaxed text-center">
+                    Processado por Asaas Pagamentos S.A. • CNPJ 19.540.550/0001-21
+                  </div>
                 </div>
              </div>
           </aside>
