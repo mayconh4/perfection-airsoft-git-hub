@@ -206,13 +206,23 @@ export function HomePage() {
                   </p>
 
                   {/* Action Button */}
-                  <div className="pt-4 lg:pt-6 w-full flex justify-center">
-                    <Link 
+                  <div className="pt-4 lg:pt-6 w-full flex flex-col items-center gap-3">
+                    <Link
                       to={slide.link}
                       className={`text-black font-black py-4 lg:py-5 px-12 lg:px-20 uppercase tracking-[0.15em] lg:tracking-widest text-[10px] lg:text-sm hover:bg-white transition-all transform hover:scale-105 flex items-center justify-center gap-3 ${slide.accentBg} ${slide.shadow} mx-auto`}
                     >
                       {slide.buttonText} <span className="material-symbols-outlined text-sm lg:text-xl font-bold">arrow_forward</span>
                     </Link>
+                    {/* Trust badge — only on the shop slide */}
+                    {slide.id === 'shop' && (
+                      <div className="flex items-center gap-3 px-4 py-1.5 bg-black/40 border border-white/10 backdrop-blur-sm">
+                        <span className="material-symbols-outlined text-[13px] text-primary">lock</span>
+                        <span className="text-[8px] lg:text-[9px] font-black tracking-[0.25em] uppercase text-white/60">
+                          Compra 100% Segura · Entrega Garantida
+                        </span>
+                        <span className="material-symbols-outlined text-[13px] text-primary">verified_user</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
