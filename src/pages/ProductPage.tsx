@@ -177,15 +177,51 @@ export function ProductPage() {
 
           {/* Botão principal — linha inteira */}
           <button
+            ref={mainCtaRef}
             onClick={async () => { await addItem(product.id); }}
             disabled={product.stock === 0}
-            className="w-full bg-primary hover:bg-primary/90 text-background-dark font-black py-5 px-8 flex items-center justify-center gap-3 transition-all active:scale-[0.98] uppercase tracking-widest text-base disabled:opacity-50 mb-8"
+            className="w-full bg-primary hover:bg-primary/90 text-background-dark font-black py-5 px-8 flex items-center justify-center gap-3 transition-all active:scale-[0.98] uppercase tracking-widest text-base disabled:opacity-50 mb-4"
           >
             <span className="material-symbols-outlined text-2xl">add_shopping_cart</span>
             Adicionar ao Kit
           </button>
+
+          {/* Trust bar */}
+          <div className="flex items-center justify-center gap-4 py-3 px-4 border border-slate-800 bg-slate-900/50 mb-8">
+            <span className="flex items-center gap-1.5 text-[9px] font-bold tracking-[0.12em] text-slate-400 uppercase whitespace-nowrap">
+              <span className="material-symbols-outlined text-[14px] text-primary">lock</span>
+              Compra Segura
+            </span>
+            <span className="w-px h-3 bg-slate-700 shrink-0"></span>
+            <span className="flex items-center gap-1.5 text-[9px] font-bold tracking-[0.12em] text-slate-400 uppercase whitespace-nowrap">
+              <span className="material-symbols-outlined text-[14px] text-primary">local_shipping</span>
+              Entrega Garantida
+            </span>
+            <span className="w-px h-3 bg-slate-700 shrink-0"></span>
+            <span className="flex items-center gap-1.5 text-[9px] font-bold tracking-[0.12em] text-slate-400 uppercase whitespace-nowrap">
+              <span className="material-symbols-outlined text-[14px] text-primary">headset_mic</span>
+              Suporte 24h
+            </span>
+          </div>
         </div>
       </div>
+
+      {/* Sticky mobile bottom bar — appears when main CTA is out of view */}
+      {showStickyBar && product.stock > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background-dark border-t border-primary/30 px-4 py-3 flex items-center gap-3 shadow-[0_-4px_24px_rgba(0,0,0,0.6)]">
+          <div className="flex flex-col min-w-0">
+            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider truncate">{product.brand}</span>
+            <span className="text-base font-black text-primary leading-tight font-mono">{formatPrice(product.price)}</span>
+          </div>
+          <button
+            onClick={async () => { await addItem(product.id); }}
+            className="flex-1 bg-primary text-background-dark font-black py-3 px-4 flex items-center justify-center gap-2 uppercase tracking-widest text-xs active:scale-[0.98] transition-all"
+          >
+            <span className="material-symbols-outlined text-base">add_shopping_cart</span>
+            ADICIONAR AO KIT
+          </button>
+        </div>
+      )}
 
       {/* Tabs Container */}
       <div className="mb-16">
