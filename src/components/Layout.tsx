@@ -143,8 +143,6 @@ export function Layout({ children }: LayoutProps) {
   const profileRef = useRef<HTMLDivElement>(null);
 
   // Instant quote state
-  const [quoteMode, setQuoteMode] = useState(false);
-  const [quoteUrl, setQuoteUrl] = useState('');
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteResult, setQuoteResult] = useState<{
     name: string;
@@ -202,22 +200,25 @@ export function Layout({ children }: LayoutProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [quoteResult, quoteError]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) navigate(`/busca?q=${encodeURIComponent(searchQuery.trim())}`);
-  };
+  const isUrl = (value: string) => /^https?:\/\//i.test(value.trim());
 
-  const handleQuote = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const url = quoteUrl.trim();
-    if (!url) return;
+    const value = searchQuery.trim();
+    if (!value) return;
 
+    if (!isUrl(value)) {
+      navigate(`/busca?q=${encodeURIComponent(value)}`);
+      return;
+    }
+
+    // URL detected → instant quote
     setQuoteLoading(true);
     setQuoteError(null);
     setQuoteResult(null);
 
     try {
-      const scraped = await scrapeProduct(url);
+      const scraped = await scrapeProduct(value);
 
       if (!scraped?.success || !scraped.data?.json) {
         setQuoteError('Não foi possível extrair dados deste produto. Tente outro link.');
@@ -233,22 +234,19 @@ export function Layout({ children }: LayoutProps) {
       const brand: string = (json.brand as string) || 'Importado';
       const description: string = (json.description as string) || '';
 
-      // Silently add to catalog for admin review, then show result with link
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80)
         + '-' + Math.random().toString(36).slice(2, 6);
 
       const { data: inserted, error: insertError } = await supabase.from('products').insert([{
-        name,
-        brand,
+        name, brand,
         price: Math.round(finalPrice * 100) / 100,
         usd_price: usdPrice.toString(),
         image_url: imageUrl,
         images: images.length ? images : (imageUrl ? [imageUrl] : []),
         description,
-        source_url: url,
+        source_url: value,
         is_available: false,
-        stock: 0,
-        slug,
+        stock: 0, slug,
         tax_importer: config.tax_importer,
         tax_admin: config.tax_admin,
         tax_nf: config.tax_nf,
@@ -258,13 +256,9 @@ export function Layout({ children }: LayoutProps) {
       }]).select('id, slug').single();
 
       if (insertError) console.warn('[Quote] Produto não salvo no catálogo:', insertError.message);
-      else console.log('[Quote] Produto adicionado ao catálogo para revisão admin.');
 
       setQuoteResult({
-        name,
-        imageUrl,
-        finalPrice,
-        usdPrice,
+        name, imageUrl, finalPrice, usdPrice,
         productSlug: inserted?.slug || inserted?.id || slug
       });
 
@@ -306,56 +300,28 @@ export function Layout({ children }: LayoutProps) {
               </div>
             </a>
 
-            {/* Search / Instant Quote - Hidden on mobile, shown on md+ */}
-            <div ref={quoteRef} className="hidden md:flex flex-col flex-1 max-w-xl relative gap-0">
-              {/* Mode Toggle Tabs */}
-              <div className="flex mb-1">
-                <button
-                  type="button"
-                  onClick={() => { setQuoteMode(false); setQuoteResult(null); setQuoteError(null); }}
-                  className={`flex items-center gap-1.5 px-3 py-1 text-[8px] font-black uppercase tracking-widest transition-all border-b-2 ${!quoteMode ? 'border-primary text-primary' : 'border-transparent text-white/20 hover:text-white/40'}`}
-                >
-                  <span className="material-symbols-outlined text-xs">search</span>
-                  Pesquisar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setQuoteMode(true); setQuoteResult(null); setQuoteError(null); }}
-                  className={`flex items-center gap-1.5 px-3 py-1 text-[8px] font-black uppercase tracking-widest transition-all border-b-2 ${quoteMode ? 'border-primary text-primary' : 'border-transparent text-white/20 hover:text-white/40'}`}
-                >
-                  <span className="material-symbols-outlined text-xs">bolt</span>
-                  Orçamento
-                </button>
-              </div>
-
-              {/* Input */}
-              <form onSubmit={quoteMode ? handleQuote : handleSearch} className="relative flex">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-primary/40">
-                  <span className="material-symbols-outlined text-xl">{quoteMode ? 'link' : 'search'}</span>
+            {/* Unified Search + Instant Quote - Hidden on mobile */}
+            <div ref={quoteRef} className="hidden md:flex flex-1 max-w-xl relative">
+              <form onSubmit={handleSubmit} className="relative flex w-full">
+                {/* Left icon: bolt when URL detected, search otherwise */}
+                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none transition-all">
+                  {quoteLoading
+                    ? <span className="material-symbols-outlined text-xl text-primary/60 animate-spin">progress_activity</span>
+                    : isUrl(searchQuery)
+                      ? <span className="material-symbols-outlined text-xl text-primary/70">bolt</span>
+                      : <span className="material-symbols-outlined text-xl text-primary/40">search</span>
+                  }
                 </div>
                 <input
-                  value={quoteMode ? quoteUrl : searchQuery}
-                  onChange={e => quoteMode ? setQuoteUrl(e.target.value) : setSearchQuery(e.target.value)}
-                  className="block w-full bg-surface/40 border border-primary/10 rounded-sm py-3 pl-12 pr-10 text-xs focus:bg-surface focus:border-primary/50 focus:ring-1 focus:ring-primary/30 placeholder-primary/20 text-white uppercase tracking-[0.2em] transition-all"
-                  placeholder={quoteMode ? 'COLE O LINK DO PRODUTO AQUI...' : 'LOCALIZAR EQUIPAMENTO...'}
-                  type={quoteMode ? 'text' : 'text'}
+                  value={searchQuery}
+                  onChange={e => { setSearchQuery(e.target.value); setQuoteResult(null); setQuoteError(null); }}
+                  className="block w-full bg-surface/40 border border-primary/10 rounded-sm py-3 pl-12 pr-4 text-xs focus:bg-surface focus:border-primary/50 focus:ring-1 focus:ring-primary/30 placeholder-primary/20 text-white uppercase tracking-[0.2em] transition-all"
+                  placeholder="PESQUISAR PRODUTO / GERAR ORÇAMENTO..."
                 />
-                {quoteMode && (
-                  <button
-                    type="submit"
-                    disabled={quoteLoading}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-primary/50 hover:text-primary transition-colors disabled:opacity-40"
-                  >
-                    {quoteLoading
-                      ? <span className="material-symbols-outlined text-xl animate-spin">progress_activity</span>
-                      : <span className="material-symbols-outlined text-xl">send</span>
-                    }
-                  </button>
-                )}
               </form>
 
-              {/* Quote Result Popup */}
-              {quoteMode && (quoteResult || quoteError) && (
+              {/* Result Popup */}
+              {(quoteResult || quoteError) && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-[#141410] border border-primary/30 shadow-[0_20px_60px_rgba(0,0,0,0.95)] z-[150] overflow-hidden">
                   {quoteError ? (
                     <div className="p-4 flex items-center gap-3">
@@ -371,12 +337,8 @@ export function Layout({ children }: LayoutProps) {
                       )}
                       <div className="flex flex-col justify-between p-4 flex-1 min-w-0">
                         <div>
-                          <p className="text-[7px] font-black uppercase tracking-[0.3em] text-primary/50 mb-1">
-                            Orçamento de Importação
-                          </p>
-                          <p className="text-[11px] font-black text-white uppercase tracking-wide leading-snug line-clamp-2">
-                            {quoteResult.name}
-                          </p>
+                          <p className="text-[7px] font-black uppercase tracking-[0.3em] text-primary/50 mb-1">Orçamento de Importação</p>
+                          <p className="text-[11px] font-black text-white uppercase tracking-wide leading-snug line-clamp-2">{quoteResult.name}</p>
                         </div>
                         <div className="flex items-end justify-between mt-3 gap-3">
                           <div>
@@ -389,7 +351,7 @@ export function Layout({ children }: LayoutProps) {
                             {quoteResult.productSlug && (
                               <Link
                                 to={`/produto/${quoteResult.productSlug}`}
-                                onClick={() => { setQuoteResult(null); setQuoteUrl(''); setQuoteMode(false); }}
+                                onClick={() => { setQuoteResult(null); setSearchQuery(''); }}
                                 className="flex items-center gap-1.5 bg-primary text-black px-3 py-1.5 text-[8px] font-black uppercase tracking-widest hover:bg-white transition-all"
                               >
                                 <span className="material-symbols-outlined text-sm">open_in_new</span>
@@ -398,8 +360,8 @@ export function Layout({ children }: LayoutProps) {
                             )}
                             <button
                               type="button"
-                              onClick={() => { setQuoteResult(null); setQuoteUrl(''); }}
-                              className="text-[8px] font-black uppercase tracking-widest text-white/20 hover:text-white/60 transition-colors pb-0.5"
+                              onClick={() => { setQuoteResult(null); setSearchQuery(''); }}
+                              className="text-[8px] font-black uppercase tracking-widest text-white/20 hover:text-white/60 transition-colors"
                             >
                               Fechar
                             </button>
@@ -410,9 +372,7 @@ export function Layout({ children }: LayoutProps) {
                   )}
                   <div className="px-4 py-2 border-t border-white/5 bg-white/[0.02] flex items-center gap-2">
                     <span className="size-1 rounded-full bg-primary animate-pulse"></span>
-                    <span className="text-[7px] font-black uppercase tracking-[0.3em] text-primary/30">
-                      Produto adicionado ao catálogo para análise
-                    </span>
+                    <span className="text-[7px] font-black uppercase tracking-[0.3em] text-primary/30">Produto adicionado ao catálogo para análise</span>
                   </div>
                 </div>
               )}
