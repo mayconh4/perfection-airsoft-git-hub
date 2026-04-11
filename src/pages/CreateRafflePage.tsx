@@ -27,27 +27,6 @@ export default function CreateRafflePage() {
   const [hasPixKey, setHasPixKey] = useState<boolean | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // Som MW2: UAV quando gate de verificação aparece
-  useEffect(() => {
-    if (hasPixKey !== false) return;
-
-    // Tenta tocar imediatamente
-    const audio = new Audio('/sounds/uav.mp3');
-    audio.volume = 0.6;
-
-    audio.play().catch(() => {
-      // Autoplay bloqueado — toca na próxima interação do usuário
-      const unlock = () => {
-        const a = new Audio('/sounds/uav.mp3');
-        a.volume = 0.6;
-        a.play().catch(() => {});
-      };
-      document.addEventListener('click', unlock, { once: true });
-      document.addEventListener('touchstart', unlock, { once: true });
-    });
-    // Sem cleanup: deixa o áudio concluir naturalmente
-  }, [hasPixKey]);
-
   useEffect(() => {
     if (user) {
       checkPixKey();
