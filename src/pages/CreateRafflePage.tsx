@@ -26,6 +26,15 @@ export default function CreateRafflePage() {
 
   const [hasPixKey, setHasPixKey] = useState<boolean | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+
+  // Som MW2: UAV quando gate de verificação aparece
+  useEffect(() => {
+    if (hasPixKey === false) {
+      const audio = new Audio('/sounds/uav.mp3');
+      audio.volume = 0.6;
+      audio.play().catch(() => {});
+    }
+  }, [hasPixKey]);
   
   useEffect(() => {
     if (user) {

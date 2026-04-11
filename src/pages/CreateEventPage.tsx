@@ -18,6 +18,15 @@ export default function CreateEventPage() {
   const [hasVerifiedProfile, setHasVerifiedProfile] = useState<boolean | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
+  // Som MW2: UAV quando gate de verificação aparece
+  useEffect(() => {
+    if (hasVerifiedProfile === false) {
+      const audio = new Audio('/sounds/uav.mp3');
+      audio.volume = 0.6;
+      audio.play().catch(() => {});
+    }
+  }, [hasVerifiedProfile]);
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',

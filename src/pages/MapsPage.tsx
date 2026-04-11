@@ -2,10 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MapBackgroundSequence } from '../components/MapBackgroundSequence';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
+import { OperatorKYCForm } from '../components/OperatorKYCForm';
 
 export function MapsPage() {
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [hasVerifiedProfile, setHasVerifiedProfile] = useState<boolean | null>(null);
+  const [isVerifyingKYC, setIsVerifyingKYC] = useState(false);
   const [expandedMapId, setExpandedMapId] = useState<string | null>(null);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [selectedRating, setSelectedRating] = useState(0);
@@ -48,6 +53,26 @@ export function MapsPage() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [searchParams]);
+
+  // Verificação de conta ao abrir o formulário
+  useEffect(() => {
+    if (!showForm || !user) return;
+    const isAdmin = user.email === 'admin@perfectionairsoft.com.br';
+    if (isAdmin) { setHasVerifiedProfile(true); return; }
+    supabase.from('profiles').select('asaas_wallet_id').eq('id', user.id).single().then(({ data }) => {
+      const verified = !!data?.asaas_wallet_id;
+      setHasVerifiedProfile(verified);
+    });
+  }, [showForm, user]);
+
+  // Som MW2: UAV ao detectar conta não verificada
+  useEffect(() => {
+    if (hasVerifiedProfile === false) {
+      const audio = new Audio('/sounds/uav.mp3');
+      audio.volume = 0.6;
+      audio.play().catch(() => {});
+    }
+  }, [hasVerifiedProfile]);
 
   // States para o form
   const GAME_MODES = [
@@ -254,9 +279,36 @@ export function MapsPage() {
       </div>
 
       {showForm ? (
-        <form onSubmit={handleSubmit} className="bg-surface border border-primary/20 p-8 rounded-sm max-w-3xl mx-auto shadow-2xl relative">
+        <div className="max-w-3xl mx-auto">
+          {/* Gate de verificação */}
+          {hasVerifiedProfile === false && user?.email !== 'admin@perfectionairsoft.com.br' && (
+            <div className={!isVerifyingKYC ? "bg-red-500/10 border border-red-500/50 p-8 flex flex-col items-center text-center gap-4 mb-8 shadow-[0_0_50px_rgba(239,68,68,0.1)]" : "mb-8 w-full"}>
+              {!isVerifyingKYC ? (
+                <>
+                  <div className="size-16 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/30">
+                    <span className="material-symbols-outlined text-red-500 text-4xl">warning</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-black uppercase tracking-[0.2em] mb-2 italic text-xl">PERFIL NÃO VERIFICADO</h3>
+                    <p className="text-slate-400 text-[10px] uppercase font-mono max-w-md mx-auto leading-relaxed tracking-widest">
+                      PARA CADASTRAR UM CAMPO NO MAPA TÁTICO, COMPLETE O PROTOCOLO DE VERIFICAÇÃO DE CONTA.
+                    </p>
+                  </div>
+                  <button type="button" onClick={() => setIsVerifyingKYC(true)} className="bg-red-500 text-white font-black py-4 px-10 text-[10px] uppercase tracking-[0.3em] hover:bg-white hover:text-red-500 transition-all">
+                    INICIAR VERIFICAÇÃO AGORA
+                  </button>
+                </>
+              ) : (
+                <div className="w-full">
+                  <OperatorKYCForm onComplete={() => { setHasVerifiedProfile(true); setIsVerifyingKYC(false); }} />
+                </div>
+              )}
+            </div>
+          )}
+
+        <form onSubmit={handleSubmit} className={`bg-surface border border-primary/20 p-8 rounded-sm shadow-2xl relative transition-all duration-500 ${(hasVerifiedProfile === false && user?.email !== 'admin@perfectionairsoft.com.br') ? 'opacity-20 pointer-events-none grayscale blur-[2px]' : ''}`}>
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl pointer-events-none"></div>
-          
+
           <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-8 border-b border-white/10 pb-4">
             Intel: <span className="text-primary">{editingMapId ? 'Atualização' : 'Registro'} de Campo</span>
           </h2>
@@ -396,6 +448,7 @@ export function MapsPage() {
             {loading ? 'Processando envio...' : editingMapId ? 'Atualizar Mapa na Base' : 'Registrar Mapa na Base'}
           </button>
         </form>
+        </div>
       ) : loadingData ? (
         <div className="flex flex-col items-center justify-center py-32 z-10 relative">
           <div className="size-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
