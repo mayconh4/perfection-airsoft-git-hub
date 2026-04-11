@@ -119,18 +119,8 @@ export function ProductPage() {
             <span className="text-xs font-bold tracking-[0.15em] text-primary uppercase">{product.stock > 0 ? `EM ESTOQUE (${product.stock} unid.)` : 'ESGOTADO'}</span>
           </div>
 
-          {/* Botão principal — linha inteira */}
-          <button
-            onClick={async () => { await addItem(product.id); }}
-            disabled={product.stock === 0}
-            className="w-full bg-primary hover:bg-primary/90 text-background-dark font-black py-5 px-8 flex items-center justify-center gap-3 transition-all active:scale-[0.98] uppercase tracking-widest text-base disabled:opacity-50 mb-3"
-          >
-            <span className="material-symbols-outlined text-2xl">add_shopping_cart</span>
-            Adicionar ao Kit
-          </button>
-
           {/* Botões secundários — menores, lado a lado */}
-          <div className="flex gap-3 mb-8">
+          <div className="flex gap-3 mb-3">
             <a
               href={`https://wa.me/5537991065120?text=${encodeURIComponent(`Olá Perfection! Tenho interesse no produto *${product.name}* (${window.location.href}). Poderia me dar mais detalhes?`)}`}
               target="_blank"
@@ -148,6 +138,16 @@ export function ProductPage() {
               {isInWishlist(product.id) ? 'Favoritado' : 'Favoritos'}
             </button>
           </div>
+
+          {/* Botão principal — linha inteira */}
+          <button
+            onClick={async () => { await addItem(product.id); }}
+            disabled={product.stock === 0}
+            className="w-full bg-primary hover:bg-primary/90 text-background-dark font-black py-5 px-8 flex items-center justify-center gap-3 transition-all active:scale-[0.98] uppercase tracking-widest text-base disabled:opacity-50 mb-8"
+          >
+            <span className="material-symbols-outlined text-2xl">add_shopping_cart</span>
+            Adicionar ao Kit
+          </button>
         </div>
       </div>
 
