@@ -274,19 +274,9 @@ export function AdminProducts() {
   const handleDollarUpdate = async () => {
     setDollarUpdating(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-dollar-rate`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`
-          }
-        }
-      );
-      const result = await res.json();
-      if (!result.success) throw new Error(result.error);
+      const { data, error } = await supabase.functions.invoke('update-dollar-rate');
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Falha desconhecida');
       setDollarLastUpdate(new Date().toLocaleTimeString('pt-BR'));
     } catch (err: any) {
       alert('Erro ao buscar cotação: ' + err.message);
