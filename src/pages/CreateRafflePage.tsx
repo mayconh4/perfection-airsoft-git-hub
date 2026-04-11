@@ -265,7 +265,13 @@ export default function CreateRafflePage() {
                     </div>
                     <button 
                       type="button"
-                      onClick={() => setIsVerifying(true)}
+                      onClick={() => {
+                        // Toca o som aqui — interação direta do usuário garante autoplay
+                        const a = new Audio('/sounds/uav.mp3');
+                        a.volume = 0.6;
+                        a.play().catch(() => {});
+                        setIsVerifying(true);
+                      }}
                       className="bg-red-500 text-white font-black py-4 px-10 text-[10px] uppercase tracking-[0.3em] hover:bg-white hover:text-red-500 transition-all shadow-[0_0_20px_rgba(239,68,68,0.2)]"
                     >
                       INICIAR VERIFICAÇÃO AGORA
