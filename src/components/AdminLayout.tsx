@@ -8,8 +8,8 @@ export function AdminLayout() {
   const menuItems = [
     { path: '/admin', icon: 'dashboard', label: 'Dashboard' },
     { path: '/admin/produtos', icon: 'inventory_2', label: 'Arsenal' },
-    { path: '/drop/criar', icon: 'add_circle', label: 'Novo Drop' },
-    { path: '/drop', icon: 'military_tech', label: 'Sorteador' },
+    { path: '/admin/drop/criar', icon: 'add_circle', label: 'Novo Drop' },
+    { path: '/admin/drop', icon: 'military_tech', label: 'Sorteador' },
     { path: '/admin/pedidos', icon: 'assignment', label: 'Missões' },
     { path: '/admin/mensagens', icon: 'mail', label: 'Rádio' },
     { path: '/admin/moderacao', icon: 'verified_user', label: 'Moderação' },

@@ -107,6 +107,9 @@ function App() {
                     <Route path="pedidos" element={<AdminOrders />} />
                     <Route path="mensagens" element={<AdminMessages />} />
                     <Route path="moderacao" element={<AdminModeration />} />
+                    <Route path="drop" element={<DropPage />} />
+                    <Route path="drop/criar" element={<CreateRafflePage />} />
+                    <Route path="drop/editar/:id" element={<CreateRafflePage />} />
                   </Route>
 
                   <Route path="*" element={<Navigate to="/" replace />} />
