@@ -17,7 +17,7 @@
     "@types/three": "^0.183.1",
     "cheerio": "^1.2.0",
     "dotenv": "^17.3.1",
-    "framer-motion": "^12.4.3",
+    "framer-motion": "^12.38.0",
     "html5-qrcode": "2.3.8",
     "lucide-react": "^0.577.0",
     "react": "^19.2.4",
