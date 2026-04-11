@@ -23,11 +23,19 @@ export function CategoryPage() {
   const { addItem } = useCart();
   const category = categories.find(c => c.slug === slug);
 
+  const categoryLabel = category?.label || slug || 'Categoria';
+  const categorySlug = slug || '';
+
   return (
     <>
-      <SEO 
-        title={category?.label || slug} 
-        description={category?.description || undefined} 
+      <SEO
+        title={`${categoryLabel} Airsoft | Comprar ${categoryLabel} — Perfection Airsoft`}
+        description={category?.description || `Compre ${categoryLabel} de airsoft importado com qualidade na Perfection Airsoft. Maior seleção de equipamentos táticos com entrega para todo o Brasil.`}
+        url={`https://www.perfectionairsoft.com.br/categoria/${categorySlug}`}
+        breadcrumbs={[
+          { name: 'Início', url: '/' },
+          { name: categoryLabel, url: `/categoria/${categorySlug}` },
+        ]}
       />
       <div className="px-4 sm:px-6 lg:px-8 py-8">
       <section className="relative h-[200px] sm:h-[300px] flex items-end overflow-hidden rounded mb-8 border border-border-tactical">

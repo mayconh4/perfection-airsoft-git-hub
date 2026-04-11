@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useSearch } from '../hooks/useProducts';
 import { useCart } from '../context/CartContext';
 import { formatPrice } from '../types/database';
+import { SEO } from '../components/SEO';
 
 export function SearchPage() {
   const [searchParams] = useSearchParams();
@@ -11,7 +12,24 @@ export function SearchPage() {
   const { results, loading } = useSearch(query);
   const { addItem } = useCart();
 
+  const seoTitle = query
+    ? `Busca: "${query}" | Perfection Airsoft`
+    : 'Buscar Produtos de Airsoft | Perfection Airsoft';
+  const seoDescription = query
+    ? `Resultados para "${query}" na Perfection Airsoft — rifles, pistolas, acessórios e equipamentos táticos de airsoft importados.`
+    : 'Pesquise rifles, pistolas, snipers, acessórios e equipamentos táticos de airsoft na maior loja do Brasil.';
+
   return (
+    <>
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        url={`https://www.perfectionairsoft.com.br/busca${query ? `?q=${encodeURIComponent(query)}` : ''}`}
+        breadcrumbs={[
+          { name: 'Início', url: '/' },
+          { name: 'Busca', url: '/busca' },
+        ]}
+      />
     <div className="px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center gap-2 mb-4">
         <div className="h-1 w-12 bg-primary"></div>
@@ -84,5 +102,6 @@ export function SearchPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

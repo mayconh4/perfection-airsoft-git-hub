@@ -152,7 +152,13 @@ export function HomePage() {
 
   return (
     <>
-      <SEO image="https://www.perfectionairsoft.com.br/og-image.png" />
+      <SEO
+        title="Perfection Airsoft | Loja de Airsoft Online — Rifles, Pistolas e Equipamentos Táticos"
+        description="Perfection Airsoft — A maior loja de airsoft do Brasil. Rifles, pistolas, snipers, acessórios e equipamentos táticos importados. Compre com segurança e receba em todo o Brasil."
+        image="https://www.perfectionairsoft.com.br/og-home.jpg"
+        url="https://www.perfectionairsoft.com.br/"
+        breadcrumbs={[{ name: 'Início', url: '/' }]}
+      />
       <div className="flex flex-col w-full overflow-x-hidden text-center items-center">
         
         {/* Banner Hero */}

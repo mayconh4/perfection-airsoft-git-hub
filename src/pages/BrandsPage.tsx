@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useBrands } from '../hooks/useBrands';
+import { SEO } from '../components/SEO';
 
 function BrandLogo({ name, logo_url }: { name: string; logo_url: string | null }) {
   const [imgFailed, setImgFailed] = useState(false);
@@ -33,6 +34,16 @@ export function BrandsPage() {
   const { brands, loading } = useBrands();
 
   return (
+    <>
+      <SEO
+        title="Marcas de Airsoft | G&G, Tokyo Marui, Krytac e mais — Perfection Airsoft"
+        description="Explore as melhores marcas de airsoft disponíveis na Perfection Airsoft: G&G Armament, Tokyo Marui, Krytac, ASG, Cyma e muito mais. Equipamentos táticos de alta performance importados."
+        url="https://www.perfectionairsoft.com.br/marcas"
+        breadcrumbs={[
+          { name: 'Início', url: '/' },
+          { name: 'Marcas', url: '/marcas' },
+        ]}
+      />
     <div className="py-12 lg:py-20 animate-fade-in relative px-4 lg:px-8">
       <div className="hidden lg:block absolute top-0 left-0 w-1/3 h-full bg-primary/5 blur-[120px] pointer-events-none" />
       <div className="hidden lg:block absolute bottom-0 right-0 w-1/3 h-full bg-primary/5 blur-[120px] pointer-events-none" />
@@ -93,5 +104,6 @@ export function BrandsPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

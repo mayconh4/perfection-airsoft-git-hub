@@ -85,10 +85,30 @@ export function ProductPage() {
 
   return (
     <>
-      <SEO 
-        title={product.name} 
-        description={product.description || undefined} 
-        image={product.image_url || undefined} 
+      <SEO
+        title={`${product.name} | Perfection Airsoft`}
+        description={product.description || `Compre ${product.name} na Perfection Airsoft — a maior loja de airsoft do Brasil. Equipamentos táticos importados com entrega para todo o Brasil.`}
+        image={product.image_url || undefined}
+        url={`https://www.perfectionairsoft.com.br/produto/${product.slug || product.id}`}
+        product={{
+          name: product.name,
+          image: product.image_url,
+          description: product.description,
+          brand: product.brand,
+          price: product.price,
+          slug: product.slug,
+        }}
+        breadcrumbs={[
+          { name: 'Início', url: '/' },
+          {
+            name: (product.category as any)?.label || 'Categoria',
+            url: `/categoria/${(product.category as any)?.slug || ''}`,
+          },
+          {
+            name: product.name,
+            url: `/produto/${product.slug || product.id}`,
+          },
+        ]}
       />
       <div className="px-4 sm:px-6 lg:px-8 py-6">
       <nav className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.15em] mb-8 text-primary/70 flex-wrap">

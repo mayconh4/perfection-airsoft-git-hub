@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /checkout/
+Disallow: /perfil/
+
+Sitemap: https://www.perfectionairsoft.com.br/sitemap.xml
