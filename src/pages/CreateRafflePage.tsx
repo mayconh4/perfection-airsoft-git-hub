@@ -31,35 +31,21 @@ export default function CreateRafflePage() {
   useEffect(() => {
     if (hasPixKey !== false) return;
 
-    let audio: HTMLAudioElement | null = null;
-    let unlockClick: (() => void) | null = null;
-    let unlockTouch: (() => void) | null = null;
-
-    const playAudio = () => {
-      if (!audio) return;
-      audio.play().catch(() => {});
-    };
-
-    audio = new Audio('/sounds/uav.mp3');
+    // Tenta tocar imediatamente
+    const audio = new Audio('/sounds/uav.mp3');
     audio.volume = 0.6;
 
     audio.play().catch(() => {
-      // Autoplay bloqueado pelo navegador — aguarda primeira interação do usuário
-      unlockClick = () => { playAudio(); cleanup(); };
-      unlockTouch = () => { playAudio(); cleanup(); };
-      document.addEventListener('click', unlockClick, { once: true });
-      document.addEventListener('touchstart', unlockTouch, { once: true });
+      // Autoplay bloqueado — toca na próxima interação do usuário
+      const unlock = () => {
+        const a = new Audio('/sounds/uav.mp3');
+        a.volume = 0.6;
+        a.play().catch(() => {});
+      };
+      document.addEventListener('click', unlock, { once: true });
+      document.addEventListener('touchstart', unlock, { once: true });
     });
-
-    const cleanup = () => {
-      if (unlockClick) document.removeEventListener('click', unlockClick);
-      if (unlockTouch) document.removeEventListener('touchstart', unlockTouch);
-    };
-
-    return () => {
-      cleanup();
-      if (audio) { audio.pause(); audio = null; }
-    };
+    // Sem cleanup: deixa o áudio concluir naturalmente
   }, [hasPixKey]);
 
   useEffect(() => {
