@@ -274,9 +274,16 @@ export function AdminProducts() {
   const handleDollarUpdate = async () => {
     setDollarUpdating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('update-dollar-rate');
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || 'Falha desconhecida');
+      // AwesomeAPI: cotação comercial USD→BRL em tempo real (CORS aberto)
+      const res = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
+      if (!res.ok) throw new Error(`API retornou ${res.status}`);
+      const data = await res.json();
+      const rawRate = parseFloat(data['USDBRL']?.bid ?? '0');
+      if (!rawRate || rawRate < 3 || rawRate > 25) throw new Error(`Cotação inválida: ${rawRate}`);
+      // +R$ 0,50 de margem operacional
+      const finalRate = Math.round((rawRate + 0.50) * 100) / 100;
+      // updateConfig salva no banco e o Realtime atualiza todos os preços
+      await updateConfig({ dollarRate: finalRate });
       setDollarLastUpdate(new Date().toLocaleTimeString('pt-BR'));
     } catch (err: any) {
       alert('Erro ao buscar cotação: ' + err.message);
