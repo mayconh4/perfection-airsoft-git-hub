@@ -473,25 +473,35 @@ function EventsList({ orders, loading }: { orders: Order[], loading: boolean }) 
 
         return (
           <div key={idx} className={`bg-surface border overflow-hidden flex flex-col group transition-all duration-300 ${isFinished ? 'border-white/5 opacity-70' : 'border-white/5 hover:border-primary/30'}`}>
-            {/* Header: Imagem/Mapa (Simulado) */}
-            <div className="h-32 bg-background-dark relative overflow-hidden">
-               <div className="absolute inset-0 bg-neutral-900 group-hover:bg-neutral-800 transition-colors" />
-               
-               {/* Fundo Real do Evento (Prioriza metadados, fallback para busca dinâmica) */}
-               {(t.item.metadata?.event_image || eventImages[t.item.metadata?.event_id]) && (
-                 <img 
-                   src={t.item.metadata?.event_image || eventImages[t.item.metadata?.event_id]} 
-                   alt="Mapa" 
-                   className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity" 
-                 />
+            {/* Header: Imagem da Missão */}
+            <div className="h-36 bg-background-dark relative overflow-hidden">
+               {/* Imagem real do evento */}
+               {(t.item.metadata?.event_image || eventImages[t.item.metadata?.event_id]) ? (
+                 <>
+                   <img
+                     src={t.item.metadata?.event_image || eventImages[t.item.metadata?.event_id]}
+                     alt={t.item.metadata?.event_title || 'Missão'}
+                     className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700"
+                   />
+                   <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/50 to-transparent" />
+                 </>
+               ) : (
+                 /* Fallback tático quando não há foto */
+                 <>
+                   <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a05] via-[#111108] to-[#0d0d06]" />
+                   <div className="absolute inset-0" style={{ backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,193,7,0.04) 39px,rgba(255,193,7,0.04) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,193,7,0.04) 39px,rgba(255,193,7,0.04) 40px)' }} />
+                   <div className="absolute inset-0 flex items-center justify-center">
+                     <span className="text-[80px] font-black text-primary/10 uppercase leading-none select-none tracking-tighter group-hover:text-primary/15 transition-colors">
+                       {(t.item.metadata?.event_title || 'OP').slice(0, 2)}
+                     </span>
+                   </div>
+                   <div className="absolute top-3 right-3 flex gap-1">
+                     {[...Array(3)].map((_, i) => <div key={i} className="size-1 bg-primary/20 rounded-full" />)}
+                   </div>
+                   <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/30 to-transparent" />
+                 </>
                )}
-
-               <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/40 to-transparent z-10" />
-               <div className="absolute inset-0 flex items-center justify-center">
-                 {!(t.item.metadata?.event_image || eventImages[t.item.metadata?.event_id]) && (
-                   <span className={`material-symbols-outlined text-8xl ${isFinished ? 'text-white/5' : 'text-white/5 group-hover:text-primary/10 transition-colors'}`}>map</span>
-                 )}
-               </div>
+               <span className="absolute top-3 left-3 text-[8px] font-black text-primary/40 uppercase tracking-[0.3em] font-mono z-10">PERFECTION AIRSOFT</span>
                
                <div className="absolute bottom-4 left-4 z-20 flex gap-2">
                   {/* Status do Evento (Temporal) */}
