@@ -286,7 +286,11 @@ export function CheckoutPage() {
                         </div>
                       )
                     ) : method === 'card' ? (
-                      <div className="w-full space-y-4 text-left">
+                      <form
+                        autoComplete="on"
+                        onSubmit={e => { e.preventDefault(); generatePayment('card'); }}
+                        className="w-full space-y-4 text-left"
+                      >
                         {/* Card Security Header */}
                         <div className="flex items-center justify-between mb-2 pb-3 border-b border-white/5">
                           <div className="flex items-center gap-2">
@@ -331,13 +335,13 @@ export function CheckoutPage() {
                         </div>
 
                         <button
-                          onClick={() => generatePayment('card')}
+                          type="submit"
                           className="w-full bg-primary text-black font-black py-4 uppercase text-xs tracking-widest mt-2 flex items-center justify-center gap-2 hover:bg-amber-300 active:scale-[0.98] transition-all"
                         >
                           <span className="material-symbols-outlined text-base">lock</span>
                           Confirmar Pagamento Seguro
                         </button>
-                      </div>
+                      </form>
                     ) : method === 'boleto' && paymentData ? (
                       <div className="space-y-6">
                         <p className="text-xs font-black uppercase text-white/60">Boleto gerado com sucesso</p>
