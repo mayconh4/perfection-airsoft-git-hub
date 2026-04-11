@@ -49,6 +49,7 @@ export function CheckoutPage() {
   });
 
   const [cardForm, setCardForm] = useState({ number: '', holder: '', expiry: '', ccv: '', installments: 1 });
+  const [cardConfirmed, setCardConfirmed] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
 
   useEffect(() => {
@@ -152,10 +153,14 @@ export function CheckoutPage() {
         })
       });
       const pData = await pResp.json();
-      if (!pResp.ok) throw new Error(pData.error || 'Operação negada pelo Gateway');
+      if (!pResp.ok) throw new Error('Não foi possível processar o pagamento. Verifique os dados e tente novamente.');
       setPaymentData(pData);
+      if (selectedMethod === 'card') setCardConfirmed(true);
     } catch (err: any) {
-      setError(err.message);
+      // Nunca expõe erros internos ao cliente
+      const raw = err.message || '';
+      const isInternal = /gateway|asaas|supabase|function|fetch|network|500|502|503/i.test(raw);
+      setError(isInternal ? 'Ocorreu um erro ao processar seu pagamento. Tente novamente ou escolha outro método.' : raw);
     } finally {
       setProcessing(false);
     }
@@ -326,7 +331,7 @@ export function CheckoutPage() {
                     {processing ? (
                       <div className="space-y-4">
                         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                        <p className="text-[10px] font-black tracking-widest text-primary uppercase">Criptografando Dados...</p>
+                        <p className="text-[10px] font-black tracking-widest text-primary uppercase">Processando pagamento...</p>
                       </div>
                     ) : error ? (
                       <div className="text-red-500 space-y-4">
@@ -350,6 +355,8 @@ export function CheckoutPage() {
                           </div>
                         </div>
                       )
+                    ) : method === 'card' && cardConfirmed ? (
+                      <ConfirmationBlock clearCart={clearCart} navigate={navigate} isPhysical={isPhysical} />
                     ) : method === 'card' ? (
                       <form autoComplete="on" onSubmit={e => { e.preventDefault(); generatePayment('card'); }} className="w-full space-y-4 text-left">
                         <div className="flex items-center justify-between mb-2 pb-3 border-b border-white/5">
@@ -387,7 +394,7 @@ export function CheckoutPage() {
                         <div className="bg-green-950/40 border border-green-500/15 px-4 py-3 flex items-start gap-3">
                           <span className="material-symbols-outlined text-green-400 text-lg mt-0.5 shrink-0">verified_user</span>
                           <p className="text-[8px] text-green-400/80 leading-relaxed uppercase tracking-wider">
-                            Dados criptografados com SSL e processados pela <strong>Asaas</strong> — PCI DSS nível 1. A Perfection Airsoft nunca armazena os dados do seu cartão.
+                            Seus dados de pagamento são criptografados e protegidos. A Perfection Airsoft nunca armazena os dados do seu cartão.
                           </p>
                         </div>
                         <button type="submit" className="w-full bg-primary text-black font-black py-4 uppercase text-xs tracking-widest flex items-center justify-center gap-2 hover:bg-amber-300 active:scale-[0.98] transition-all">
@@ -444,18 +451,15 @@ export function CheckoutPage() {
               <div className="mt-8 pt-6 border-t border-white/5 space-y-3">
                 {[
                   { icon: 'lock', label: 'Checkout 100% Seguro' },
-                  { icon: 'verified_user', label: 'PCI DSS Certificado' },
+                  { icon: 'verified_user', label: 'Pagamento Certificado' },
                   { icon: 'encrypted', label: 'Criptografia SSL 256-bit' },
-                  { icon: 'shield_with_heart', label: 'Dados protegidos pela Asaas' },
+                  { icon: 'shield_with_heart', label: 'Dados 100% Protegidos' },
                 ].map(b => (
                   <div key={b.icon} className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-green-400 text-sm">{b.icon}</span>
                     <span className="text-[8px] font-black uppercase tracking-widest text-green-400/80">{b.label}</span>
                   </div>
                 ))}
-                <div className="mt-4 pt-4 border-t border-white/5 text-[7px] font-bold text-white/20 uppercase tracking-[0.2em] leading-relaxed text-center">
-                  Processado por Asaas Pagamentos S.A.<br />CNPJ 19.540.550/0001-21
-                </div>
               </div>
             </div>
           </aside>
@@ -466,13 +470,13 @@ export function CheckoutPage() {
 }
 
 // ─── Fee constants ─────────────────────────────────────────────────
-// Taxas reais do backend (calculateInterest em asaas-checkout-v2)
+// Tabela de juros por parcelamento
 const INSTALLMENT_RATES: Record<number, number> = {
   1: 1.000, 2: 1.050, 3: 1.070, 4: 1.090,  5: 1.110,
   6: 1.130, 7: 1.150, 8: 1.170, 9: 1.190, 10: 1.210,
   11: 1.230, 12: 1.250,
 };
-// Taxa de gateway Asaas sobre cartão de crédito
+// Taxa de operação sobre cartão de crédito
 const ASAAS_CC_FEE = 0.0249; // 2,49%
 
 function calcInstallment(total: number, n: number) {
@@ -537,7 +541,7 @@ function FeeTable() {
                 return (
                   <div key={n} className="flex justify-between text-[8px] font-mono text-white/50">
                     <span>{n}x</span>
-                    <span>{n === 1 ? `Gateway Asaas: ${(ASAAS_CC_FEE*100).toFixed(2)}%` : `Juros: ${juros.toFixed(0)}% + Gateway: ${(ASAAS_CC_FEE*100).toFixed(2)}% = ${total_fee.toFixed(2)}% total`}</span>
+                    <span>{n === 1 ? `Taxa de operação: ${(ASAAS_CC_FEE*100).toFixed(2)}%` : `Juros: ${juros.toFixed(0)}% + Taxa: ${(ASAAS_CC_FEE*100).toFixed(2)}% = ${total_fee.toFixed(2)}% total`}</span>
                   </div>
                 );
               })}
@@ -564,7 +568,7 @@ function FeeTable() {
           </div>
 
           <p className="text-[7px] text-white/20 uppercase tracking-widest pt-2 border-t border-white/5">
-            Taxas cobradas pela Asaas Pagamentos S.A. — CNPJ 19.540.550/0001-21 · Processador parceiro certificado PCI DSS Nível 1
+            Taxas de operação aplicadas pela Perfection Airsoft conforme regulamentação do Banco Central do Brasil
           </p>
         </div>
       )}
