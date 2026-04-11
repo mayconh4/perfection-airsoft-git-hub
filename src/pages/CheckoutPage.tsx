@@ -206,11 +206,11 @@ export function CheckoutPage() {
               </div>
 
               <div className="bg-white/[0.03] border border-white/10 p-8 clip-path-tactical">
-                <form onSubmit={handleNext} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Input label="Nome Completo" value={form.name} onChange={v => setForm({...form, name: v})} />
-                  <Input label="CPF Operacional" value={form.cpf} onChange={v => setForm({...form, cpf: v})} placeholder="000.000.000-00" />
-                  <Input label="E-mail de Contato" value={form.email} onChange={v => setForm({...form, email: v})} type="email" />
-                  <Input label="WhatsApp / Rádio" value={form.phone} onChange={v => setForm({...form, phone: v})} placeholder="(00) 00000-0000" />
+                <form onSubmit={handleNext} autoComplete="on" className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input label="Nome Completo" name="name" autoComplete="name" value={form.name} onChange={v => setForm({...form, name: v})} />
+                  <Input label="CPF Operacional" name="cpf" autoComplete="off" value={form.cpf} onChange={v => setForm({...form, cpf: v})} placeholder="000.000.000-00" />
+                  <Input label="E-mail de Contato" name="email" autoComplete="email" value={form.email} onChange={v => setForm({...form, email: v})} type="email" />
+                  <Input label="WhatsApp / Rádio" name="tel" autoComplete="tel" value={form.phone} onChange={v => setForm({...form, phone: v})} placeholder="(00) 00000-0000" />
                   {step === 'dados' && (
                     <button className="col-span-1 md:col-span-2 bg-primary text-black font-black py-4 uppercase tracking-[0.2em] text-xs hover:bg-white transition-all mt-4">
                       Configurar Pagamento →
@@ -303,12 +303,12 @@ export function CheckoutPage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                            <div className="md:col-span-2">
-                             <Input label="Número do Cartão" value={cardForm.number} onChange={v => setCardForm({...cardForm, number: v})} type="tel" placeholder="0000 0000 0000 0000" />
+                             <Input label="Número do Cartão" name="cc-number" autoComplete="cc-number" value={cardForm.number} onChange={v => setCardForm({...cardForm, number: v})} type="tel" placeholder="0000 0000 0000 0000" />
                            </div>
-                           <Input label="Nome Impresso no Cartão" value={cardForm.holder} onChange={v => setCardForm({...cardForm, holder: v})} />
+                           <Input label="Nome Impresso no Cartão" name="cc-name" autoComplete="cc-name" value={cardForm.holder} onChange={v => setCardForm({...cardForm, holder: v})} />
                            <div className="grid grid-cols-2 gap-3">
-                             <Input label="Validade (MM/AA)" value={cardForm.expiry} onChange={v => setCardForm({...cardForm, expiry: v})} type="tel" placeholder="MM/AA" />
-                             <Input label="CVV 🔒" value={cardForm.ccv} onChange={v => setCardForm({...cardForm, ccv: v})} type="tel" placeholder="•••" />
+                             <Input label="Validade (MM/AA)" name="cc-exp" autoComplete="cc-exp" value={cardForm.expiry} onChange={v => setCardForm({...cardForm, expiry: v})} type="tel" placeholder="MM/AA" />
+                             <Input label="CVV 🔒" name="cc-csc" autoComplete="cc-csc" value={cardForm.ccv} onChange={v => setCardForm({...cardForm, ccv: v})} type="tel" placeholder="•••" />
                            </div>
                         </div>
 
@@ -416,13 +416,15 @@ export function CheckoutPage() {
 }
 
 // Sub-components para manter o código limpo e premium
-function Input({ label, value, onChange, type = "text", placeholder = "" }: { label: string, value: string, onChange: (v: string) => void, type?: string, placeholder?: string }) {
+function Input({ label, value, onChange, type = "text", placeholder = "", autoComplete, name }: { label: string, value: string, onChange: (v: string) => void, type?: string, placeholder?: string, autoComplete?: string, name?: string }) {
   return (
     <div className="space-y-2">
       <label className="text-[9px] font-black text-white/40 tracking-widest uppercase">{label}</label>
-      <input 
-        type={type} 
-        value={value} 
+      <input
+        type={type}
+        name={name}
+        autoComplete={autoComplete}
+        value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         className="w-full bg-black/60 border border-white/10 px-4 py-4 text-xs font-sans outline-none focus:border-primary transition-all rounded-sm placeholder:text-white/5"
