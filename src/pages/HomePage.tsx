@@ -40,7 +40,7 @@ export function HomePage() {
       description: "Conecte seu campo à maior rede de operadores do país.",
       buttonText: "Cadastrar Campo",
       link: "/eventos",
-      image: "/assets/field-banner.png",
+      image: "/images/field-banner.jpg",
       accent: "text-green-500",
       accentBg: "bg-green-500",
       shadow: "shadow-[0_0_40px_rgba(34,197,94,0.4)]"
