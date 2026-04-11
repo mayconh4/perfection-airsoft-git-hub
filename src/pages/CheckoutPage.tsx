@@ -367,9 +367,14 @@ export function CheckoutPage() {
                           <div className="md:col-span-2">
                             <Input label="Número do Cartão" name="cc-number" autoComplete="cc-number" value={cardForm.number} onChange={v => setCardForm({...cardForm, number: v})} type="tel" placeholder="0000 0000 0000 0000" />
                           </div>
-                          <Input label="Nome no Cartão" name="cc-name" autoComplete="cc-name" value={cardForm.holder} onChange={v => setCardForm({...cardForm, holder: v})} />
+                          <Input label="Nome no Cartão" name="cc-name" autoComplete="cc-name" value={cardForm.holder} onChange={v => setCardForm({...cardForm, holder: v.toUpperCase()})} className="uppercase" />
                           <div className="grid grid-cols-2 gap-3">
-                            <Input label="Validade" name="cc-exp" autoComplete="cc-exp" value={cardForm.expiry} onChange={v => setCardForm({...cardForm, expiry: v})} type="tel" placeholder="MM/AA" />
+                            <Input label="Validade" name="cc-exp" autoComplete="cc-exp" value={cardForm.expiry} onChange={v => {
+                              // Máscara MM/AA automática
+                              const digits = v.replace(/\D/g, '').slice(0, 4);
+                              const masked = digits.length > 2 ? digits.slice(0,2) + '/' + digits.slice(2) : digits;
+                              setCardForm({...cardForm, expiry: masked});
+                            }} type="tel" placeholder="MM/AA" />
                             <Input label="CVV 🔒" name="cc-csc" autoComplete="cc-csc" value={cardForm.ccv} onChange={v => setCardForm({...cardForm, ccv: v})} type="tel" placeholder="•••" />
                           </div>
                         </div>
@@ -492,9 +497,9 @@ function ConfirmationBlock({ clearCart, navigate, isPhysical }: { clearCart: () 
   );
 }
 
-function Input({ label, value, onChange, type = 'text', placeholder = '', autoComplete, name }: {
+function Input({ label, value, onChange, type = 'text', placeholder = '', autoComplete, name, className = '' }: {
   label: string; value: string; onChange: (v: string) => void;
-  type?: string; placeholder?: string; autoComplete?: string; name?: string;
+  type?: string; placeholder?: string; autoComplete?: string; name?: string; className?: string;
 }) {
   return (
     <div className="space-y-2">
@@ -502,7 +507,7 @@ function Input({ label, value, onChange, type = 'text', placeholder = '', autoCo
       <input
         type={type} name={name} autoComplete={autoComplete} value={value}
         onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full bg-black/60 border border-white/10 px-4 py-4 text-xs font-sans outline-none focus:border-primary transition-all rounded-sm placeholder:text-white/5"
+        className={`w-full bg-black/60 border border-white/10 px-4 py-4 text-xs font-sans outline-none focus:border-primary transition-all rounded-sm placeholder:text-white/5 ${className}`}
       />
     </div>
   );
