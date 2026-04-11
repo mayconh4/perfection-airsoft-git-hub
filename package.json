@@ -26,6 +26,9 @@
     "three": "^0.183.2",
     "three-stdlib": "^2.36.1"
   },
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@types/node": "^24.12.0",
