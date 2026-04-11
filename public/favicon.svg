@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Dark rounded background -->
+  <rect width="512" height="512" rx="110" fill="#0a0a05"/>
+
+  <!-- Outer glow -->
+  <circle cx="256" cy="256" r="185" fill="none" stroke="#FFC107" stroke-width="6" opacity="0.25"/>
+
+  <!-- Target rings -->
+  <circle cx="256" cy="256" r="165" fill="none" stroke="#FFC107" stroke-width="18" opacity="0.9"/>
+  <circle cx="256" cy="256" r="110" fill="none" stroke="#FFC107" stroke-width="18" opacity="0.9"/>
+  <circle cx="256" cy="256" r="55"  fill="#FFC107"/>
+
+  <!-- Crosshair lines -->
+  <line x1="256" y1="68"  x2="256" y2="152" stroke="#FFC107" stroke-width="18" stroke-linecap="round" opacity="0.9"/>
+  <line x1="256" y1="360" x2="256" y2="444" stroke="#FFC107" stroke-width="18" stroke-linecap="round" opacity="0.9"/>
+  <line x1="68"  y1="256" x2="152" y2="256" stroke="#FFC107" stroke-width="18" stroke-linecap="round" opacity="0.9"/>
+  <line x1="360" y1="256" x2="444" y2="256" stroke="#FFC107" stroke-width="18" stroke-linecap="round" opacity="0.9"/>
+</svg>
