@@ -260,25 +260,6 @@ export function CheckoutPage() {
                     </form>
                   </div>
 
-                  {/* CTA bilhetes/drops */}
-                  {!isPhysical && (
-                    <div className="mt-4 bg-primary/5 border border-primary/20 px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-                      <div>
-                        <p className="text-[9px] font-black text-primary/70 uppercase tracking-widest">Já tem uma conta?</p>
-                        <p className="text-xs font-black text-white">Ver seus ingressos e bilhetes de drop</p>
-                      </div>
-                      <div className="flex gap-3">
-                        <Link to="/login" className="bg-white/5 border border-white/10 text-white text-[9px] font-black uppercase tracking-widest px-5 py-2.5 hover:border-primary transition-all">
-                          Fazer Login
-                        </Link>
-                        {user && (
-                          <Link to="/meus-ingressos" className="bg-primary text-black text-[9px] font-black uppercase tracking-widest px-5 py-2.5 hover:bg-amber-300 transition-all">
-                            Ver Bilhetes
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </motion.section>
               )}
 
