@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
 
 // Motor Server-Side Rendering Vercel (Node.js API)
 // Essa função não usa Edge Runtime para garantir acesso a todas as variáveis de ambiente
@@ -88,15 +90,21 @@ export default async function handler(req: any, res: any) {
       }
     }
 
-    // Busca o HTML React puro compilarado
-    const siteUrl = 'https://www.perfectionairsoft.com.br';
+    // Lê o index.html do output do build (mais confiável que HTTP self-request)
     let html = '';
     try {
-      const resp = await fetch(`${siteUrl}/index.html`);
-      html = await resp.text();
-    } catch (e) {
-      // Fallback extremo
-      html = `<!DOCTYPE html><html><head><title>${title}</title></head><body><div id="root"></div></body></html>`;
+      html = fs.readFileSync(path.join(process.cwd(), 'dist', 'index.html'), 'utf-8');
+    } catch {
+      // Fallback: tenta buscar via HTTP
+      try {
+        const resp = await fetch('https://www.perfectionairsoft.com.br/index.html', { signal: AbortSignal.timeout(4000) });
+        html = await resp.text();
+      } catch {
+        // Fallback final: redireciona para o SPA (melhor que página em branco)
+        res.setHeader('Location', '/');
+        res.status(302).end();
+        return;
+      }
     }
 
     // Injeção Server-Side das Tags
