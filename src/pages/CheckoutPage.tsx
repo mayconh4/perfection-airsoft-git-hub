@@ -144,13 +144,7 @@ export function CheckoutPage() {
   };
 
   if (isConfirmed) {
-    return (
-      <TacticalSuccessModal 
-        isOpen={true}
-        onClose={() => { clearCart(); navigate('/meus-ingressos'); }}
-        message="MISSÃO CUMPRIDA! Pagamento confirmado em tempo real. Sua mercadoria tática já está em processamento."
-      />
-    );
+    // Não mostra mais o modal gigante — handled inline no lugar do QR code
   }
 
   return (
@@ -259,19 +253,38 @@ export function CheckoutPage() {
                         <button onClick={() => setMethod(null)} className="text-[10px] underline uppercase">Tentar outro método</button>
                       </div>
                     ) : method === 'pix' && paymentData ? (
-                      <div className="space-y-6 w-full">
-                        <div className="bg-white p-4 inline-block rounded-sm">
-                           <img src={`data:image/png;base64,${paymentData.qrCodeBase64}`} alt="QR Code" className="w-40 h-40" />
+                      isConfirmed ? (
+                        /* Confirmação discreta no lugar do QR code */
+                        <div className="w-full flex flex-col items-center gap-5 py-6">
+                          <div className="w-14 h-14 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-green-400 text-3xl">check_circle</span>
+                          </div>
+                          <div className="text-center space-y-1">
+                            <p className="text-sm font-black text-green-400 uppercase tracking-widest">Pagamento Confirmado</p>
+                            <p className="text-[10px] text-white/40 uppercase tracking-wider">Pedido em processamento</p>
+                          </div>
+                          <button
+                            onClick={() => { clearCart(); navigate('/'); }}
+                            className="mt-2 bg-primary/10 border border-primary/30 text-primary text-[9px] font-black uppercase tracking-widest px-8 py-3 hover:bg-primary hover:text-black transition-all"
+                          >
+                            Voltar à Loja
+                          </button>
                         </div>
-                        <div className="w-full max-w-sm mx-auto bg-black border border-white/10 p-3 flex gap-2">
-                          <input readOnly value={paymentData.qrCode} className="bg-transparent text-[9px] font-mono text-white/40 outline-none flex-1 truncate" />
-                          <button onClick={() => { navigator.clipboard.writeText(paymentData.qrCode); }} className="bg-primary text-black text-[9px] font-black px-4">COPIAR</button>
+                      ) : (
+                        <div className="space-y-6 w-full">
+                          <div className="bg-white p-4 inline-block rounded-sm">
+                            <img src={`data:image/png;base64,${paymentData.qrCodeBase64}`} alt="QR Code" className="w-40 h-40" />
+                          </div>
+                          <div className="w-full max-w-sm mx-auto bg-black border border-white/10 p-3 flex gap-2">
+                            <input readOnly value={paymentData.qrCode} className="bg-transparent text-[9px] font-mono text-white/40 outline-none flex-1 truncate" />
+                            <button onClick={() => { navigator.clipboard.writeText(paymentData.qrCode); }} className="bg-primary text-black text-[9px] font-black px-4">COPIAR</button>
+                          </div>
+                          <div className="flex items-center justify-center gap-2 animate-pulse">
+                            <div className="w-2 h-2 bg-primary rounded-full" />
+                            <span className="text-[9px] font-black tracking-[0.3em] text-primary uppercase">Aguardando pagamento...</span>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-center gap-2 animate-pulse">
-                          <div className="w-2 h-2 bg-primary rounded-full" />
-                          <span className="text-[9px] font-black tracking-[0.3em] text-primary uppercase">Sintonizando confirmação via satélite...</span>
-                        </div>
-                      </div>
+                      )
                     ) : method === 'card' ? (
                       <div className="w-full space-y-4 text-left">
                         {/* Card Security Header */}
