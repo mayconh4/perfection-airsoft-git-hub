@@ -151,6 +151,7 @@ export function Layout({ children }: LayoutProps) {
     imageUrl: string;
     finalPrice: number;
     usdPrice: number;
+    productSlug?: string;
   } | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const quoteRef = useRef<HTMLDivElement>(null);
@@ -232,13 +233,11 @@ export function Layout({ children }: LayoutProps) {
       const brand: string = (json.brand as string) || 'Importado';
       const description: string = (json.description as string) || '';
 
-      setQuoteResult({ name, imageUrl, finalPrice, usdPrice });
-
-      // Silently add to catalog for admin review
+      // Silently add to catalog for admin review, then show result with link
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80)
         + '-' + Math.random().toString(36).slice(2, 6);
 
-      supabase.from('products').insert([{
+      const { data: inserted, error: insertError } = await supabase.from('products').insert([{
         name,
         brand,
         price: Math.round(finalPrice * 100) / 100,
@@ -256,9 +255,17 @@ export function Layout({ children }: LayoutProps) {
         condition: 'novo',
         system: 'Eletrica (AEG)',
         specs: {}
-      }]).then(({ error }) => {
-        if (error) console.warn('[Quote] Produto não salvo no catálogo:', error.message);
-        else console.log('[Quote] Produto adicionado ao catálogo para revisão admin.');
+      }]).select('id, slug').single();
+
+      if (insertError) console.warn('[Quote] Produto não salvo no catálogo:', insertError.message);
+      else console.log('[Quote] Produto adicionado ao catálogo para revisão admin.');
+
+      setQuoteResult({
+        name,
+        imageUrl,
+        finalPrice,
+        usdPrice,
+        productSlug: inserted?.slug || inserted?.id || slug
       });
 
     } catch {
@@ -371,20 +378,32 @@ export function Layout({ children }: LayoutProps) {
                             {quoteResult.name}
                           </p>
                         </div>
-                        <div className="flex items-end justify-between mt-3">
+                        <div className="flex items-end justify-between mt-3 gap-3">
                           <div>
                             <p className="text-[7px] text-white/30 uppercase tracking-widest leading-none mb-0.5">Preço Final</p>
                             <p className="text-xl font-black text-primary leading-none">
                               R${' '}{quoteResult.finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => { setQuoteResult(null); setQuoteUrl(''); }}
-                            className="text-[8px] font-black uppercase tracking-widest text-white/20 hover:text-white/60 transition-colors ml-4 pb-0.5"
-                          >
-                            Fechar
-                          </button>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {quoteResult.productSlug && (
+                              <Link
+                                to={`/produto/${quoteResult.productSlug}`}
+                                onClick={() => { setQuoteResult(null); setQuoteUrl(''); setQuoteMode(false); }}
+                                className="flex items-center gap-1.5 bg-primary text-black px-3 py-1.5 text-[8px] font-black uppercase tracking-widest hover:bg-white transition-all"
+                              >
+                                <span className="material-symbols-outlined text-sm">open_in_new</span>
+                                Ver Item
+                              </Link>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => { setQuoteResult(null); setQuoteUrl(''); }}
+                              className="text-[8px] font-black uppercase tracking-widest text-white/20 hover:text-white/60 transition-colors pb-0.5"
+                            >
+                              Fechar
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
