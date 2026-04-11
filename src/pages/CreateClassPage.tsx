@@ -325,7 +325,7 @@ export function CreateClassPage() {
                                   className={`w-full flex items-center gap-4 p-4 border-b border-white/5 transition-all text-left group ${loadout[activeSlot] === product ? 'bg-primary/10 border-l-4 border-l-primary' : 'hover:bg-white/5'}`}
                                >
                                   <div className="size-10 bg-black/60 flex items-center justify-center overflow-hidden border border-white/10 group-hover:border-primary/50 transition-colors">
-                                     <img src={product.image_url} alt={product.name || ''} className="w-full h-full object-contain p-1" />
+                                     <img src={product.image_url ?? undefined} alt={product.name || ''} className="w-full h-full object-contain p-1" />
                                   </div>
                                   <span className={`text-[11px] font-black uppercase tracking-tight group-hover:text-primary transition-colors ${loadout[activeSlot] === product ? 'text-primary' : 'text-white/60'}`}>
                                      {product.name}
