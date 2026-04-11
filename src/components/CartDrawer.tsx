@@ -22,16 +22,29 @@ export function CartDrawer() {
             <span className="material-symbols-outlined text-primary text-2xl">shopping_cart</span>
             Seu Kit Tático
           </h2>
-          <button onClick={() => setIsCartOpen(false)} className="text-white/50 hover:text-primary transition-colors p-2 -mr-2">
+          <button onClick={() => setIsCartOpen(false)} aria-label="Fechar carrinho" className="text-white/50 hover:text-primary transition-colors p-2 -mr-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-background-dark">
           {items.length === 0 ? (
-            <div className="text-center text-white/40 pt-10 uppercase tracking-[0.2em] font-bold text-xs">
-              <span className="material-symbols-outlined text-4xl mb-4 opacity-50 block">remove_shopping_cart</span>
-              Seu kit está vazio.
+            <div className="flex flex-col items-center justify-center h-full text-center px-6 py-20 gap-6">
+              <div className="relative">
+                <span className="material-symbols-outlined text-6xl text-white/10 block">shopping_cart</span>
+                <div className="absolute inset-0 bg-primary/5 blur-2xl rounded-full"></div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-[11px] font-black text-white/30 uppercase tracking-[0.3em]">Kit Vazio</p>
+                <p className="text-[9px] text-white/20 uppercase tracking-widest">Nenhum equipamento adicionado</p>
+              </div>
+              <a
+                href="/produtos"
+                onClick={() => setIsCartOpen(false)}
+                className="bg-primary/10 border border-primary/30 text-primary text-[10px] font-black uppercase tracking-widest px-6 py-3 hover:bg-primary hover:text-black transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                Explorar Arsenal
+              </a>
             </div>
           ) : (
             items.map(item => (
@@ -51,10 +64,18 @@ export function CartDrawer() {
                       {formatPrice(item.product?.price || 0, item.product?.brand === 'DROP')}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 bg-background-dark w-fit border border-white/10 rounded-sm">
-                    <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="px-3 py-1 text-white/50 hover:text-primary transition-colors text-xs font-bold">-</button>
-                    <span className="text-[10px] font-mono font-bold w-4 text-center">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="px-3 py-1 text-white/50 hover:text-primary transition-colors text-xs font-bold">+</button>
+                  <div className="flex items-center gap-0 bg-background-dark w-fit border border-white/10 rounded-sm mt-1">
+                    <button
+                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      aria-label="Diminuir quantidade"
+                      className="w-8 h-8 flex items-center justify-center text-white/50 hover:text-primary hover:bg-primary/10 transition-all text-sm font-black border-r border-white/10 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                    >−</button>
+                    <span className="text-[10px] font-mono font-bold w-8 text-center">{item.quantity}</span>
+                    <button
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      aria-label="Aumentar quantidade"
+                      className="w-8 h-8 flex items-center justify-center text-white/50 hover:text-primary hover:bg-primary/10 transition-all text-sm font-black border-l border-white/10 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                    >+</button>
                   </div>
                   {item.metadata?.tickets && (
                     <div className="mt-2 flex flex-wrap gap-1">
@@ -67,10 +88,10 @@ export function CartDrawer() {
                     </div>
                   )}
                 </div>
-                <button 
-                  onClick={() => removeItem(item.id)} 
-                  className="absolute top-2 right-2 text-white/40 hover:text-red-500 group-hover/item:opacity-100 transition-all bg-background-dark/80 p-2 rounded-sm"
-                  title="Remover"
+                <button
+                  onClick={() => removeItem(item.id)}
+                  aria-label={`Remover ${item.product?.name || 'item'} do carrinho`}
+                  className="absolute top-2 right-2 text-white/40 hover:text-red-500 group-hover/item:opacity-100 transition-all bg-background-dark/80 p-2 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                 >
                   <span className="material-symbols-outlined text-[16px]">delete</span>
                 </button>

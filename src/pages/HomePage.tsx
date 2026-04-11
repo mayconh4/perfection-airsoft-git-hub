@@ -40,7 +40,8 @@ export function HomePage() {
       description: "Conecte seu campo à maior rede de operadores do país.",
       buttonText: "Cadastrar Campo",
       link: "/eventos",
-      image: "/assets/field-banner.png",
+      image: "/images/field-banner.jpg",
+      fallback: "https://images.unsplash.com/photo-1595590424283-b8f17842773f?q=80&w=2070&auto=format&fit=crop",
       accent: "text-green-500",
       accentBg: "bg-green-500",
       shadow: "shadow-[0_0_40px_rgba(34,197,94,0.4)]"
@@ -52,7 +53,8 @@ export function HomePage() {
       description: "Organize eventos, defina o briefing e lidere sua equipe.",
       buttonText: "Criar Missão",
       link: "/eventos",
-      image: "https://images.unsplash.com/photo-1595590424283-b8f17842773f?q=80&w=2070&auto=format&fit=crop",
+      image: "/images/mission-banner.jpg",
+      fallback: "https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=2070&auto=format&fit=crop",
       accent: "text-orange-500",
       accentBg: "bg-orange-500",
       shadow: "shadow-[0_0_40px_rgba(249,115,22,0.4)]"
@@ -64,7 +66,8 @@ export function HomePage() {
       description: "Sua AEG ou GBB sempre pronta para o combate.",
       buttonText: "Solicitar Manutenção",
       link: "/contato",
-      image: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=2070&auto=format&fit=crop",
+      image: "/images/maintenance-banner.jpg",
+      fallback: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=2070&auto=format&fit=crop",
       accent: "text-slate-400",
       accentBg: "bg-slate-400",
       shadow: "shadow-[0_0_40px_rgba(148,163,184,0.4)]"
@@ -76,7 +79,8 @@ export function HomePage() {
       description: "Os melhores equipamentos para elevar seu nível operacional.",
       buttonText: "Acessar Loja",
       link: "/produtos",
-      image: "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=2070&auto=format&fit=crop",
+      image: "/images/shop-banner.jpg",
+      fallback: "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=2070&auto=format&fit=crop",
       accent: "text-primary",
       accentBg: "bg-primary",
       shadow: "shadow-[0_0_40px_rgba(255,193,7,0.4)]"
@@ -148,7 +152,13 @@ export function HomePage() {
 
   return (
     <>
-      <SEO image="https://www.perfectionairsoft.com.br/og-image.png" />
+      <SEO
+        title="Perfection Airsoft | Loja de Airsoft Online — Rifles, Pistolas e Equipamentos Táticos"
+        description="Perfection Airsoft — A maior loja de airsoft do Brasil. Rifles, pistolas, snipers, acessórios e equipamentos táticos importados. Compre com segurança e receba em todo o Brasil."
+        image="https://www.perfectionairsoft.com.br/og-home.jpg"
+        url="https://www.perfectionairsoft.com.br/"
+        breadcrumbs={[{ name: 'Início', url: '/' }]}
+      />
       <div className="flex flex-col w-full overflow-x-hidden text-center items-center">
         
         {/* Banner Hero */}
@@ -175,10 +185,11 @@ export function HomePage() {
               >
                 {/* Background Image */}
                 <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden">
-                  <img 
-                    src={slide.image} 
-                    alt={slide.subtitle} 
-                    className="w-full h-full object-cover object-center opacity-40 lg:opacity-60 transition-transform duration-[20s] scale-105 group-hover:scale-110" 
+                  <img
+                    src={slide.image}
+                    alt={slide.subtitle}
+                    onError={(e) => { if ((slide as any).fallback) (e.currentTarget as HTMLImageElement).src = (slide as any).fallback; }}
+                    className="w-full h-full object-cover object-center opacity-40 lg:opacity-60 transition-transform duration-[20s] scale-105 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-background-dark/80 via-transparent to-background-dark"></div>
                 </div>
@@ -269,21 +280,38 @@ export function HomePage() {
             </div>
 
             {loading ? (
-              <div className="py-20 flex flex-col items-center gap-5 opacity-20 text-center">
-                <div className="w-14 h-[1px] bg-primary animate-pulse"></div>
-                <span className="text-[9px] font-black tracking-[0.4em] text-white uppercase italic">Sincronizando Arsenal...</span>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 w-full">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="bg-surface/20 border border-white/5 flex flex-col overflow-hidden animate-pulse">
+                    <div className="aspect-square bg-white/5"></div>
+                    <div className="p-3 lg:p-6 space-y-3">
+                      <div className="h-2 bg-white/5 w-1/3 mx-auto"></div>
+                      <div className="h-3 bg-white/5 w-3/4 mx-auto"></div>
+                      <div className="h-3 bg-white/5 w-1/2 mx-auto"></div>
+                      <div className="h-8 bg-primary/10 w-full mt-2"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : featured.length === 0 ? (
+              <div className="py-20 flex flex-col items-center gap-4 text-center">
+                <span className="material-symbols-outlined text-5xl text-white/10">inventory_2</span>
+                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Arsenal temporariamente vazio</p>
+                <Link to="/produtos" className="text-[9px] font-black text-primary/60 hover:text-primary uppercase tracking-widest border border-primary/20 hover:border-primary/50 px-5 py-2.5 transition-all">
+                  Ver Todos os Produtos
+                </Link>
               </div>
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 w-full">
                 {featured.map(p => (
-                  <div key={p.id} className="group bg-surface/20 border border-white/5 hover:border-primary/40 transition-all flex flex-col items-center text-center relative overflow-hidden">
-                    <Link to={`/produto/${p.slug || p.id}`} className="w-full">
-                      <ProductImageSlider 
+                  <div key={p.id} className="group bg-surface/20 border border-white/5 hover:border-primary/40 hover:shadow-[0_0_30px_rgba(255,193,7,0.08)] transition-all duration-300 flex flex-col items-center text-center relative overflow-hidden">
+                    <Link to={`/produto/${p.slug || p.id}`} className="w-full overflow-hidden" aria-label={`Ver ${p.name}`}>
+                      <ProductImageSlider
                         mainImage={p.image_url}
                         images={p.images}
                         alt={p.name}
                         wrapperClassName="relative aspect-square bg-white flex items-center justify-center p-3 lg:p-4 overflow-hidden"
-                        imgClassName="w-full h-full object-contain"
+                        imgClassName="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
                       >
                         <div className="absolute top-0 left-0 bg-primary text-black text-[7px] lg:text-[9px] font-black px-2 lg:px-4 py-1.5 lg:py-2 uppercase z-20 -skew-x-12 -translate-x-1">Drop</div>
                       </ProductImageSlider>
@@ -302,8 +330,11 @@ export function HomePage() {
                         <span className="text-[8px] lg:text-[10px] font-bold text-white/20 line-through uppercase">{formatPrice(p.price * 1.3)}</span>
                       </div>
 
-                      <button onClick={() => addItem(p.id)}
-                              className="w-full bg-primary text-black font-black py-3 lg:py-4 uppercase tracking-[0.1em] lg:tracking-[0.2em] text-[8px] lg:text-[10px] italic transition-all hover:bg-white truncate px-1">
+                      <button
+                        onClick={() => addItem(p.id)}
+                        aria-label={`Adicionar ${p.name} ao carrinho`}
+                        className="w-full bg-primary text-black font-black py-3 lg:py-4 uppercase tracking-[0.1em] lg:tracking-[0.2em] text-[8px] lg:text-[10px] italic transition-all hover:bg-amber-300 active:scale-[0.97] truncate px-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark"
+                      >
                         Adicionar
                       </button>
                     </div>

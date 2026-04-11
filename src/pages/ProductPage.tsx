@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useProduct } from '../hooks/useProducts';
 import { useCart } from '../context/CartContext';
@@ -13,25 +13,9 @@ export function ProductPage() {
   const { product, loading } = useProduct(idOrSlug || '');
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-  const [showStickyBar, setShowStickyBar] = useState(false);
-  const mainCtaRef = useRef<HTMLButtonElement>(null);
   const { addItem } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { user } = useAuth();
-
-  // Estoque exibido: número aleatório entre 1-7 para criar urgência (seed por produto)
-  const displayStock = useMemo(() => {
-    if (!product || product.stock === 0) return 0;
-    const seed = product.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    return (seed % 7) + 1; // 1 a 7, consistente por produto na sessão
-  }, [product]);
-
-  // Visualizações hoje: número aleatório entre 8-23 (seed por produto)
-  const viewersToday = useMemo(() => {
-    if (!product) return 0;
-    const seed = product.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    return (seed % 16) + 8; // 8 a 23
-  }, [product]);
 
   // Combine main image with gallery
   const allImages = useMemo(() => {
@@ -60,27 +44,71 @@ export function ProductPage() {
     return () => clearInterval(interval);
   }, [isAutoPlaying, allImages]);
 
-  // Show sticky bottom bar when main CTA scrolls out of view
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => setShowStickyBar(!entry.isIntersecting),
-      { threshold: 0 }
-    );
-    if (mainCtaRef.current) observer.observe(mainCtaRef.current);
-    return () => observer.disconnect();
-  }, [loading]);
+  if (loading) return (
+    <div className="px-4 sm:px-6 lg:px-8 py-6 animate-pulse">
+      <div className="h-4 bg-white/5 w-48 mb-8 rounded"></div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-16">
+        <div className="flex flex-col gap-4">
+          <div className="aspect-square bg-white/5 border border-white/5"></div>
+          <div className="flex gap-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="size-20 bg-white/5 border border-white/5 flex-shrink-0"></div>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col gap-4">
+          <div className="h-3 bg-primary/10 w-20 rounded"></div>
+          <div className="h-10 bg-white/5 w-3/4 rounded"></div>
+          <div className="h-8 bg-white/5 w-1/3 rounded"></div>
+          <div className="h-12 bg-primary/10 w-full mt-4 rounded"></div>
+          <div className="h-12 bg-white/5 w-full rounded"></div>
+          <div className="h-12 bg-white/5 w-full rounded"></div>
+        </div>
+      </div>
+    </div>
+  );
 
-  if (loading) return <div className="py-20 text-center text-primary animate-pulse uppercase tracking-widest">Carregando produto...</div>;
-  if (!product) return <div className="py-20 text-center text-slate-500 uppercase tracking-widest">Produto não encontrado</div>;
+  if (!product) return (
+    <div className="px-4 sm:px-6 lg:px-8 py-24 flex flex-col items-center gap-6 text-center">
+      <span className="material-symbols-outlined text-6xl text-white/10">search_off</span>
+      <div className="space-y-2">
+        <p className="text-lg font-black text-white/30 uppercase tracking-[0.3em]">Produto não encontrado</p>
+        <p className="text-[10px] text-white/20 uppercase tracking-widest">Este item pode ter sido removido ou o link está incorreto</p>
+      </div>
+      <Link to="/produtos" className="bg-primary/10 border border-primary/30 text-primary text-[10px] font-black uppercase tracking-widest px-6 py-3 hover:bg-primary hover:text-black transition-all">
+        Explorar Arsenal
+      </Link>
+    </div>
+  );
 
   const specs = product.specs ? Object.entries(product.specs) : [];
 
   return (
     <>
-      <SEO 
-        title={product.name} 
-        description={product.description || undefined} 
-        image={product.image_url || undefined} 
+      <SEO
+        title={`${product.name} | Perfection Airsoft`}
+        description={product.description || `Compre ${product.name} na Perfection Airsoft — a maior loja de airsoft do Brasil. Equipamentos táticos importados com entrega para todo o Brasil.`}
+        image={product.image_url || undefined}
+        url={`https://www.perfectionairsoft.com.br/produto/${product.slug || product.id}`}
+        product={{
+          name: product.name,
+          image: product.image_url,
+          description: product.description,
+          brand: product.brand,
+          price: product.price,
+          slug: product.slug,
+        }}
+        breadcrumbs={[
+          { name: 'Início', url: '/' },
+          {
+            name: (product.category as any)?.label || 'Categoria',
+            url: `/categoria/${(product.category as any)?.slug || ''}`,
+          },
+          {
+            name: product.name,
+            url: `/produto/${product.slug || product.id}`,
+          },
+        ]}
       />
       <div className="px-4 sm:px-6 lg:px-8 py-6">
       <nav className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.15em] mb-8 text-primary/70 flex-wrap">
@@ -140,88 +168,42 @@ export function ProductPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 py-3 px-4 bg-primary/5 border-l-2 border-primary mb-3">
+          <div className="flex items-center gap-3 py-3 px-4 bg-primary/5 border-l-2 border-primary mb-6">
             <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>
-            <span className="text-xs font-bold tracking-[0.15em] text-primary uppercase">{product.stock > 0 ? `RESTAM APENAS ${displayStock} UNID.` : 'ESGOTADO'}</span>
+            <span className="text-xs font-bold tracking-[0.15em] text-primary uppercase">{product.stock > 0 ? `EM ESTOQUE (${product.stock} unid.)` : 'ESGOTADO'}</span>
           </div>
 
-          {/* Urgency: viewers today */}
-          {product.stock > 0 && (
-            <div className="flex items-center gap-2 mb-6">
-              <span className="material-symbols-outlined text-[14px] text-slate-400">visibility</span>
-              <span className="text-[10px] font-bold tracking-[0.15em] text-slate-400 uppercase">
-                {viewersToday} pessoas viram este item hoje
-              </span>
-            </div>
-          )}
-
-          {/* Botões secundários — menores, lado a lado */}
-          <div className="flex gap-3 mb-3">
-            <a
-              href={`https://wa.me/5537991065120?text=${encodeURIComponent(`Olá Perfection! Tenho interesse no produto *${product.name}* (${window.location.href}). Poderia me dar mais detalhes?`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] font-black py-3 px-4 flex items-center justify-center gap-2 hover:bg-[#25D366] hover:text-white transition-all uppercase tracking-widest text-xs"
+          <div className="flex flex-col sm:flex-row gap-4 mb-8">
+            <button
+              onClick={async () => { await addItem(product.id); }}
+              disabled={product.stock === 0}
+              aria-label={product.stock === 0 ? 'Produto esgotado' : `Adicionar ${product.name} ao carrinho`}
+              className="flex-1 bg-primary hover:bg-amber-300 text-background-dark font-bold py-4 px-8 flex items-center justify-center gap-3 transition-all active:scale-[0.98] uppercase tracking-widest text-sm disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark"
             >
-              <svg viewBox="0 0 24 24" className="size-4 fill-current shrink-0" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              Tirar Dúvidas
-            </a>
+              <span className="material-symbols-outlined">add_shopping_cart</span> Adicionar ao Kit
+            </button>
             <button
               onClick={() => user ? toggleWishlist(product.id) : alert('Faça login primeiro')}
-              className={`border font-bold py-3 px-5 flex items-center justify-center gap-2 transition-colors uppercase tracking-widest text-xs ${isInWishlist(product.id) ? 'border-red-500 text-red-500' : 'border-primary/40 hover:border-primary text-primary'}`}
+              aria-label={isInWishlist(product.id) ? `Remover ${product.name} dos favoritos` : `Adicionar ${product.name} aos favoritos`}
+              className={`flex-1 border font-bold py-4 px-8 flex items-center justify-center gap-3 transition-all active:scale-[0.98] uppercase tracking-widest text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark ${isInWishlist(product.id) ? 'border-red-500 text-red-500 hover:bg-red-500/10 focus-visible:ring-red-500' : 'border-primary/40 hover:border-primary text-primary hover:bg-primary/5 focus-visible:ring-primary'}`}
             >
-              <span className="material-symbols-outlined text-lg" style={isInWishlist(product.id) ? {fontVariationSettings: "'FILL' 1"} : {}}>favorite</span>
+              <span className="material-symbols-outlined" style={isInWishlist(product.id) ? {fontVariationSettings: "'FILL' 1"} : {}}>favorite</span>
               {isInWishlist(product.id) ? 'Favoritado' : 'Favoritos'}
             </button>
           </div>
 
-          {/* Botão principal — linha inteira */}
-          <button
-            ref={mainCtaRef}
-            onClick={async () => { await addItem(product.id); }}
-            disabled={product.stock === 0}
-            className="w-full bg-primary hover:bg-primary/90 text-background-dark font-black py-5 px-8 flex items-center justify-center gap-3 transition-all active:scale-[0.98] uppercase tracking-widest text-base disabled:opacity-50 mb-4"
+          {/* WhatsApp Quick Order */}
+          <a 
+            href={`https://wa.me/5511999999999?text=${encodeURIComponent(`Olá Perfection! Tenho interesse no produto *${product.name}* (${window.location.href}). Poderia me dar mais detalhes?`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] font-black py-4 px-8 flex items-center justify-center gap-3 hover:bg-[#25D366] hover:text-white transition-all uppercase tracking-[0.2em] text-xs mb-8"
           >
-            <span className="material-symbols-outlined text-2xl">add_shopping_cart</span>
-            Adicionar ao Kit
-          </button>
-
-          {/* Trust bar */}
-          <div className="flex items-center justify-center gap-4 py-3 px-4 border border-slate-800 bg-slate-900/50 mb-8">
-            <span className="flex items-center gap-1.5 text-[9px] font-bold tracking-[0.12em] text-slate-400 uppercase whitespace-nowrap">
-              <span className="material-symbols-outlined text-[14px] text-primary">lock</span>
-              Compra Segura
-            </span>
-            <span className="w-px h-3 bg-slate-700 shrink-0"></span>
-            <span className="flex items-center gap-1.5 text-[9px] font-bold tracking-[0.12em] text-slate-400 uppercase whitespace-nowrap">
-              <span className="material-symbols-outlined text-[14px] text-primary">local_shipping</span>
-              Entrega Garantida
-            </span>
-            <span className="w-px h-3 bg-slate-700 shrink-0"></span>
-            <span className="flex items-center gap-1.5 text-[9px] font-bold tracking-[0.12em] text-slate-400 uppercase whitespace-nowrap">
-              <span className="material-symbols-outlined text-[14px] text-primary">headset_mic</span>
-              Suporte 24h
-            </span>
-          </div>
+            <svg viewBox="0 0 24 24" className="size-5 fill-current" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+            Tirar Dúvidas via WhatsApp
+          </a>
         </div>
       </div>
-
-      {/* Sticky mobile bottom bar — appears when main CTA is out of view */}
-      {showStickyBar && product.stock > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background-dark border-t border-primary/30 px-4 py-3 flex items-center gap-3 shadow-[0_-4px_24px_rgba(0,0,0,0.6)]">
-          <div className="flex flex-col min-w-0">
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider truncate">{product.brand}</span>
-            <span className="text-base font-black text-primary leading-tight font-mono">{formatPrice(product.price)}</span>
-          </div>
-          <button
-            onClick={async () => { await addItem(product.id); }}
-            className="flex-1 bg-primary text-background-dark font-black py-3 px-4 flex items-center justify-center gap-2 uppercase tracking-widest text-xs active:scale-[0.98] transition-all"
-          >
-            <span className="material-symbols-outlined text-base">add_shopping_cart</span>
-            ADICIONAR AO KIT
-          </button>
-        </div>
-      )}
 
       {/* Tabs Container */}
       <div className="mb-16">

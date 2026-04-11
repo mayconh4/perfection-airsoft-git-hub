@@ -5,6 +5,7 @@ import type { Product } from '../../types/database';
 import { useCategories } from '../../hooks/useProducts';
 import { scrapeProduct } from '../../services/firecrawl';
 import { usePricing } from '../../context/PricingContext';
+import { useBrands, ensureBrandExists, ensureCategoryExists } from '../../hooks/useBrands';
 
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -78,7 +79,7 @@ export function AdminProducts() {
   const [dollarUpdating, setDollarUpdating] = useState(false);
   const [dollarLastUpdate, setDollarLastUpdate] = useState<string | null>(null);
 
-  const brands = ['G&G Armament', 'VFC', 'Tokyo Marui', 'Krytac', 'Lancer Tactical', 'Cybergun', 'Rossi', 'Ares', 'KWA', 'Outras'];
+  const { brands: dbBrands } = useBrands();
 
   useEffect(() => {
     fetchData();
@@ -175,7 +176,10 @@ export function AdminProducts() {
     if (!form.image_url) return alert('Carregue a imagem primeiro!');
     if (!form.category_id) return alert('Selecione uma categoria válida!');
     setLoading(true);
-    
+
+    // Auto-register brand in DB (fire and forget — won't block save)
+    if (form.brand) ensureBrandExists(form.brand).catch(() => {});
+
     const classification = autoClassify(form.name, form.description);
 
     const productData = {
@@ -247,19 +251,32 @@ export function AdminProducts() {
       if (result?.success && result.data.json) {
         const p = result.data.json;
         const finalPrice = p.price ? calculateFinalPrice(p.price).toFixed(2) : form.price;
+        const scrapedName = (p.name as string) || form.name;
+        const scrapedDesc = (p.description as string) || form.description;
+        const scrapedBrand = (p.brand as string) || form.brand;
+
+        // Auto-classify to detect category
+        const { wType } = autoClassify(scrapedName, scrapedDesc);
+
+        // Register brand + ensure category exist in parallel (silent)
+        const [, categoryId] = await Promise.all([
+          scrapedBrand ? ensureBrandExists(scrapedBrand).catch(() => null) : Promise.resolve(null),
+          ensureCategoryExists(wType).catch(() => null)
+        ]);
 
         setForm(f => ({
           ...f,
-          name: p.name || f.name,
+          name: scrapedName,
           price: finalPrice,
           usd_price: p.price ? String(p.price) : f.usd_price,
-          brand: p.brand || f.brand,
-          description: p.description || f.description,
-          image_url: p.image_url || f.image_url,
-          images: p.images || [p.image_url], // Captura o array de fotos do carrossel
-          source_url: firecrawlUrl
+          brand: scrapedBrand,
+          description: scrapedDesc,
+          image_url: (p.image_url as string) || f.image_url,
+          images: (p.images as string[]) || [(p.image_url as string)],
+          source_url: firecrawlUrl,
+          ...(categoryId ? { category_id: categoryId } : {})
         }));
-        if (p.image_url) setImagePreview(p.image_url);
+        if (p.image_url) setImagePreview(p.image_url as string);
         alert('Nossa IA Ghost atualizou o banco de dados');
       } else {
         alert('Falha na extração inteligente.');
@@ -452,10 +469,16 @@ export function AdminProducts() {
             <input placeholder="NOME DO EQUIPAMENTO" required value={form.name} onChange={e => setForm({...form, name: e.target.value})} 
                    className="bg-background-dark border border-white/5 p-3 text-xs text-white uppercase outline-none focus:border-primary/40"/>
             
-            <select value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} 
-                    className="bg-background-dark border border-white/5 p-3 text-xs text-white uppercase font-bold outline-none focus:border-primary/40">
-              {brands.map(b => <option key={b} value={b}>{b}</option>)}
-            </select>
+            <input
+              list="brands-list"
+              placeholder="MARCA"
+              value={form.brand}
+              onChange={e => setForm({...form, brand: e.target.value})}
+              className="bg-background-dark border border-white/5 p-3 text-xs text-white uppercase font-bold outline-none focus:border-primary/40"
+            />
+            <datalist id="brands-list">
+              {dbBrands.map(b => <option key={b.id} value={b.name} />)}
+            </datalist>
 
             <div className="grid grid-cols-3 gap-2">
               <input placeholder="VALOR ESTIMADO (R$)" required value={form.price} onChange={e => setForm({...form, price: e.target.value})} 

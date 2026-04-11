@@ -7,6 +7,7 @@ import { VirtualAgent } from './VirtualAgent';
 import { CartDrawer } from './CartDrawer';
 import { scrapeProduct } from '../services/firecrawl';
 import { supabase } from '../lib/supabase';
+import { ensureBrandExists } from '../hooks/useBrands';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -56,8 +57,8 @@ export function Layout({ children }: LayoutProps) {
       badge: 'new'
     },
     {
-      label: 'Create a Class',
-      href: '/custom',
+      label: 'Montar Loadout',
+      href: '/create-class',
       icon: 'construction',
       subcategories: [],
       badge: 'new'
@@ -92,7 +93,7 @@ export function Layout({ children }: LayoutProps) {
     {
       label: 'Pistolas',
       href: '/categoria/pistolas',
-      icon: 'handyman',
+      icon: 'ads_click',
       subcategories: [
         { label: 'GBB (Blowback)', href: '/categoria/pistolas?tipo=gbb' },
         { label: 'AEP (Elétricas)', href: '/categoria/pistolas?tipo=aep' },
@@ -102,31 +103,31 @@ export function Layout({ children }: LayoutProps) {
     {
       label: 'Snipers',
       href: '/categoria/snipers',
-      icon: 'target',
+      icon: 'my_location',
       subcategories: []
     },
     {
       label: 'Acessórios',
       href: '/categoria/acessorios',
-      icon: 'build',
+      icon: 'tune',
       subcategories: []
     },
     {
       label: 'Equipamentos',
       href: '/categoria/equipamentos',
-      icon: 'shield',
+      icon: 'security',
       subcategories: []
     },
     {
       label: 'BBs & Gas',
       href: '/categoria/bbs',
-      icon: 'science',
+      icon: 'bubble_chart',
       subcategories: []
     },
     {
       label: 'Peças',
       href: '/categoria/pecas',
-      icon: 'settings',
+      icon: 'manufacturing',
       subcategories: []
     },
     {
@@ -140,7 +141,6 @@ export function Layout({ children }: LayoutProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const profileRef = useRef<HTMLDivElement>(null);
 
   // Instant quote state
   const [quoteLoading, setQuoteLoading] = useState(false);
@@ -149,10 +149,28 @@ export function Layout({ children }: LayoutProps) {
     imageUrl: string;
     finalPrice: number;
     usdPrice: number;
-    productSlug?: string;
+    productSlug: string;
   } | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const quoteRef = useRef<HTMLDivElement>(null);
+
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  const isUrl = (value: string) => /^https?:\/\//i.test(value.trim());
+
+  // Close quote popup on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (quoteRef.current && !quoteRef.current.contains(e.target as Node)) {
+        setQuoteResult(null);
+        setQuoteError(null);
+      }
+    };
+    if (quoteResult || quoteError) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [quoteResult, quoteError]);
 
   // Click outside profile box
   useEffect(() => {
@@ -186,23 +204,7 @@ export function Layout({ children }: LayoutProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close quote popup on outside click
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (quoteRef.current && !quoteRef.current.contains(event.target as Node)) {
-        setQuoteResult(null);
-        setQuoteError(null);
-      }
-    };
-    if (quoteResult || quoteError) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [quoteResult, quoteError]);
-
-  const isUrl = (value: string) => /^https?:\/\//i.test(value.trim());
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     const value = searchQuery.trim();
     if (!value) return;
@@ -266,6 +268,9 @@ export function Layout({ children }: LayoutProps) {
 
       if (insertError) console.warn('[Quote] Produto não salvo no catálogo:', insertError.message);
 
+      // Auto-register brand silently (fire and forget)
+      if (brand && brand !== 'Importado') ensureBrandExists(brand).catch(() => {});
+
       setQuoteResult({
         name, imageUrl, finalPrice, usdPrice,
         productSlug: inserted?.slug || inserted?.id || slug
@@ -311,12 +316,11 @@ export function Layout({ children }: LayoutProps) {
 
             {/* Unified Search + Instant Quote - Hidden on mobile */}
             <div ref={quoteRef} className="hidden md:flex flex-1 max-w-xl relative">
-              <form onSubmit={handleSubmit} className="relative flex w-full">
+              <form onSubmit={handleSearch} className="relative flex w-full">
                 {/* Left icon: clickable submit button */}
                 <button
                   type="submit"
-                  disabled={quoteLoading}
-                  className="absolute inset-y-0 left-0 flex items-center pl-4 transition-all disabled:opacity-50 hover:scale-110"
+                  className="absolute inset-y-0 left-0 flex items-center pl-4 z-10 bg-transparent border-none cursor-pointer"
                 >
                   {quoteLoading
                     ? <span className="material-symbols-outlined text-xl text-primary/60 animate-spin">progress_activity</span>
@@ -327,9 +331,10 @@ export function Layout({ children }: LayoutProps) {
                 </button>
                 <input
                   value={searchQuery}
-                  onChange={e => { setSearchQuery(e.target.value); setQuoteResult(null); setQuoteError(null); }}
-                  className="block w-full bg-surface/40 border border-primary/10 rounded-sm py-3 pl-12 pr-4 text-xs focus:bg-surface focus:border-primary/50 focus:ring-1 focus:ring-primary/30 placeholder-primary/20 text-white uppercase tracking-[0.2em] transition-all"
-                  placeholder="PESQUISAR PRODUTO / GERAR ORÇAMENTO..."
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="block w-full bg-surface/40 border border-primary/10 py-3 pl-12 pr-4 text-xs focus:bg-surface focus:border-primary/50 focus:ring-1 focus:ring-primary/30 placeholder-primary/20 text-white uppercase tracking-[0.2em] transition-all outline-none"
+                  placeholder="Pesquisar produto / gerar orçamento..."
+                  type="text"
                 />
               </form>
 
@@ -367,26 +372,15 @@ export function Layout({ children }: LayoutProps) {
                                 onClick={() => { setQuoteResult(null); setSearchQuery(''); }}
                                 className="flex items-center gap-1.5 bg-primary text-black px-3 py-1.5 text-[8px] font-black uppercase tracking-widest hover:bg-white transition-all"
                               >
-                                <span className="material-symbols-outlined text-sm">open_in_new</span>
+                                <span className="material-symbols-outlined text-sm">arrow_forward</span>
                                 Ver Item
                               </Link>
                             )}
-                            <button
-                              type="button"
-                              onClick={() => { setQuoteResult(null); setSearchQuery(''); }}
-                              className="text-[8px] font-black uppercase tracking-widest text-white/20 hover:text-white/60 transition-colors"
-                            >
-                              Fechar
-                            </button>
                           </div>
                         </div>
                       </div>
                     </div>
                   )}
-                  <div className="px-4 py-2 border-t border-white/5 bg-white/[0.02] flex items-center gap-2">
-                    <span className="size-1 rounded-full bg-primary animate-pulse"></span>
-                    <span className="text-[7px] font-black uppercase tracking-[0.3em] text-primary/30">Produto adicionado ao catálogo para análise</span>
-                  </div>
                 </div>
               )}
             </div>
@@ -456,14 +450,14 @@ export function Layout({ children }: LayoutProps) {
               )}
 
               {/* Favorites (Hidden on small screens) */}
-              <a href="/favoritos" className="hidden xs:flex flex-col items-center gap-1 group">
-                <span className="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors text-xl sm:text-2xl">military_tech</span>
-                <span className="text-[7px] font-black text-white/20 uppercase tracking-widest group-hover:text-primary transition-colors hidden lg:block">Farovitos</span>
+              <a href="/favoritos" aria-label="Favoritos" className="hidden xs:flex flex-col items-center gap-1 group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm">
+                <span className="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors text-xl sm:text-2xl">favorite</span>
+                <span className="text-[7px] font-black text-white/20 uppercase tracking-widest group-hover:text-primary transition-colors hidden lg:block">Favoritos</span>
               </a>
 
               {/* Cart Button */}
               <div className="relative">
-                <a href="/carrinho" className={`bg-primary text-black rounded-sm font-black tracking-widest uppercase flex items-center gap-2 sm:gap-3 hover:bg-white transition-all shadow-[0_0_20px_rgba(255,193,7,0.2)] ${isScrolled ? 'px-3 sm:px-4 py-1.5 sm:py-2 text-[8px] sm:text-[10px]' : 'px-4 sm:px-6 py-2 sm:py-3 text-[9px] sm:text-xs'}`}>
+                <a href="/carrinho" aria-label={`Carrinho${itemCount > 0 ? ` (${itemCount} itens)` : ''}`} className={`bg-primary text-black rounded-sm font-black tracking-widest uppercase flex items-center gap-2 sm:gap-3 hover:bg-amber-300 transition-all shadow-[0_0_20px_rgba(255,193,7,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary ${isScrolled ? 'px-3 sm:px-4 py-1.5 sm:py-2 text-[8px] sm:text-[10px]' : 'px-4 sm:px-6 py-2 sm:py-3 text-[9px] sm:text-xs'}`}>
                   <span className="relative">
                     <span className={`material-symbols-outlined transition-all ${isScrolled ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl'}`}>shopping_cart</span>
                     {itemCount > 0 && (
@@ -569,7 +563,7 @@ export function Layout({ children }: LayoutProps) {
         <div className={`relative w-[280px] bg-background-dark h-full shadow-[0_0_50px_rgba(0,0,0,0.8)] border-l border-primary/20 transition-transform duration-300 flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
           <div className="p-6 border-b border-white/5 flex items-center justify-between">
             <h2 className="text-xs font-black tracking-widest text-primary uppercase">Categorias Táticas</h2>
-            <button onClick={() => setIsMobileMenuOpen(false)} className="text-white/40 hover:text-white">
+            <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Fechar menu" className="text-white/40 hover:text-white p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm transition-colors">
               <span className="material-symbols-outlined">close</span>
             </button>
           </div>
@@ -624,7 +618,7 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </div>
 
-      <main className="flex-1 w-full flex flex-col pt-32 sm:pt-48">
+      <main className="flex-1 w-full flex flex-col pt-28 sm:pt-44">
         <div className="w-full max-w-7xl mx-auto px-4 lg:px-8 flex-1 flex flex-col">
           {children}
         </div>
@@ -642,9 +636,9 @@ export function Layout({ children }: LayoutProps) {
                 A maior autoridade em airsoft da América Latina. Desenvolvido para você.
               </p>
               <div className="flex gap-4">
-                <span className="material-symbols-outlined text-white/30 hover:text-primary cursor-pointer transition-colors">language</span>
-                <span className="material-symbols-outlined text-white/30 hover:text-primary cursor-pointer transition-colors">share</span>
-                <span className="material-symbols-outlined text-white/30 hover:text-primary cursor-pointer transition-colors">smart_display</span>
+                <a href="https://perfectionairsoft.com.br" target="_blank" rel="noopener noreferrer" aria-label="Site oficial" className="material-symbols-outlined text-white/30 hover:text-primary transition-colors focus:outline-none focus-visible:text-primary">language</a>
+                <a href="https://instagram.com/perfectionairsoft" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="material-symbols-outlined text-white/30 hover:text-primary transition-colors focus:outline-none focus-visible:text-primary">share</a>
+                <a href="https://youtube.com/@perfectionairsoft" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="material-symbols-outlined text-white/30 hover:text-primary transition-colors focus:outline-none focus-visible:text-primary">smart_display</a>
               </div>
             </div>
 
