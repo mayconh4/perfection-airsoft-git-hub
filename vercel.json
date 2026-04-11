@@ -1,15 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/",
-      "destination": "/api/og",
-      "missing": [{ "type": "header", "key": "x-og-internal" }]
-    },
-    {
-      "source": "/drop",
-      "destination": "/api/og?type=drop-list"
-    },
-    {
       "source": "/drop/(.*)",
       "destination": "/api/og?type=drop&slug=$1"
     },
