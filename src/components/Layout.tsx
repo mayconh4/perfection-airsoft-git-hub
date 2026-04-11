@@ -57,8 +57,8 @@ export function Layout({ children }: LayoutProps) {
       badge: 'new'
     },
     {
-      label: 'Create a Class',
-      href: '/custom',
+      label: 'Montar Loadout',
+      href: '/create-class',
       icon: 'construction',
       subcategories: [],
       badge: 'new'
@@ -93,7 +93,7 @@ export function Layout({ children }: LayoutProps) {
     {
       label: 'Pistolas',
       href: '/categoria/pistolas',
-      icon: 'handyman',
+      icon: 'ads_click',
       subcategories: [
         { label: 'GBB (Blowback)', href: '/categoria/pistolas?tipo=gbb' },
         { label: 'AEP (Elétricas)', href: '/categoria/pistolas?tipo=aep' },
@@ -103,31 +103,31 @@ export function Layout({ children }: LayoutProps) {
     {
       label: 'Snipers',
       href: '/categoria/snipers',
-      icon: 'target',
+      icon: 'my_location',
       subcategories: []
     },
     {
       label: 'Acessórios',
       href: '/categoria/acessorios',
-      icon: 'build',
+      icon: 'tune',
       subcategories: []
     },
     {
       label: 'Equipamentos',
       href: '/categoria/equipamentos',
-      icon: 'shield',
+      icon: 'security',
       subcategories: []
     },
     {
       label: 'BBs & Gas',
       href: '/categoria/bbs',
-      icon: 'science',
+      icon: 'bubble_chart',
       subcategories: []
     },
     {
       label: 'Peças',
       href: '/categoria/pecas',
-      icon: 'settings',
+      icon: 'manufacturing',
       subcategories: []
     },
     {
