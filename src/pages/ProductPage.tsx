@@ -44,8 +44,42 @@ export function ProductPage() {
     return () => clearInterval(interval);
   }, [isAutoPlaying, allImages]);
 
-  if (loading) return <div className="py-20 text-center text-primary animate-pulse uppercase tracking-widest">Carregando produto...</div>;
-  if (!product) return <div className="py-20 text-center text-slate-500 uppercase tracking-widest">Produto não encontrado</div>;
+  if (loading) return (
+    <div className="px-4 sm:px-6 lg:px-8 py-6 animate-pulse">
+      <div className="h-4 bg-white/5 w-48 mb-8 rounded"></div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-16">
+        <div className="flex flex-col gap-4">
+          <div className="aspect-square bg-white/5 border border-white/5"></div>
+          <div className="flex gap-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="size-20 bg-white/5 border border-white/5 flex-shrink-0"></div>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col gap-4">
+          <div className="h-3 bg-primary/10 w-20 rounded"></div>
+          <div className="h-10 bg-white/5 w-3/4 rounded"></div>
+          <div className="h-8 bg-white/5 w-1/3 rounded"></div>
+          <div className="h-12 bg-primary/10 w-full mt-4 rounded"></div>
+          <div className="h-12 bg-white/5 w-full rounded"></div>
+          <div className="h-12 bg-white/5 w-full rounded"></div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (!product) return (
+    <div className="px-4 sm:px-6 lg:px-8 py-24 flex flex-col items-center gap-6 text-center">
+      <span className="material-symbols-outlined text-6xl text-white/10">search_off</span>
+      <div className="space-y-2">
+        <p className="text-lg font-black text-white/30 uppercase tracking-[0.3em]">Produto não encontrado</p>
+        <p className="text-[10px] text-white/20 uppercase tracking-widest">Este item pode ter sido removido ou o link está incorreto</p>
+      </div>
+      <Link to="/produtos" className="bg-primary/10 border border-primary/30 text-primary text-[10px] font-black uppercase tracking-widest px-6 py-3 hover:bg-primary hover:text-black transition-all">
+        Explorar Arsenal
+      </Link>
+    </div>
+  );
 
   const specs = product.specs ? Object.entries(product.specs) : [];
 
@@ -121,15 +155,18 @@ export function ProductPage() {
 
           <div className="flex flex-col sm:flex-row gap-4 mb-8">
             <button
-                    onClick={async () => {
-                      await addItem(product.id);
-                    }}
-                    disabled={product.stock === 0}
-                    className="flex-1 bg-primary hover:bg-primary/90 text-background-dark font-bold py-4 px-8 flex items-center justify-center gap-3 transition-all active:scale-[0.98] uppercase tracking-widest text-sm disabled:opacity-50">
+              onClick={async () => { await addItem(product.id); }}
+              disabled={product.stock === 0}
+              aria-label={product.stock === 0 ? 'Produto esgotado' : `Adicionar ${product.name} ao carrinho`}
+              className="flex-1 bg-primary hover:bg-amber-300 text-background-dark font-bold py-4 px-8 flex items-center justify-center gap-3 transition-all active:scale-[0.98] uppercase tracking-widest text-sm disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark"
+            >
               <span className="material-symbols-outlined">add_shopping_cart</span> Adicionar ao Kit
             </button>
-            <button onClick={() => user ? toggleWishlist(product.id) : alert('Faça login primeiro')}
-                    className={`flex-1 border font-bold py-4 px-8 flex items-center justify-center gap-3 transition-colors uppercase tracking-widest text-sm ${isInWishlist(product.id) ? 'border-red-500 text-red-500' : 'border-primary/40 hover:border-primary text-primary'}`}>
+            <button
+              onClick={() => user ? toggleWishlist(product.id) : alert('Faça login primeiro')}
+              aria-label={isInWishlist(product.id) ? `Remover ${product.name} dos favoritos` : `Adicionar ${product.name} aos favoritos`}
+              className={`flex-1 border font-bold py-4 px-8 flex items-center justify-center gap-3 transition-all active:scale-[0.98] uppercase tracking-widest text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark ${isInWishlist(product.id) ? 'border-red-500 text-red-500 hover:bg-red-500/10 focus-visible:ring-red-500' : 'border-primary/40 hover:border-primary text-primary hover:bg-primary/5 focus-visible:ring-primary'}`}
+            >
               <span className="material-symbols-outlined" style={isInWishlist(product.id) ? {fontVariationSettings: "'FILL' 1"} : {}}>favorite</span>
               {isInWishlist(product.id) ? 'Favoritado' : 'Favoritos'}
             </button>

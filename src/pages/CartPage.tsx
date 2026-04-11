@@ -69,8 +69,11 @@ export function CartPage() {
                   </div>
                 </div>
                 <div className="flex flex-col items-end justify-between">
-                  <button onClick={() => removeItem(item.id)}
-                    className="text-white/40 hover:text-red-500 transition-colors p-2 bg-background-dark/80 rounded-sm">
+                  <button
+                    onClick={() => removeItem(item.id)}
+                    aria-label={`Remover ${item.product?.name || 'item'} do carrinho`}
+                    className="text-white/40 hover:text-red-500 transition-colors p-2 bg-background-dark/80 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                  >
                     <span className="material-symbols-outlined text-xl">delete</span>
                   </button>
                   <span className="text-sm font-black text-white font-mono">{formatPrice((item.product?.price || 0) * item.quantity)}</span>
@@ -149,8 +152,10 @@ export function CartPage() {
                   <span className="text-primary font-mono">{formatPrice(grandTotal)}</span>
                 </div>
               </div>
-              <Link to="/checkout"
-                className="w-full bg-primary text-background-dark font-black py-4 uppercase tracking-[0.2em] hover:bg-white transition-all block text-center text-sm shadow-[0_0_20px_rgba(255,193,7,0.15)]">
+              <Link
+                to="/checkout"
+                className="w-full bg-primary text-background-dark font-black py-4 uppercase tracking-[0.2em] hover:bg-amber-300 active:scale-[0.98] transition-all block text-center text-sm shadow-[0_0_20px_rgba(255,193,7,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark"
+              >
                 Finalizar Transação →
               </Link>
               <Link to="/" className="block text-center mt-4 text-[10px] text-white/30 hover:text-white uppercase tracking-widest font-bold transition-colors">

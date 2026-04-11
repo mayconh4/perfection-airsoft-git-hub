@@ -457,7 +457,7 @@ export function Layout({ children }: LayoutProps) {
 
               {/* Cart Button */}
               <div className="relative">
-                <a href="/carrinho" className={`bg-primary text-black rounded-sm font-black tracking-widest uppercase flex items-center gap-2 sm:gap-3 hover:bg-white transition-all shadow-[0_0_20px_rgba(255,193,7,0.2)] ${isScrolled ? 'px-3 sm:px-4 py-1.5 sm:py-2 text-[8px] sm:text-[10px]' : 'px-4 sm:px-6 py-2 sm:py-3 text-[9px] sm:text-xs'}`}>
+                <a href="/carrinho" aria-label={`Carrinho${itemCount > 0 ? ` (${itemCount} itens)` : ''}`} className={`bg-primary text-black rounded-sm font-black tracking-widest uppercase flex items-center gap-2 sm:gap-3 hover:bg-amber-300 transition-all shadow-[0_0_20px_rgba(255,193,7,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary ${isScrolled ? 'px-3 sm:px-4 py-1.5 sm:py-2 text-[8px] sm:text-[10px]' : 'px-4 sm:px-6 py-2 sm:py-3 text-[9px] sm:text-xs'}`}>
                   <span className="relative">
                     <span className={`material-symbols-outlined transition-all ${isScrolled ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl'}`}>shopping_cart</span>
                     {itemCount > 0 && (
@@ -563,7 +563,7 @@ export function Layout({ children }: LayoutProps) {
         <div className={`relative w-[280px] bg-background-dark h-full shadow-[0_0_50px_rgba(0,0,0,0.8)] border-l border-primary/20 transition-transform duration-300 flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
           <div className="p-6 border-b border-white/5 flex items-center justify-between">
             <h2 className="text-xs font-black tracking-widest text-primary uppercase">Categorias Táticas</h2>
-            <button onClick={() => setIsMobileMenuOpen(false)} className="text-white/40 hover:text-white">
+            <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Fechar menu" className="text-white/40 hover:text-white p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm transition-colors">
               <span className="material-symbols-outlined">close</span>
             </button>
           </div>
@@ -618,7 +618,7 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </div>
 
-      <main className="flex-1 w-full flex flex-col pt-32 sm:pt-48">
+      <main className="flex-1 w-full flex flex-col pt-28 sm:pt-44">
         <div className="w-full max-w-7xl mx-auto px-4 lg:px-8 flex-1 flex flex-col">
           {children}
         </div>
@@ -636,9 +636,9 @@ export function Layout({ children }: LayoutProps) {
                 A maior autoridade em airsoft da América Latina. Desenvolvido para você.
               </p>
               <div className="flex gap-4">
-                <span className="material-symbols-outlined text-white/30 hover:text-primary cursor-pointer transition-colors">language</span>
-                <span className="material-symbols-outlined text-white/30 hover:text-primary cursor-pointer transition-colors">share</span>
-                <span className="material-symbols-outlined text-white/30 hover:text-primary cursor-pointer transition-colors">smart_display</span>
+                <a href="https://perfectionairsoft.com.br" target="_blank" rel="noopener noreferrer" aria-label="Site oficial" className="material-symbols-outlined text-white/30 hover:text-primary transition-colors focus:outline-none focus-visible:text-primary">language</a>
+                <a href="https://instagram.com/perfectionairsoft" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="material-symbols-outlined text-white/30 hover:text-primary transition-colors focus:outline-none focus-visible:text-primary">share</a>
+                <a href="https://youtube.com/@perfectionairsoft" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="material-symbols-outlined text-white/30 hover:text-primary transition-colors focus:outline-none focus-visible:text-primary">smart_display</a>
               </div>
             </div>
 

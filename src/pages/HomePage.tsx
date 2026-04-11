@@ -264,21 +264,38 @@ export function HomePage() {
             </div>
 
             {loading ? (
-              <div className="py-20 flex flex-col items-center gap-5 opacity-20 text-center">
-                <div className="w-14 h-[1px] bg-primary animate-pulse"></div>
-                <span className="text-[9px] font-black tracking-[0.4em] text-white uppercase italic">Sincronizando Arsenal...</span>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 w-full">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="bg-surface/20 border border-white/5 flex flex-col overflow-hidden animate-pulse">
+                    <div className="aspect-square bg-white/5"></div>
+                    <div className="p-3 lg:p-6 space-y-3">
+                      <div className="h-2 bg-white/5 w-1/3 mx-auto"></div>
+                      <div className="h-3 bg-white/5 w-3/4 mx-auto"></div>
+                      <div className="h-3 bg-white/5 w-1/2 mx-auto"></div>
+                      <div className="h-8 bg-primary/10 w-full mt-2"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : featured.length === 0 ? (
+              <div className="py-20 flex flex-col items-center gap-4 text-center">
+                <span className="material-symbols-outlined text-5xl text-white/10">inventory_2</span>
+                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Arsenal temporariamente vazio</p>
+                <Link to="/produtos" className="text-[9px] font-black text-primary/60 hover:text-primary uppercase tracking-widest border border-primary/20 hover:border-primary/50 px-5 py-2.5 transition-all">
+                  Ver Todos os Produtos
+                </Link>
               </div>
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 w-full">
                 {featured.map(p => (
-                  <div key={p.id} className="group bg-surface/20 border border-white/5 hover:border-primary/40 transition-all flex flex-col items-center text-center relative overflow-hidden">
-                    <Link to={`/produto/${p.slug || p.id}`} className="w-full">
-                      <ProductImageSlider 
+                  <div key={p.id} className="group bg-surface/20 border border-white/5 hover:border-primary/40 hover:shadow-[0_0_30px_rgba(255,193,7,0.08)] transition-all duration-300 flex flex-col items-center text-center relative overflow-hidden">
+                    <Link to={`/produto/${p.slug || p.id}`} className="w-full overflow-hidden" aria-label={`Ver ${p.name}`}>
+                      <ProductImageSlider
                         mainImage={p.image_url}
                         images={p.images}
                         alt={p.name}
                         wrapperClassName="relative aspect-square bg-white flex items-center justify-center p-3 lg:p-4 overflow-hidden"
-                        imgClassName="w-full h-full object-contain"
+                        imgClassName="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
                       >
                         <div className="absolute top-0 left-0 bg-primary text-black text-[7px] lg:text-[9px] font-black px-2 lg:px-4 py-1.5 lg:py-2 uppercase z-20 -skew-x-12 -translate-x-1">Drop</div>
                       </ProductImageSlider>
@@ -297,8 +314,11 @@ export function HomePage() {
                         <span className="text-[8px] lg:text-[10px] font-bold text-white/20 line-through uppercase">{formatPrice(p.price * 1.3)}</span>
                       </div>
 
-                      <button onClick={() => addItem(p.id)}
-                              className="w-full bg-primary text-black font-black py-3 lg:py-4 uppercase tracking-[0.1em] lg:tracking-[0.2em] text-[8px] lg:text-[10px] italic transition-all hover:bg-white truncate px-1">
+                      <button
+                        onClick={() => addItem(p.id)}
+                        aria-label={`Adicionar ${p.name} ao carrinho`}
+                        className="w-full bg-primary text-black font-black py-3 lg:py-4 uppercase tracking-[0.1em] lg:tracking-[0.2em] text-[8px] lg:text-[10px] italic transition-all hover:bg-amber-300 active:scale-[0.97] truncate px-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark"
+                      >
                         Adicionar
                       </button>
                     </div>

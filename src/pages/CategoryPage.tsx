@@ -65,18 +65,30 @@ export function CategoryPage() {
             <p className="text-[10px] tracking-widest text-slate-500 uppercase">{loading ? 'Carregando...' : `Exibindo ${products.length} resultados`}</p>
           </div>
           {loading ? (
-            <div className="text-center py-20 text-primary animate-pulse uppercase tracking-widest">Carregando arsenal...</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="bg-surface/50 border border-border-tactical animate-pulse">
+                  <div className="aspect-square bg-white/5"></div>
+                  <div className="p-4 sm:p-6 space-y-3">
+                    <div className="h-2 bg-white/5 w-1/4"></div>
+                    <div className="h-4 bg-white/5 w-3/4"></div>
+                    <div className="h-6 bg-white/5 w-1/3 mt-2"></div>
+                    <div className="h-10 bg-primary/10 w-full mt-3"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {products.length > 0 ? products.map(p => (
-                <div key={p.id} className="bg-surface/50 border border-border-tactical group hover:border-primary transition-all duration-300">
-                  <Link to={`/produto/${p.slug || p.id}`}>
+                <div key={p.id} className="bg-surface/50 border border-border-tactical group hover:border-primary hover:shadow-[0_0_25px_rgba(255,193,7,0.07)] transition-all duration-300">
+                  <Link to={`/produto/${p.slug || p.id}`} aria-label={`Ver ${p.name}`}>
                     <ProductImageSlider
                       mainImage={p.image_url}
                       images={p.images}
                       alt={p.name}
                       wrapperClassName="relative aspect-square overflow-hidden bg-white p-4 cursor-pointer"
-                      imgClassName="w-full h-full object-contain grayscale group-hover:grayscale-0 transition-all duration-500"
+                      imgClassName="w-full h-full object-contain grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
                     >
                       {p.badge && <div className="absolute top-2 right-2 bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 uppercase tracking-widest border border-primary/20 z-20">{p.badge}</div>}
                     </ProductImageSlider>
@@ -95,14 +107,26 @@ export function CategoryPage() {
                       </h4>
                     </Link>
                     <div className="text-xl sm:text-2xl font-bold text-primary tracking-tighter pt-2">{formatPrice(p.price)}</div>
-                    <button onClick={() => addItem(p.id)}
-                            className="w-full mt-3 flex items-center justify-center gap-2 bg-primary text-background-dark font-bold text-xs tracking-widest uppercase py-3 hover:bg-white transition-colors">
+                    <button
+                      onClick={() => addItem(p.id)}
+                      aria-label={`Adicionar ${p.name} ao carrinho`}
+                      className="w-full mt-3 flex items-center justify-center gap-2 bg-primary text-background-dark font-bold text-xs tracking-widest uppercase py-3 hover:bg-amber-300 active:scale-[0.98] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background-dark"
+                    >
                       <span className="material-symbols-outlined text-sm">add</span> Adicionar ao Kit
                     </button>
                   </div>
                 </div>
               )) : (
-                <div className="col-span-full text-center py-20 text-slate-500 uppercase tracking-widest text-sm">Nenhum item encontrado nesta categoria.</div>
+                <div className="col-span-full py-24 flex flex-col items-center gap-6 text-center">
+                  <span className="material-symbols-outlined text-6xl text-white/10">inventory_2</span>
+                  <div className="space-y-2">
+                    <p className="text-sm font-black text-white/30 uppercase tracking-[0.3em]">Nenhum item encontrado</p>
+                    <p className="text-[10px] text-white/20 uppercase tracking-widest">Esta categoria ainda não possui produtos disponíveis</p>
+                  </div>
+                  <Link to="/" className="bg-primary/10 border border-primary/30 text-primary text-[10px] font-black uppercase tracking-widest px-6 py-3 hover:bg-primary hover:text-black transition-all">
+                    Voltar ao Arsenal
+                  </Link>
+                </div>
               )}
             </div>
           )}
