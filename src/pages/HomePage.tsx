@@ -52,7 +52,7 @@ export function HomePage() {
       description: "Organize eventos, defina o briefing e lidere sua equipe.",
       buttonText: "Criar Missão",
       link: "/eventos",
-      image: "https://images.unsplash.com/photo-1595590424283-b8f17842773f?q=80&w=2070&auto=format&fit=crop",
+      image: "/images/mission-banner.jpg",
       accent: "text-orange-500",
       accentBg: "bg-orange-500",
       shadow: "shadow-[0_0_40px_rgba(249,115,22,0.4)]"
@@ -64,7 +64,7 @@ export function HomePage() {
       description: "Sua AEG ou GBB sempre pronta para o combate.",
       buttonText: "Solicitar Manutenção",
       link: "/contato",
-      image: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=2070&auto=format&fit=crop",
+      image: "/images/maintenance-banner.jpg",
       accent: "text-slate-400",
       accentBg: "bg-slate-400",
       shadow: "shadow-[0_0_40px_rgba(148,163,184,0.4)]"
