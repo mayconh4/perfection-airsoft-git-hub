@@ -303,15 +303,19 @@ export function Layout({ children }: LayoutProps) {
             {/* Unified Search + Instant Quote - Hidden on mobile */}
             <div ref={quoteRef} className="hidden md:flex flex-1 max-w-xl relative">
               <form onSubmit={handleSubmit} className="relative flex w-full">
-                {/* Left icon: bolt when URL detected, search otherwise */}
-                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none transition-all">
+                {/* Left icon: clickable submit button */}
+                <button
+                  type="submit"
+                  disabled={quoteLoading}
+                  className="absolute inset-y-0 left-0 flex items-center pl-4 transition-all disabled:opacity-50 hover:scale-110"
+                >
                   {quoteLoading
                     ? <span className="material-symbols-outlined text-xl text-primary/60 animate-spin">progress_activity</span>
                     : isUrl(searchQuery)
-                      ? <span className="material-symbols-outlined text-xl text-primary/70">bolt</span>
-                      : <span className="material-symbols-outlined text-xl text-primary/40">search</span>
+                      ? <span className="material-symbols-outlined text-xl text-primary/70 hover:text-primary transition-colors">bolt</span>
+                      : <span className="material-symbols-outlined text-xl text-primary/40 hover:text-primary transition-colors">search</span>
                   }
-                </div>
+                </button>
                 <input
                   value={searchQuery}
                   onChange={e => { setSearchQuery(e.target.value); setQuoteResult(null); setQuoteError(null); }}
