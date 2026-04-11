@@ -51,6 +51,7 @@ export function CheckoutPage() {
   const [cardForm, setCardForm] = useState({ number: '', holder: '', expiry: '', ccv: '', installments: 1 });
   const [cardConfirmed, setCardConfirmed] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const [cepError, setCepError] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('tactical_p_data', JSON.stringify(form));
@@ -69,16 +70,22 @@ export function CheckoutPage() {
     return () => { supabase.removeChannel(channel); };
   }, [order?.id, isConfirmed]);
 
-  // ViaCEP — preenche endereço automaticamente
-  const handleCepChange = async (cep: string) => {
-    const clean = cep.replace(/\D/g, '');
-    setForm((f: any) => ({ ...f, cep }));
-    if (clean.length === 8) {
+  // ViaCEP — máscara + validação + autocomplete
+  const handleCepChange = async (raw: string) => {
+    // Aceita apenas dígitos e hífen, aplica máscara 00000-000
+    const digits = raw.replace(/\D/g, '').slice(0, 8);
+    const masked = digits.length > 5 ? digits.slice(0, 5) + '-' + digits.slice(5) : digits;
+    setForm((f: any) => ({ ...f, cep: masked }));
+    setCepError(false);
+
+    if (digits.length === 8) {
       setCepLoading(true);
       try {
-        const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+        const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
         const data = await res.json();
-        if (!data.erro) {
+        if (data.erro) {
+          setCepError(true);
+        } else {
           setForm((f: any) => ({
             ...f,
             street: data.logradouro || f.street,
@@ -87,8 +94,11 @@ export function CheckoutPage() {
             state: data.uf || f.state,
           }));
         }
-      } catch { /* ignore */ }
+      } catch { setCepError(true); }
       finally { setCepLoading(false); }
+    } else if (digits.length > 0 && digits.length < 8) {
+      // Incompleto mas usuário já digitou algo — não marca erro ainda
+      setCepError(false);
     }
   };
 
@@ -99,7 +109,9 @@ export function CheckoutPage() {
       setError(null);
       setStep(isPhysical ? 'endereco' : 'pagamento');
     } else if (step === 'endereco') {
-      if (!form.cep || !form.street || !form.number) return setError('Informe o endereço completo.');
+      if (cepError) return setError('CEP inválido. Verifique e tente novamente.');
+      if (!form.cep || form.cep.replace(/\D/g,'').length < 8) return setError('Informe um CEP válido com 8 dígitos.');
+      if (!form.street || !form.number) return setError('Informe o endereço completo.');
       setError(null);
       setStep('pagamento');
     }
@@ -270,8 +282,17 @@ export function CheckoutPage() {
                   <div className="bg-white/[0.03] border border-white/10 p-8">
                     <form onSubmit={handleNextStep} autoComplete="on" className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div className="relative">
-                        <Input label={cepLoading ? 'CEP — buscando...' : 'CEP *'} name="postal-code" autoComplete="postal-code" value={form.cep} onChange={handleCepChange} placeholder="00000-000" />
+                        <Input
+                          label={cepLoading ? 'CEP — buscando...' : cepError ? 'CEP inválido' : 'CEP *'}
+                          name="postal-code"
+                          autoComplete="postal-code"
+                          value={form.cep}
+                          onChange={handleCepChange}
+                          placeholder="00000-000"
+                          className={cepError ? 'border-red-500 focus:border-red-500 text-red-400' : ''}
+                        />
                         {cepLoading && <div className="absolute right-3 top-9 w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
+                        {cepError && !cepLoading && <span className="absolute right-3 top-9 material-symbols-outlined text-red-500 text-base">error</span>}
                       </div>
                       <Input label="Número *" name="address-line2" autoComplete="address-line2" value={form.number} onChange={v => setForm({...form, number: v})} placeholder="123" />
                       <Input label="Rua" name="address-line1" autoComplete="address-line1" value={form.street} onChange={v => setForm({...form, street: v})} placeholder="Preenchido pelo CEP" />
