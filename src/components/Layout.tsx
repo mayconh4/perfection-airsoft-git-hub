@@ -450,9 +450,9 @@ export function Layout({ children }: LayoutProps) {
               )}
 
               {/* Favorites (Hidden on small screens) */}
-              <a href="/favoritos" className="hidden xs:flex flex-col items-center gap-1 group">
-                <span className="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors text-xl sm:text-2xl">military_tech</span>
-                <span className="text-[7px] font-black text-white/20 uppercase tracking-widest group-hover:text-primary transition-colors hidden lg:block">Farovitos</span>
+              <a href="/favoritos" aria-label="Favoritos" className="hidden xs:flex flex-col items-center gap-1 group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm">
+                <span className="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors text-xl sm:text-2xl">favorite</span>
+                <span className="text-[7px] font-black text-white/20 uppercase tracking-widest group-hover:text-primary transition-colors hidden lg:block">Favoritos</span>
               </a>
 
               {/* Cart Button */}
