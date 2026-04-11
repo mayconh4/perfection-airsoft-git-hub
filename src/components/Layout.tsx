@@ -335,7 +335,7 @@ export function Layout({ children }: LayoutProps) {
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="block w-full bg-surface/40 border border-primary/10 py-3 pl-12 pr-4 text-xs focus:bg-surface focus:border-primary/50 focus:ring-1 focus:ring-primary/30 placeholder-primary/20 text-white uppercase tracking-[0.2em] transition-all outline-none"
-                  placeholder="Pesquisar produto / gerar orçamento..."
+                  placeholder="Colar link arsenal..."
                   type="text"
                 />
               </form>
