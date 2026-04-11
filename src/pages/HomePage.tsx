@@ -76,7 +76,7 @@ export function HomePage() {
       description: "Os melhores equipamentos para elevar seu nível operacional.",
       buttonText: "Acessar Loja",
       link: "/produtos",
-      image: "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=2070&auto=format&fit=crop",
+      image: "/images/shop-banner.jpg",
       accent: "text-primary",
       accentBg: "bg-primary",
       shadow: "shadow-[0_0_40px_rgba(255,193,7,0.4)]"
