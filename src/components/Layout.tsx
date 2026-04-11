@@ -5,6 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import { usePricing } from '../context/PricingContext';
 import { VirtualAgent } from './VirtualAgent';
 import { CartDrawer } from './CartDrawer';
+import { scrapeProduct } from '../services/firecrawl';
+import { supabase } from '../lib/supabase';
+import { ensureBrandExists } from '../hooks/useBrands';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -29,7 +32,7 @@ export function Layout({ children }: LayoutProps) {
 
   const { itemCount, showToast } = useCart();
   const { user, signOut, isAdmin } = useAuth();
-  const { getEffectiveRate } = usePricing();
+  const { getEffectiveRate, calculateFinalPrice, config } = usePricing();
   const navigate = useNavigate();
 
   const navigationMenu: NavigationItem[] = [
@@ -137,9 +140,37 @@ export function Layout({ children }: LayoutProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Instant quote state
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteResult, setQuoteResult] = useState<{
+    name: string;
+    imageUrl: string;
+    finalPrice: number;
+    usdPrice: number;
+    productSlug: string;
+  } | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const quoteRef = useRef<HTMLDivElement>(null);
+
   const profileRef = useRef<HTMLDivElement>(null);
+
+  const isUrl = (value: string) => /^https?:\/\//i.test(value.trim());
+
+  // Close quote popup on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (quoteRef.current && !quoteRef.current.contains(e.target as Node)) {
+        setQuoteResult(null);
+        setQuoteError(null);
+      }
+    };
+    if (quoteResult || quoteError) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [quoteResult, quoteError]);
 
   // Click outside profile box
   useEffect(() => {
@@ -173,9 +204,83 @@ export function Layout({ children }: LayoutProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) navigate(`/busca?q=${encodeURIComponent(searchQuery.trim())}`);
+    const value = searchQuery.trim();
+    if (!value) return;
+
+    if (!isUrl(value)) {
+      navigate(`/busca?q=${encodeURIComponent(value)}`);
+      return;
+    }
+
+    // URL detected → instant quote
+    setQuoteLoading(true);
+    setQuoteError(null);
+    setQuoteResult(null);
+
+    try {
+      const scraped = await scrapeProduct(value);
+
+      if (!scraped?.success || !scraped.data?.json) {
+        setQuoteError('Não foi possível extrair dados deste produto. Tente outro link.');
+        return;
+      }
+
+      const json = scraped.data.json;
+      const usdPrice = typeof json.price === 'number' ? json.price : 0;
+      const finalPrice = calculateFinalPrice(usdPrice);
+      const images: string[] = Array.isArray(json.images) ? json.images : [];
+      const imageUrl: string = (json.image_url as string) || images[0] || '';
+      const name: string = (json.name as string) || scraped.data.metadata?.title || 'Produto Importado';
+      const brand: string = (json.brand as string) || 'Importado';
+      const description: string = (json.description as string) || '';
+      const buttonText = ((json.button_text as string) || '').toLowerCase();
+      const markdownLower = (scraped.data.markdown || '').toLowerCase();
+
+      // Tem preço E não tem texto de produto esgotado/sem estoque → disponível
+      const unavailableKeywords = ['avise-me', 'avise me', 'avisar quando', 'quando chegar', 'orçamento'];
+      const isUnavailable =
+        usdPrice <= 0 ||
+        unavailableKeywords.some(kw => buttonText.includes(kw) || markdownLower.includes(kw));
+
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80)
+        + '-' + Math.random().toString(36).slice(2, 6);
+
+      const { data: inserted, error: insertError } = await supabase.from('products').insert([{
+        name, brand,
+        price: Math.round(finalPrice * 100) / 100,
+        usd_price: usdPrice.toString(),
+        image_url: imageUrl,
+        images: images.length ? images : (imageUrl ? [imageUrl] : []),
+        description,
+        source_url: value,
+        is_available: !isUnavailable,
+        stock: isUnavailable ? 0 : 1,
+        slug,
+        tax_importer: config.tax_importer,
+        tax_admin: config.tax_admin,
+        tax_nf: config.tax_nf,
+        condition: 'novo',
+        system: 'Eletrica (AEG)',
+        specs: {}
+      }]).select('id, slug').single();
+
+      if (insertError) console.warn('[Quote] Produto não salvo no catálogo:', insertError.message);
+
+      // Auto-register brand silently (fire and forget)
+      if (brand && brand !== 'Importado') ensureBrandExists(brand).catch(() => {});
+
+      setQuoteResult({
+        name, imageUrl, finalPrice, usdPrice,
+        productSlug: inserted?.slug || inserted?.id || slug
+      });
+
+    } catch {
+      setQuoteError('Erro ao processar. Verifique o link e tente novamente.');
+    } finally {
+      setQuoteLoading(false);
+    }
   };
   return (
     <div className="bg-background-dark font-display text-slate-100 min-h-screen selection:bg-primary selection:text-background-dark relative flex flex-col overflow-x-hidden">
@@ -209,19 +314,76 @@ export function Layout({ children }: LayoutProps) {
               </div>
             </a>
 
-            {/* Search - Hidden on mobile, shown on md+ */}
-            <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xl relative">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-primary/40">
-                <span className="material-symbols-outlined text-xl">search</span>
-              </div>
-              <input
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="block w-full bg-surface/40 border border-primary/10 rounded-sm py-3 pl-12 pr-4 text-xs focus:bg-surface focus:border-primary/50 focus:ring-1 focus:ring-primary/30 placeholder-primary/20 text-white uppercase tracking-[0.2em] transition-all"
-                placeholder="LOCALIZAR EQUIPAMENTO..."
-                type="text"
-              />
-            </form>
+            {/* Unified Search + Instant Quote - Hidden on mobile */}
+            <div ref={quoteRef} className="hidden md:flex flex-1 max-w-xl relative">
+              <form onSubmit={handleSearch} className="relative flex w-full">
+                {/* Left icon: clickable submit button */}
+                <button
+                  type="submit"
+                  className="absolute inset-y-0 left-0 flex items-center pl-4 z-10 bg-transparent border-none cursor-pointer"
+                >
+                  {quoteLoading
+                    ? <span className="material-symbols-outlined text-xl text-primary/60 animate-spin">progress_activity</span>
+                    : isUrl(searchQuery)
+                      ? <span className="material-symbols-outlined text-xl text-primary/70 hover:text-primary transition-colors">bolt</span>
+                      : <span className="material-symbols-outlined text-xl text-primary/40 hover:text-primary transition-colors">search</span>
+                  }
+                </button>
+                <input
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="block w-full bg-surface/40 border border-primary/10 py-3 pl-12 pr-4 text-xs focus:bg-surface focus:border-primary/50 focus:ring-1 focus:ring-primary/30 placeholder-primary/20 text-white uppercase tracking-[0.2em] transition-all outline-none"
+                  placeholder="Pesquisar produto / gerar orçamento..."
+                  type="text"
+                />
+              </form>
+
+              {/* Result Popup */}
+              {(quoteResult || quoteError) && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-[#141410] border border-primary/30 shadow-[0_20px_60px_rgba(0,0,0,0.95)] z-[150] overflow-hidden">
+                  {quoteError ? (
+                    <div className="p-4 flex items-center gap-3">
+                      <span className="material-symbols-outlined text-red-400 text-xl">error</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-red-400">{quoteError}</span>
+                    </div>
+                  ) : quoteResult && (
+                    <div className="flex overflow-hidden">
+                      {quoteResult.imageUrl && (
+                        <div className="w-28 h-28 shrink-0 bg-black overflow-hidden">
+                          <img src={quoteResult.imageUrl} alt={quoteResult.name} className="w-full h-full object-cover opacity-90" />
+                        </div>
+                      )}
+                      <div className="flex flex-col justify-between p-4 flex-1 min-w-0">
+                        <div>
+                          <p className="text-[7px] font-black uppercase tracking-[0.3em] text-primary/50 mb-1">Orçamento de Importação</p>
+                          <p className="text-[11px] font-black text-white uppercase tracking-wide leading-snug line-clamp-2">{quoteResult.name}</p>
+                        </div>
+                        <div className="flex items-end justify-between mt-3 gap-3">
+                          <div>
+                            <p className="text-[7px] text-white/30 uppercase tracking-widest leading-none mb-0.5">Preço Final</p>
+                            <p className="text-xl font-black text-primary leading-none">
+                              R${' '}{quoteResult.finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {quoteResult.productSlug && (
+                              <Link
+                                to={`/produto/${quoteResult.productSlug}`}
+                                onClick={() => { setQuoteResult(null); setSearchQuery(''); }}
+                                className="flex items-center gap-1.5 bg-primary text-black px-3 py-1.5 text-[8px] font-black uppercase tracking-widest hover:bg-white transition-all"
+                              >
+                                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                                Ver Item
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Actions */}
             <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
