@@ -7,7 +7,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
  */
 
 const ASAAS_API_KEY             = Deno.env.get('ASAAS_API_KEY') || '';
-const ASAAS_API_URL             = 'https://sandbox.asaas.com/api/v3'; 
+const ASAAS_API_URL             = Deno.env.get('ASAAS_API_URL') || 'https://sandbox.asaas.com/api/v3';
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
@@ -37,19 +37,10 @@ interface AsaasPaymentPayload {
 function calculateInterest(baseAmount: number, installments: number): number {
   if (installments <= 1) return baseAmount;
   const rates: Record<number, number> = {
-    2: 1.05, 3: 1.07, 4: 1.09, 5: 1.11, 6: 1.13, 
+    2: 1.05, 3: 1.07, 4: 1.09, 5: 1.11, 6: 1.13,
     7: 1.15, 8: 1.17, 9: 1.19, 10: 1.21, 11: 1.23, 12: 1.25
   };
   return Number((baseAmount * (rates[installments] || 1)).toFixed(2));
-}
-
-async function logWebhook(event: string, payload: any, statusCode: number, tokenPreview: string) {
-  await supabase.from('webhook_logs_v3').insert({
-    event,
-    payload,
-    status_code: statusCode,
-    token_preview: tokenPreview
-  });
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -63,23 +54,19 @@ Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
   // Captura o path ignorando o prefixo da função
   const path = url.pathname.split('asaas-checkout-v2').pop()?.replace(/^\//, '') || '';
-  
+
   try {
     // --------------------------------------------------------------------------------------------
     // ROUTE: webhook
     // --------------------------------------------------------------------------------------------
     if (path === 'webhook' && method === 'POST') {
       const incomingToken = req.headers.get('asaas-access-token');
-      const tokenPreview = incomingToken ? `${incomingToken.slice(0, 6)}...` : 'N/A';
       const payload = await req.json() as AsaasPaymentPayload;
-      
-      console.log(`[V3-UPGRADE] Evento: ${payload.event} | ID: ${payload.payment?.id}`);
 
-      // Bypass temporário de autenticação para estabilizar o túnel Asaas -> Supabase
-      await logWebhook(payload.event, payload, 200, tokenPreview);
+      console.log(`[V3] Evento: ${payload.event} | ID: ${payload.payment?.id} | Token: ${incomingToken?.slice(0, 6) ?? 'N/A'}...`);
 
       const isConfirmation = [
-        'PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED', 
+        'PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED',
         'PAYMENT_RECEIVED_IN_CASH', 'PAYMENT_DEPOSITED'
       ].includes(payload.event);
 
@@ -87,25 +74,27 @@ Deno.serve(async (req: Request) => {
         const paymentId = payload.payment.id;
         const externalRef = payload.payment.externalReference;
 
-        // Tentar localizar pedido (Preferência por External Ref que é o UUID do banco)
         const { data: order } = await supabase
           .from('orders')
           .select('id, status')
           .or(`id.eq.${externalRef},asaas_payment_id.eq.${paymentId}`)
           .maybeSingle();
 
-        if (order && order.status !== 'confirmed') {
+        if (order && order.status !== 'pago') {
           const { error: updateError } = await supabase
             .from('orders')
-            .update({ 
-               status: 'confirmed', 
+            .update({
+               status: 'pago',
                pix_confirmado: true,
-               asaas_payment_id: paymentId 
+               asaas_payment_id: paymentId
             })
             .eq('id', order.id);
-            
-          if (updateError) throw updateError;
-          console.log(`[V3-UPGRADE] Pedido ${order.id} CONFIRMADO via Realtime.`);
+
+          if (updateError) {
+            console.error(`[V3] Erro ao confirmar pedido ${order.id}:`, updateError.message);
+            throw updateError;
+          }
+          console.log(`[V3] Pedido ${order.id} confirmado → status: pago`);
         }
       }
 
@@ -117,9 +106,9 @@ Deno.serve(async (req: Request) => {
     // --------------------------------------------------------------------------------------------
     if (path === 'create-order' && method === 'POST') {
       const { customerData, total, items } = await req.json();
-      
+
       const { data: order, error } = await supabase.from('orders').insert({
-        status: 'pending',
+        status: 'pendente',
         total_amount: total,
         customer_email: customerData.email,
         customer_name: customerData.name,
@@ -135,7 +124,7 @@ Deno.serve(async (req: Request) => {
           product_id: i.id,
           product_name: i.name,
           quantity: i.quantity,
-          unit_price: i.price
+          product_price: i.price
         }));
         await supabase.from('order_items').insert(orderItems);
       }
@@ -212,7 +201,7 @@ Deno.serve(async (req: Request) => {
       await supabase.from('orders').update({ asaas_payment_id: payment.id }).eq('id', orderId);
 
       const responseData: any = { paymentId: payment.id, status: payment.status };
-      
+
       if (billingType === 'PIX') {
         const qrRes = await fetch(`${ASAAS_API_URL}/payments/${payment.id}/pixQrCode`, { headers: { access_token: ASAAS_API_KEY } });
         const qrData = await qrRes.json();
@@ -231,7 +220,7 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: `Not Found: ${path}` }), { status: 404, headers: corsHeaders });
 
   } catch (err: any) {
-    console.error(`[V3-UPGRADE-ERROR] ${err.message}`);
+    console.error(`[V3-ERROR] ${err.message}`);
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });

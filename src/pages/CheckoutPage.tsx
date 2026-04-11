@@ -62,7 +62,7 @@ export function CheckoutPage() {
         },
         (payload) => {
           console.log('[HUD] Mudança de status detectada via satélite:', payload.new.status);
-          if (payload.new.status === 'confirmed' || payload.new.pix_confirmado) {
+          if (payload.new.status === 'pago' || payload.new.pix_confirmado) {
             setIsConfirmed(true);
           }
         }
