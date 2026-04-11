@@ -8,6 +8,7 @@ export interface FirecrawlResponse {
       brand?: string;
       image_url?: string;
       description?: string;
+      button_text?: string;
       [key: string]: any;
     };
     metadata: {
@@ -44,12 +45,16 @@ export async function scrapeProduct(url: string): Promise<FirecrawlResponse | nu
               price: { type: "number" },
               brand: { type: "string" },
               image_url: { type: "string" },
-              images: { 
-                type: "array", 
+              images: {
+                type: "array",
                 items: { type: "string" },
                 description: "Array com todas as URLs de imagens do produto (carrossel)"
               },
-              description: { type: "string" }
+              description: { type: "string" },
+              button_text: {
+                type: "string",
+                description: "Texto do botão principal de compra/ação na página (ex: 'Adicionar ao Carrinho', 'Avise-me quando chegar', 'Orçamento')"
+              }
             },
             required: ["name", "price", "images"]
           }

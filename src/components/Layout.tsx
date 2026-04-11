@@ -233,6 +233,14 @@ export function Layout({ children }: LayoutProps) {
       const name: string = (json.name as string) || scraped.data.metadata?.title || 'Produto Importado';
       const brand: string = (json.brand as string) || 'Importado';
       const description: string = (json.description as string) || '';
+      const buttonText = ((json.button_text as string) || '').toLowerCase();
+      const markdownLower = (scraped.data.markdown || '').toLowerCase();
+
+      // Tem preço E não tem texto de produto esgotado/sem estoque → disponível
+      const unavailableKeywords = ['avise-me', 'avise me', 'avisar quando', 'quando chegar', 'orçamento'];
+      const isUnavailable =
+        usdPrice <= 0 ||
+        unavailableKeywords.some(kw => buttonText.includes(kw) || markdownLower.includes(kw));
 
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80)
         + '-' + Math.random().toString(36).slice(2, 6);
@@ -245,8 +253,9 @@ export function Layout({ children }: LayoutProps) {
         images: images.length ? images : (imageUrl ? [imageUrl] : []),
         description,
         source_url: value,
-        is_available: false,
-        stock: 0, slug,
+        is_available: !isUnavailable,
+        stock: isUnavailable ? 0 : 1,
+        slug,
         tax_importer: config.tax_importer,
         tax_admin: config.tax_admin,
         tax_nf: config.tax_nf,
