@@ -327,7 +327,56 @@ export function CheckoutPage() {
                     <PaymentOption active={method === 'boleto'} onClick={() => generatePayment('boleto')} title="Boleto" desc="3 dias úteis" icon="📄" />
                   </div>
 
-                  <div className="bg-white/[0.03] border border-white/10 p-8 min-h-[280px] flex flex-col items-center justify-center text-center">
+                  {/* CARD FORM — sempre no DOM para o Chrome detectar e oferecer autofill */}
+                  <form
+                    autoComplete="on"
+                    onSubmit={e => { e.preventDefault(); generatePayment('card'); }}
+                    style={{ display: method === 'card' && !cardConfirmed && !processing && !error ? 'block' : 'none' }}
+                    className="bg-white/[0.03] border border-white/10 p-8 space-y-4 text-left"
+                  >
+                    <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-green-400 text-base">lock</span>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-green-400">Ambiente Seguro — SSL 256-bit</span>
+                      </div>
+                      <div className="flex items-center gap-2 opacity-60">
+                        <div className="bg-white px-2 py-0.5 text-[8px] font-black text-blue-800 tracking-widest">VISA</div>
+                        <div className="bg-[#EB001B] px-1.5 py-0.5 rounded-full w-5 h-5 -mr-2.5 opacity-90" />
+                        <div className="bg-[#F79E1B] px-1.5 py-0.5 rounded-full w-5 h-5 opacity-90" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <Input label="Número do Cartão" id="cc-number" name="cc-number" autoComplete="cc-number" value={cardForm.number} onChange={v => setCardForm({...cardForm, number: v})} type="tel" placeholder="0000 0000 0000 0000" />
+                      </div>
+                      <Input label="Nome no Cartão" id="cc-name" name="cc-name" autoComplete="cc-name" value={cardForm.holder} onChange={v => setCardForm({...cardForm, holder: v.toUpperCase()})} className="uppercase" />
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input label="Validade" id="cc-exp" name="cc-exp" autoComplete="cc-exp" value={cardForm.expiry} onChange={v => {
+                          const digits = v.replace(/\D/g, '').slice(0, 4);
+                          const masked = digits.length > 2 ? digits.slice(0,2) + '/' + digits.slice(2) : digits;
+                          setCardForm({...cardForm, expiry: masked});
+                        }} type="tel" placeholder="MM/AA" />
+                        <Input label="CVV 🔒" id="cc-csc" name="cc-csc" autoComplete="cc-csc" value={cardForm.ccv} onChange={v => setCardForm({...cardForm, ccv: v})} type="tel" placeholder="•••" />
+                      </div>
+                    </div>
+                    <InstallmentSelect total={total} value={cardForm.installments} onChange={v => setCardForm({...cardForm, installments: v})} />
+                    <FeeTable />
+                    <div className="bg-green-950/40 border border-green-500/15 px-4 py-3 flex items-start gap-3">
+                      <span className="material-symbols-outlined text-green-400 text-lg mt-0.5 shrink-0">verified_user</span>
+                      <p className="text-[8px] text-green-400/80 leading-relaxed uppercase tracking-wider">
+                        Seus dados de pagamento são criptografados e protegidos. A Perfection Airsoft nunca armazena os dados do seu cartão.
+                      </p>
+                    </div>
+                    <button type="submit" className="w-full bg-primary text-black font-black py-4 uppercase text-xs tracking-widest flex items-center justify-center gap-2 hover:bg-amber-300 active:scale-[0.98] transition-all">
+                      <span className="material-symbols-outlined text-base">lock</span>
+                      Confirmar Pagamento Seguro
+                    </button>
+                  </form>
+
+                  {/* PAINEL DINÂMICO — PIX, Boleto, loading, erro, confirmação */}
+                  <div className={`bg-white/[0.03] border border-white/10 p-8 min-h-[280px] flex flex-col items-center justify-center text-center ${
+                    method === 'card' && !cardConfirmed && !processing && !error ? 'hidden' : ''
+                  }`}>
                     {processing ? (
                       <div className="space-y-4">
                         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
@@ -339,6 +388,8 @@ export function CheckoutPage() {
                         <p className="font-black uppercase text-xs tracking-widest">{error}</p>
                         <button onClick={() => setError(null)} className="text-[10px] underline uppercase">Tentar outro método</button>
                       </div>
+                    ) : cardConfirmed ? (
+                      <ConfirmationBlock clearCart={clearCart} navigate={navigate} isPhysical={isPhysical} />
                     ) : method === 'pix' && paymentData ? (
                       isConfirmed ? <ConfirmationBlock clearCart={clearCart} navigate={navigate} isPhysical={isPhysical} /> : (
                         <div className="space-y-6 w-full">
@@ -355,53 +406,6 @@ export function CheckoutPage() {
                           </div>
                         </div>
                       )
-                    ) : method === 'card' && cardConfirmed ? (
-                      <ConfirmationBlock clearCart={clearCart} navigate={navigate} isPhysical={isPhysical} />
-                    ) : method === 'card' ? (
-                      <form autoComplete="on" onSubmit={e => { e.preventDefault(); generatePayment('card'); }} className="w-full space-y-4 text-left">
-                        <div className="flex items-center justify-between mb-2 pb-3 border-b border-white/5">
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-green-400 text-base">lock</span>
-                            <span className="text-[9px] font-black uppercase tracking-widest text-green-400">Ambiente Seguro — SSL 256-bit</span>
-                          </div>
-                          <div className="flex items-center gap-2 opacity-60">
-                            <div className="bg-white px-2 py-0.5 text-[8px] font-black text-blue-800 tracking-widest">VISA</div>
-                            <div className="bg-[#EB001B] px-1.5 py-0.5 rounded-full w-5 h-5 -mr-2.5 opacity-90" />
-                            <div className="bg-[#F79E1B] px-1.5 py-0.5 rounded-full w-5 h-5 opacity-90" />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="md:col-span-2">
-                            <Input label="Número do Cartão" name="cc-number" autoComplete="cc-number" value={cardForm.number} onChange={v => setCardForm({...cardForm, number: v})} type="tel" placeholder="0000 0000 0000 0000" />
-                          </div>
-                          <Input label="Nome no Cartão" name="cc-name" autoComplete="cc-name" value={cardForm.holder} onChange={v => setCardForm({...cardForm, holder: v.toUpperCase()})} className="uppercase" />
-                          <div className="grid grid-cols-2 gap-3">
-                            <Input label="Validade" name="cc-exp" autoComplete="cc-exp" value={cardForm.expiry} onChange={v => {
-                              // Máscara MM/AA automática
-                              const digits = v.replace(/\D/g, '').slice(0, 4);
-                              const masked = digits.length > 2 ? digits.slice(0,2) + '/' + digits.slice(2) : digits;
-                              setCardForm({...cardForm, expiry: masked});
-                            }} type="tel" placeholder="MM/AA" />
-                            <Input label="CVV 🔒" name="cc-csc" autoComplete="cc-csc" value={cardForm.ccv} onChange={v => setCardForm({...cardForm, ccv: v})} type="tel" placeholder="•••" />
-                          </div>
-                        </div>
-                        {/* Parcelamento com taxas reais */}
-                        <InstallmentSelect total={total} value={cardForm.installments} onChange={v => setCardForm({...cardForm, installments: v})} />
-
-                        {/* Tabela de taxas completa */}
-                        <FeeTable />
-
-                        <div className="bg-green-950/40 border border-green-500/15 px-4 py-3 flex items-start gap-3">
-                          <span className="material-symbols-outlined text-green-400 text-lg mt-0.5 shrink-0">verified_user</span>
-                          <p className="text-[8px] text-green-400/80 leading-relaxed uppercase tracking-wider">
-                            Seus dados de pagamento são criptografados e protegidos. A Perfection Airsoft nunca armazena os dados do seu cartão.
-                          </p>
-                        </div>
-                        <button type="submit" className="w-full bg-primary text-black font-black py-4 uppercase text-xs tracking-widest flex items-center justify-center gap-2 hover:bg-amber-300 active:scale-[0.98] transition-all">
-                          <span className="material-symbols-outlined text-base">lock</span>
-                          Confirmar Pagamento Seguro
-                        </button>
-                      </form>
                     ) : method === 'boleto' && paymentData ? (
                       isConfirmed ? <ConfirmationBlock clearCart={clearCart} navigate={navigate} isPhysical={isPhysical} /> : (
                         <div className="space-y-6">
@@ -609,15 +613,15 @@ function ConfirmationBlock({ clearCart, navigate, isPhysical }: { clearCart: () 
   );
 }
 
-function Input({ label, value, onChange, type = 'text', placeholder = '', autoComplete, name, className = '' }: {
+function Input({ label, value, onChange, type = 'text', placeholder = '', autoComplete, name, id, className = '' }: {
   label: string; value: string; onChange: (v: string) => void;
-  type?: string; placeholder?: string; autoComplete?: string; name?: string; className?: string;
+  type?: string; placeholder?: string; autoComplete?: string; name?: string; id?: string; className?: string;
 }) {
   return (
     <div className="space-y-2">
-      <label className="text-[9px] font-black text-white/40 tracking-widest uppercase">{label}</label>
+      <label htmlFor={id || name} className="text-[9px] font-black text-white/40 tracking-widest uppercase">{label}</label>
       <input
-        type={type} name={name} autoComplete={autoComplete} value={value}
+        id={id || name} type={type} name={name} autoComplete={autoComplete} value={value}
         onChange={e => onChange(e.target.value)} placeholder={placeholder}
         className={`w-full bg-black/60 border border-white/10 px-4 py-4 text-xs font-sans outline-none focus:border-primary transition-all rounded-sm placeholder:text-white/5 ${className}`}
       />
