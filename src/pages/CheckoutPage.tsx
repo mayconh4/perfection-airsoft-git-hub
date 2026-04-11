@@ -232,17 +232,11 @@ export function CheckoutPage() {
         </div>
 
         {/* HEADER */}
-        <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <span className="text-primary text-[10px] font-black tracking-[0.5em] uppercase mb-2 block">System Status: Operacional</span>
-            <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase leading-none">
-              Checkout <span className="text-primary">Phoenix</span>
-            </h1>
-          </div>
-          <div className="bg-white/5 border border-white/10 px-6 py-4 rounded-sm backdrop-blur-md">
-            <span className="text-[10px] font-bold text-white/40 uppercase block mb-1">Total da Operação</span>
-            <span className="text-3xl font-black italic text-primary">R$ {total.toFixed(2)}</span>
-          </div>
+        <header className="mb-10">
+          <span className="text-primary text-[10px] font-black tracking-[0.5em] uppercase mb-2 block">System Status: Operacional</span>
+          <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase leading-none">
+            Checkout <span className="text-primary">Phoenix</span>
+          </h1>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
@@ -448,6 +442,11 @@ export function CheckoutPage() {
           <aside className="lg:col-span-1">
             <div className="bg-white/[0.02] border border-white/5 p-8 backdrop-blur-xl relative overflow-hidden sticky top-28">
               <div className="absolute top-0 right-0 p-2 text-[8px] font-mono text-primary/30 uppercase tracking-tighter">REF: {order?.id?.slice(0, 8) || 'PENDING'}</div>
+              {/* Total — alinhado com o topo do painel principal */}
+              <div className="mb-6 pb-6 border-b border-white/5">
+                <span className="text-[10px] font-bold text-white/40 uppercase block mb-1">Total da Operação</span>
+                <span className="text-3xl font-black italic text-primary">R$ {total.toFixed(2)}</span>
+              </div>
               <h3 className="text-[10px] font-black tracking-[0.4em] text-primary uppercase mb-8 border-b border-primary/20 pb-4">Sumário da Carga</h3>
               <div className="space-y-6 mb-12">
                 {items.map((item, i) => (
