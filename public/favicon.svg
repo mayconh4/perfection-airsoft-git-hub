@@ -1,19 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Dark rounded square — marca registrada do app -->
-  <rect width="512" height="512" rx="100" fill="#0d0d08"/>
-
-  <!-- Outer circle -->
-  <circle cx="256" cy="256" r="200" fill="none" stroke="#CC0000" stroke-width="22"/>
-  <!-- Middle circle -->
-  <circle cx="256" cy="256" r="132" fill="none" stroke="#CC0000" stroke-width="22"/>
-  <!-- Inner circle -->
-  <circle cx="256" cy="256" r="64"  fill="none" stroke="#CC0000" stroke-width="22"/>
-  <!-- Center dot -->
-  <circle cx="256" cy="256" r="20"  fill="#CC0000"/>
-
-  <!-- Crosshair lines (com gap no anel externo) -->
-  <line x1="256" y1="28"  x2="256" y2="192" stroke="#CC0000" stroke-width="22" stroke-linecap="round"/>
-  <line x1="256" y1="320" x2="256" y2="484" stroke="#CC0000" stroke-width="22" stroke-linecap="round"/>
-  <line x1="28"  y1="256" x2="192" y2="256" stroke="#CC0000" stroke-width="22" stroke-linecap="round"/>
-  <line x1="320" y1="256" x2="484" y2="256" stroke="#CC0000" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="220" fill="none" stroke="#CC0000" stroke-width="22"/>
+  <circle cx="256" cy="256" r="148" fill="none" stroke="#CC0000" stroke-width="22"/>
+  <circle cx="256" cy="256" r="76"  fill="none" stroke="#CC0000" stroke-width="22"/>
+  <circle cx="256" cy="256" r="22"  fill="#CC0000"/>
+  <line x1="256" y1="12"  x2="256" y2="196" stroke="#CC0000" stroke-width="22" stroke-linecap="round"/>
+  <line x1="256" y1="316" x2="256" y2="500" stroke="#CC0000" stroke-width="22" stroke-linecap="round"/>
+  <line x1="12"  y1="256" x2="196" y2="256" stroke="#CC0000" stroke-width="22" stroke-linecap="round"/>
+  <line x1="316" y1="256" x2="500" y2="256" stroke="#CC0000" stroke-width="22" stroke-linecap="round"/>
 </svg>
