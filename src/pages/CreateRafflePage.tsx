@@ -29,13 +29,39 @@ export default function CreateRafflePage() {
 
   // Som MW2: UAV quando gate de verificação aparece
   useEffect(() => {
-    if (hasPixKey === false) {
-      const audio = new Audio('/sounds/uav.mp3');
-      audio.volume = 0.6;
+    if (hasPixKey !== false) return;
+
+    let audio: HTMLAudioElement | null = null;
+    let unlockClick: (() => void) | null = null;
+    let unlockTouch: (() => void) | null = null;
+
+    const playAudio = () => {
+      if (!audio) return;
       audio.play().catch(() => {});
-    }
+    };
+
+    audio = new Audio('/sounds/uav.mp3');
+    audio.volume = 0.6;
+
+    audio.play().catch(() => {
+      // Autoplay bloqueado pelo navegador — aguarda primeira interação do usuário
+      unlockClick = () => { playAudio(); cleanup(); };
+      unlockTouch = () => { playAudio(); cleanup(); };
+      document.addEventListener('click', unlockClick, { once: true });
+      document.addEventListener('touchstart', unlockTouch, { once: true });
+    });
+
+    const cleanup = () => {
+      if (unlockClick) document.removeEventListener('click', unlockClick);
+      if (unlockTouch) document.removeEventListener('touchstart', unlockTouch);
+    };
+
+    return () => {
+      cleanup();
+      if (audio) { audio.pause(); audio = null; }
+    };
   }, [hasPixKey]);
-  
+
   useEffect(() => {
     if (user) {
       checkPixKey();
