@@ -18,6 +18,7 @@ interface NavigationItem {
   href: string;
   icon: any;
   subcategories: { label: string; href: string }[];
+  comingSoon?: boolean;
   badge?: string;
 }
 
@@ -57,11 +58,12 @@ export function Layout({ children }: LayoutProps) {
       badge: 'new'
     },
     {
-      label: 'Montar Loadout',
+      label: 'Create Class',
       href: '/create-class',
       icon: 'construction',
       subcategories: [],
-      badge: 'new'
+      badge: 'new',
+      comingSoon: true
     },
     {
       label: 'Mapas',
@@ -543,7 +545,11 @@ export function Layout({ children }: LayoutProps) {
 
                 {navigationMenu.map(cat => (
                   <li key={cat.label} className="relative group/nav flex-shrink-0">
-                    <a href={cat.href} className={`text-white/50 hover:text-primary transition-colors flex items-center gap-1.5 border-b-2 border-transparent hover:border-primary ${isScrolled ? 'py-2' : 'py-4'}`}>
+                    <a
+                      href={cat.href}
+                      onClick={cat.comingSoon ? (e) => { e.preventDefault(); alert('Em breve'); } : undefined}
+                      className={`text-white/50 hover:text-primary transition-colors flex items-center gap-1.5 border-b-2 border-transparent hover:border-primary ${isScrolled ? 'py-2' : 'py-4'}`}
+                    >
                       {cat.label}
                       {cat.badge === 'new' && (
                         <span className="size-1.5 rounded-full bg-primary animate-pulse ml-1.5 shadow-[0_0_8px_rgba(255,193,7,0.5)]"></span>
@@ -578,16 +584,32 @@ export function Layout({ children }: LayoutProps) {
 
               {navigationMenu.map(cat => (
                 <li key={cat.label} className="border-t border-white/5">
-                  <Link to={cat.href} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-white/70 hover:bg-primary/10 hover:text-primary transition-all">
-                    <div className="flex items-center gap-4">
-                      {renderIcon(cat.icon, true)}
-                      {cat.label}
-                    </div>
-                    {cat.badge === 'new' && (
-                      <span className="size-1.5 rounded-full bg-primary animate-pulse ml-2 shadow-[0_0_8px_rgba(255,193,7,0.5)]"></span>
-                    )}
-                    <span className="material-symbols-outlined text-sm opacity-30">chevron_right</span>
-                  </Link>
+                  {cat.comingSoon ? (
+                    <button
+                      onClick={() => { setIsMobileMenuOpen(false); alert('Em breve'); }}
+                      className="w-full flex items-center justify-between px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-white/70 hover:bg-primary/10 hover:text-primary transition-all text-left"
+                    >
+                      <div className="flex items-center gap-4">
+                        {renderIcon(cat.icon, true)}
+                        {cat.label}
+                      </div>
+                      {cat.badge === 'new' && (
+                        <span className="size-1.5 rounded-full bg-primary animate-pulse ml-2 shadow-[0_0_8px_rgba(255,193,7,0.5)]"></span>
+                      )}
+                      <span className="material-symbols-outlined text-sm opacity-30">chevron_right</span>
+                    </button>
+                  ) : (
+                    <Link to={cat.href} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-white/70 hover:bg-primary/10 hover:text-primary transition-all">
+                      <div className="flex items-center gap-4">
+                        {renderIcon(cat.icon, true)}
+                        {cat.label}
+                      </div>
+                      {cat.badge === 'new' && (
+                        <span className="size-1.5 rounded-full bg-primary animate-pulse ml-2 shadow-[0_0_8px_rgba(255,193,7,0.5)]"></span>
+                      )}
+                      <span className="material-symbols-outlined text-sm opacity-30">chevron_right</span>
+                    </Link>
+                  )}
                 </li>
               ))}
 
