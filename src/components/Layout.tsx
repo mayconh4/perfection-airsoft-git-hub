@@ -481,6 +481,30 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </div>
 
+        {/* Mobile Search Bar - Visible only on mobile */}
+        <div className="block md:hidden px-4 pb-2">
+          <form onSubmit={handleSearch} className="relative flex w-full">
+            <button
+              type="submit"
+              className="absolute inset-y-0 left-0 flex items-center pl-3 z-10 bg-transparent border-none cursor-pointer"
+            >
+              {quoteLoading
+                ? <span className="material-symbols-outlined text-lg text-primary/60 animate-spin">progress_activity</span>
+                : isUrl(searchQuery)
+                  ? <span className="material-symbols-outlined text-lg text-primary/70">bolt</span>
+                  : <span className="material-symbols-outlined text-lg text-primary/40">search</span>
+              }
+            </button>
+            <input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="block w-full bg-surface/40 border border-primary/10 py-2.5 pl-10 pr-4 text-xs focus:bg-surface focus:border-primary/50 focus:ring-1 focus:ring-primary/30 placeholder-primary/20 text-white uppercase tracking-[0.2em] transition-all outline-none"
+              placeholder="Buscar no arsenal..."
+              type="text"
+            />
+          </form>
+        </div>
+
         {/* Categories Nav - Scrollable Row on Mobile */}
         <nav className={`border-t border-white/5 bg-background-dark relative transition-all duration-500 ${isScrolled ? 'h-10 sm:h-12 border-b border-primary/10' : ''}`}>
           <div className="max-w-7xl mx-auto px-4 lg:px-8 flex items-stretch h-full overflow-hidden">
@@ -640,7 +664,7 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </div>
 
-      <main className="flex-1 w-full flex flex-col pt-28 sm:pt-44">
+      <main className="flex-1 w-full flex flex-col pt-36 sm:pt-44">
         <div className="w-full max-w-7xl mx-auto px-4 lg:px-8 flex-1 flex flex-col">
           {children}
         </div>
