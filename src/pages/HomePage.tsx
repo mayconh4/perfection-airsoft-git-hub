@@ -28,7 +28,7 @@ export function HomePage() {
       description: "Equipamentos de elite e drops limitados para quem domina o jogo.",
       buttonText: "Solicitar Drop",
       link: "/drop/criar",
-      image: "/assets/drop-banner.png",
+      image: "/images/drop-banner.webp",
       accent: "text-blue-500",
       accentBg: "bg-blue-500",
       shadow: "shadow-[0_0_40px_rgba(59,130,246,0.4)]"
@@ -40,8 +40,7 @@ export function HomePage() {
       description: "Conecte seu campo à maior rede de operadores do país.",
       buttonText: "Cadastrar Campo",
       link: "/eventos",
-      image: "/images/field-banner.jpg",
-      fallback: "https://images.unsplash.com/photo-1595590424283-b8f17842773f?q=80&w=2070&auto=format&fit=crop",
+      image: "/images/field-banner.png",
       accent: "text-green-500",
       accentBg: "bg-green-500",
       shadow: "shadow-[0_0_40px_rgba(34,197,94,0.4)]"
@@ -53,8 +52,7 @@ export function HomePage() {
       description: "Organize eventos, defina o briefing e lidere sua equipe.",
       buttonText: "Criar Missão",
       link: "/eventos",
-      image: "/images/mission-banner.jpg",
-      fallback: "https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=2070&auto=format&fit=crop",
+      image: "/images/mission-banner.png",
       accent: "text-orange-500",
       accentBg: "bg-orange-500",
       shadow: "shadow-[0_0_40px_rgba(249,115,22,0.4)]"
@@ -66,8 +64,7 @@ export function HomePage() {
       description: "Sua AEG ou GBB sempre pronta para o combate.",
       buttonText: "Solicitar Manutenção",
       link: "/contato",
-      image: "/images/maintenance-banner.jpg",
-      fallback: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=2070&auto=format&fit=crop",
+      image: "/images/maintenance-banner.png",
       accent: "text-slate-400",
       accentBg: "bg-slate-400",
       shadow: "shadow-[0_0_40px_rgba(148,163,184,0.4)]"
@@ -79,8 +76,7 @@ export function HomePage() {
       description: "Os melhores equipamentos para elevar seu nível operacional.",
       buttonText: "Acessar Loja",
       link: "/produtos",
-      image: "/images/shop-banner.jpg",
-      fallback: "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=2070&auto=format&fit=crop",
+      image: "/images/shop-banner.png",
       accent: "text-primary",
       accentBg: "bg-primary",
       shadow: "shadow-[0_0_40px_rgba(255,193,7,0.4)]"
