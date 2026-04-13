@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useProducts, useCategories } from '../hooks/useProducts';
 import { useCart } from '../context/CartContext';
 import { formatPrice } from '../types/database';
@@ -18,12 +18,19 @@ function restName(name: string, words = 4): string {
 
 export function CategoryPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { products, loading } = useProducts(slug);
+  const [searchParams] = useSearchParams();
+  const marcaFilter = searchParams.get('marca') || '';
+  const { products: allProducts, loading } = useProducts(slug);
   const { categories } = useCategories();
   const { addItem } = useCart();
   const category = categories.find(c => c.slug === slug);
 
-  const categoryLabel = category?.label || slug || 'Categoria';
+  // Filtra por marca se vier ?marca= na URL
+  const products = marcaFilter
+    ? allProducts.filter(p => p.brand?.toLowerCase() === marcaFilter.toLowerCase())
+    : allProducts;
+
+  const categoryLabel = marcaFilter ? marcaFilter : (category?.label || slug || 'Loja');
   const categorySlug = slug || '';
 
   return (

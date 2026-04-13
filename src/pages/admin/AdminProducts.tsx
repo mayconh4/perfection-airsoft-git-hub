@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import type { Product } from '../../types/database';
 import { useCategories } from '../../hooks/useProducts';
+import { generateTacticalDescription, generateProductSlug, numerologyPrice } from '../../lib/utils';
 import { scrapeProduct } from '../../services/firecrawl';
 import { usePricing } from '../../context/PricingContext';
 import { useBrands, ensureBrandExists, ensureCategoryExists } from '../../hooks/useBrands';
@@ -177,17 +178,17 @@ export function AdminProducts() {
     if (!form.category_id) return alert('Selecione uma categoria válida!');
     setLoading(true);
 
-    // Auto-register brand in DB (fire and forget — won't block save)
-    if (form.brand) ensureBrandExists(form.brand).catch(() => {});
+    // Garante que a marca existe no banco (aguarda para garantir criação)
+    if (form.brand) await ensureBrandExists(form.brand).catch(() => {});
 
     const classification = autoClassify(form.name, form.description);
 
     const productData = {
       ...form,
-      price: parseFloat(form.price),
+      price: numerologyPrice(parseFloat(form.price)),
       usd_price: form.usd_price ? parseFloat(form.usd_price) : null,
       stock: parseInt(form.stock as any, 10),
-      slug: form.name.toLowerCase().replace(/ /g, '-'),
+      slug: generateProductSlug(form.name),
       images: form.images, // Adicionado para persistência
       specs: {
         ...form.specs,
@@ -257,6 +258,8 @@ export function AdminProducts() {
 
         // Auto-classify to detect category
         const { wType } = autoClassify(scrapedName, scrapedDesc);
+        const detectedSystem = wType.includes('GBB') ? 'GBB' : wType.includes('CO2') ? 'CO2' : wType.includes('Spring') ? 'Spring' : 'AEG';
+        const tacticalDesc = generateTacticalDescription(scrapedName, scrapedBrand, scrapedDesc, detectedSystem);
 
         // Register brand + ensure category exist in parallel (silent)
         const [, categoryId] = await Promise.all([
@@ -270,7 +273,7 @@ export function AdminProducts() {
           price: finalPrice,
           usd_price: p.price ? String(p.price) : f.usd_price,
           brand: scrapedBrand,
-          description: scrapedDesc,
+          description: tacticalDesc,
           image_url: (p.image_url as string) || f.image_url,
           images: (p.images as string[]) || [(p.image_url as string)],
           source_url: firecrawlUrl,

@@ -24,7 +24,7 @@ const DEFAULT_CONFIG: PricingConfig = {
 
 const DOLLAR_MARKUP = 0.50; // Margem operacional fixa adicionada à cotação do dia
 
-<PricingContextType | undefined>(undefined);
+const PricingContext = createContext<PricingContextType | undefined>(undefined);
 
 export function PricingProvider({ children }: { children: React.ReactNode }) {
   const [config, setConfig] = useState<PricingConfig>(DEFAULT_CONFIG);

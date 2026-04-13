@@ -8,7 +8,7 @@ import { CartDrawer } from './CartDrawer';
 import { scrapeProduct } from '../services/firecrawl';
 import { supabase } from '../lib/supabase';
 import { ensureBrandExists } from '../hooks/useBrands';
-import { numerologyPrice, generateProductSlug } from '../lib/utils';
+import { numerologyPrice, generateProductSlug, generateTacticalDescription } from '../lib/utils';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -237,9 +237,19 @@ export function Layout({ children }: LayoutProps) {
       const imageUrl: string = (json.image_url as string) || images[0] || '';
       const name: string = (json.name as string) || scraped.data.metadata?.title || 'Produto Importado';
       const brand: string = (json.brand as string) || 'Importado';
-      const description: string = (json.description as string) || '';
+      const rawDescription: string = (json.description as string) || '';
       const buttonText = ((json.button_text as string) || '').toLowerCase();
       const markdownLower = (scraped.data.markdown || '').toLowerCase();
+
+      // Detecta sistema a partir do nome/descrição para a descrição tática
+      const systemRaw = (name + ' ' + rawDescription).toLowerCase();
+      const detectedSystem = systemRaw.includes('gbb') || systemRaw.includes('gas blowback') ? 'GBB'
+        : systemRaw.includes('co2') ? 'CO2'
+        : systemRaw.includes('spring') ? 'Spring'
+        : 'AEG';
+
+      // Gera descrição tática com specs
+      const description = generateTacticalDescription(name, brand, rawDescription, detectedSystem);
 
       // Tem preço E não tem texto de produto esgotado/sem estoque → disponível
       const unavailableKeywords = ['avise-me', 'avise me', 'avisar quando', 'quando chegar', 'orçamento'];
@@ -248,6 +258,9 @@ export function Layout({ children }: LayoutProps) {
         unavailableKeywords.some(kw => buttonText.includes(kw) || markdownLower.includes(kw));
 
       const slug = generateProductSlug(name);
+
+      // Cria a marca no banco se não existir (aguarda para garantir)
+      if (brand && brand !== 'Importado') await ensureBrandExists(brand).catch(() => {});
 
       const { data: inserted, error: insertError } = await supabase.from('products').insert([{
         name, brand,
@@ -258,7 +271,7 @@ export function Layout({ children }: LayoutProps) {
         description,
         source_url: value,
         is_available: !isUnavailable,
-        stock: isUnavailable ? 0 : 1,
+        stock: isUnavailable ? 0 : 10,
         slug,
         tax_importer: config.tax_importer,
         tax_admin: config.tax_admin,
@@ -270,8 +283,6 @@ export function Layout({ children }: LayoutProps) {
 
       if (insertError) console.warn('[Quote] Produto não salvo no catálogo:', insertError.message);
 
-      // Auto-register brand silently (fire and forget)
-      if (brand && brand !== 'Importado') ensureBrandExists(brand).catch(() => {});
 
       setQuoteResult({
         name, imageUrl, finalPrice: numerologyPrice(finalPrice), usdPrice,

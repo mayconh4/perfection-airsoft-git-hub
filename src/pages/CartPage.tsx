@@ -7,7 +7,7 @@ import { formatPrice } from '../types/database';
 
 export function CartPage() {
   const { items, loading, total, removeItem, updateQuantity, itemCount, selectedShipping, setSelectedShipping } = useCart();
-  const { user } = useAuth();
+  useAuth();
   const { options, loading: shippingLoading, error: shippingError, calculateShipping } = useShipping();
   const [cep, setCep] = useState('');
 

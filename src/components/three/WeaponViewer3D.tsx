@@ -12,7 +12,7 @@ function Weapon({ url }: { url: string }) {
   const group = useRef<THREE.Group>(null);
 
   // Lógica de rotação suave opcional (auto-rotation)
-  useFrame((state) => {
+  useFrame(() => {
     if (group.current) {
         group.current.rotation.y += 0.005;
     }

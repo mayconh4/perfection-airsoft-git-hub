@@ -81,7 +81,7 @@ export function BrandsPage() {
           {brands.map(brand => (
             <Link
               key={brand.id}
-              to={`/busca?q=${encodeURIComponent(brand.name)}`}
+              to={`/loja?marca=${encodeURIComponent(brand.name)}`}
               aria-label={`Ver produtos da marca ${brand.name}`}
               className="group relative bg-surface border border-white/5 p-8 flex flex-col items-center justify-center gap-6 hover:border-primary/50 hover:shadow-[0_0_30px_rgba(255,193,7,0.08)] transition-all duration-300 overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
