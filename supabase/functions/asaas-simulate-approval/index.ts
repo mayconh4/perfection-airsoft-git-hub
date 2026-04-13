@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
 
   try {
     const asaasApiKey = Deno.env.get('ASAAS_API_KEY');
-    const asaasApiUrl = Deno.env.get('ASAAS_API_URL') || 'https://sandbox.asaas.com/api/v3';
+    const asaasApiUrl = Deno.env.get('ASAAS_API_URL') || 'https://www.asaas.com/api/v3';
 
     if (!asaasApiKey) throw new Error('ASAAS_API_KEY not configured');
 

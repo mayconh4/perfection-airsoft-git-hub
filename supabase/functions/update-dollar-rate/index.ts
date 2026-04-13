@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-const MARGIN                    = 0.50; // R$ adicionados sobre a cotação do dia
+// A margem de +R$0,50 é aplicada pelo PricingContext no frontend — não somamos aqui
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,8 +29,8 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Cotação inválida recebida: ${rawRate}`);
     }
 
-    // Aplica margem operacional (+R$ 0,50)
-    const finalRate = Math.round((rawRate + MARGIN) * 100) / 100;
+    // Salva a cotação REAL — a margem operacional (+R$0,50) é somada pelo PricingContext
+    const finalRate = Math.round(rawRate * 100) / 100;
 
     // Atualiza admin_config — o Realtime propaga pra todos os clientes conectados
     const { error } = await supabase
@@ -43,14 +43,13 @@ Deno.serve(async (req: Request) => {
 
     if (error) throw error;
 
-    console.log(`[Dollar] Cotação: R$ ${rawRate.toFixed(2)} + margem R$ ${MARGIN} = R$ ${finalRate}`);
+    console.log(`[Dollar] Cotação real salva: R$ ${finalRate.toFixed(2)} (site exibirá R$ ${(finalRate + 0.50).toFixed(2)})`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        rawRate,
-        margin: MARGIN,
-        finalRate,
+        rawRate: finalRate,
+        operationalRate: finalRate + 0.50,
         updatedAt: new Date().toISOString()
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

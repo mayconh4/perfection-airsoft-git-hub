@@ -22,7 +22,9 @@ const DEFAULT_CONFIG: PricingConfig = {
   tax_nf: 3
 };
 
-const PricingContext = createContext<PricingContextType | undefined>(undefined);
+const DOLLAR_MARKUP = 0.50; // Margem operacional fixa adicionada à cotação do dia
+
+<PricingContextType | undefined>(undefined);
 
 export function PricingProvider({ children }: { children: React.ReactNode }) {
   const [config, setConfig] = useState<PricingConfig>(DEFAULT_CONFIG);
@@ -74,22 +76,23 @@ export function PricingProvider({ children }: { children: React.ReactNode }) {
 
   const calculateFinalPrice = (usdPrice: number, overrides?: Partial<PricingConfig>) => {
     const activeConfig = { ...config, ...overrides };
-    
-    // 1. Conversão Base (USD * Dolar)
-    const base = usdPrice * activeConfig.dollarRate;
+    // Sempre aplica a margem operacional de +0,50 sobre a cotação base
+    const operationalRate = activeConfig.dollarRate + DOLLAR_MARKUP;
+    // 1. Conversão Base (USD * Dólar Operacional)
+    const base = usdPrice * operationalRate;
     // 2. Taxa do Importador (compounding)
     const withImporter = base * (1 + activeConfig.tax_importer / 100);
     // 3. Taxa do Adm (compounding)
     const withAdmin = withImporter * (1 + activeConfig.tax_admin / 100);
     // 4. Taxa da Nota Fiscal (final)
     const Final = withAdmin * (1 + activeConfig.tax_nf / 100);
-    
+
     return Final;
   };
 
   const getEffectiveRate = () => {
-    // Agora o dólar efetivo é o dólar base
-    return config.dollarRate;
+    // Dólar operacional = cotação real + margem R$0,50
+    return config.dollarRate + DOLLAR_MARKUP;
   };
 
   return (
