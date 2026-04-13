@@ -274,7 +274,7 @@ export function Layout({ children }: LayoutProps) {
       if (brand && brand !== 'Importado') ensureBrandExists(brand).catch(() => {});
 
       setQuoteResult({
-        name, imageUrl, finalPrice, usdPrice,
+        name, imageUrl, finalPrice: numerologyPrice(finalPrice), usdPrice,
         productSlug: inserted?.slug || inserted?.id || slug
       });
 
@@ -364,7 +364,7 @@ export function Layout({ children }: LayoutProps) {
                           <div>
                             <p className="text-[7px] text-white/30 uppercase tracking-widest leading-none mb-0.5">Preço Final</p>
                             <p className="text-xl font-black text-primary leading-none">
-                              R${' '}{quoteResult.finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              R${' '}{quoteResult.finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -481,6 +481,73 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </div>
 
+        {/* Mobile Search Bar - Visible only on mobile */}
+        <div className="block md:hidden px-4 pb-2 relative">
+          <form onSubmit={handleSearch} className="relative flex w-full">
+            <button
+              type="submit"
+              className="absolute inset-y-0 left-0 flex items-center pl-3 z-10 bg-transparent border-none cursor-pointer"
+            >
+              {quoteLoading
+                ? <span className="material-symbols-outlined text-lg text-primary/60 animate-spin">progress_activity</span>
+                : isUrl(searchQuery)
+                  ? <span className="material-symbols-outlined text-lg text-primary/70">bolt</span>
+                  : <span className="material-symbols-outlined text-lg text-primary/40">search</span>
+              }
+            </button>
+            <input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="block w-full bg-surface/40 border border-primary/10 py-2.5 pl-10 pr-4 text-xs focus:bg-surface focus:border-primary/50 focus:ring-1 focus:ring-primary/30 placeholder-primary/20 text-white uppercase tracking-[0.2em] transition-all outline-none"
+              placeholder="Colar link arsenal..."
+              type="text"
+            />
+          </form>
+
+          {/* Mobile Result Popup */}
+          {(quoteResult || quoteError) && (
+            <div className="absolute top-full left-4 right-4 mt-0 bg-[#141410] border border-primary/30 shadow-[0_20px_60px_rgba(0,0,0,0.95)] z-[150] overflow-hidden">
+              {quoteError ? (
+                <div className="p-3 flex items-center gap-3">
+                  <span className="material-symbols-outlined text-red-400 text-base">error</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-red-400">{quoteError}</span>
+                </div>
+              ) : quoteResult && (
+                <div className="flex overflow-hidden">
+                  {quoteResult.imageUrl && (
+                    <div className="w-20 h-20 shrink-0 bg-black overflow-hidden">
+                      <img src={quoteResult.imageUrl} alt={quoteResult.name} className="w-full h-full object-cover opacity-90" />
+                    </div>
+                  )}
+                  <div className="flex flex-col justify-between p-3 flex-1 min-w-0">
+                    <div>
+                      <p className="text-[7px] font-black uppercase tracking-[0.3em] text-primary/50 mb-0.5">Orçamento de Importação</p>
+                      <p className="text-[10px] font-black text-white uppercase tracking-wide leading-snug line-clamp-2">{quoteResult.name}</p>
+                    </div>
+                    <div className="flex items-end justify-between mt-2 gap-2">
+                      <div>
+                        <p className="text-[7px] text-white/30 uppercase tracking-widest leading-none mb-0.5">Preço Final</p>
+                        <p className="text-lg font-black text-primary leading-none">
+                          R${' '}{quoteResult.finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        </p>
+                      </div>
+                      {quoteResult.productSlug && (
+                        <Link
+                          to={`/produto/${quoteResult.productSlug}`}
+                          onClick={() => { setQuoteResult(null); setSearchQuery(''); }}
+                          className="flex items-center gap-1 bg-primary text-black px-2.5 py-1.5 text-[8px] font-black uppercase tracking-widest hover:bg-white transition-all"
+                        >
+                          <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                          Ver Item
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         {/* Categories Nav - Scrollable Row on Mobile */}
         <nav className={`border-t border-white/5 bg-background-dark relative transition-all duration-500 ${isScrolled ? 'h-10 sm:h-12 border-b border-primary/10' : ''}`}>
           <div className="max-w-7xl mx-auto px-4 lg:px-8 flex items-stretch h-full overflow-hidden">
