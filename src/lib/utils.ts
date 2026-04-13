@@ -206,43 +206,57 @@ export function generateTacticalDescription(
   // Comprimento
   const comprimento = specLookup('comprimento', 'length');
 
-  // Parágrafo narrativo (primeiras 2 frases do rawDesc)
+  // Texto narrativo completo (sem cortar frases)
   let narrative = rawDesc?.trim() || '';
-  const sentences = narrative.split(/(?<=[.!?])\s+/);
-  if (sentences.length >= 2) narrative = sentences.slice(0, 2).join(' ').trim();
-  else if (narrative.length > 350) narrative = narrative.slice(0, 350).replace(/\s\S*$/, '...');
+  // Remove o rodapé padrão do fabricante/loja se presente
+  narrative = narrative
+    .replace(/\*?As descrições e especificações dos produtos são de responsabilidade[\s\S]*$/i, '')
+    .replace(/\*?As especificações são de responsabilidade[\s\S]*$/i, '')
+    .trim();
   if (!narrative) narrative = `${name}${brand ? ` — ${brand}` : ''} — equipamento tático de alta performance para uso profissional em campo.`;
 
-  const specLines: string[] = [
-    `Tipo: ${tipo} | Calibre: 6mm BB`,
-    `FPS: ${fps} | Modos: ${modos}`,
-    `Cano: ${barrel} | Alcance: ~40–50 m`,
-    gearbox ? `Gearbox: ${gearbox} | Rosca: ${rosca}` : `Rosca: ${rosca}`,
-    `Peso: ${peso}`,
-    `Material: ${material}`,
-  ];
-  if (magCap) specLines.push(`Magazine: ${magCap}`);
-  if (motor) specLines.push(`Motor: ${motor}`);
-  if (hopup) specLines.push(`Hop-Up: ${hopup}`);
-  if (comprimento) specLines.push(`Comprimento: ${comprimento}`);
+  // Se temos especificações estruturadas do Firecrawl, exibimos elas diretamente no formato original
+  // (mais fiel ao fabricante) e omitimos o bloco gerado por heurística
+  let specBlock: string;
+  const hasStructuredSpecs = specifications && Object.keys(specifications).length > 0;
 
-  // Specs adicionais não cobertos acima (SKU, blowback, marca etc.)
-  const usedKeys = new Set([
-    'tipo', 'type', 'sistema', 'system', 'fps', 'velocidade',
-    'modos', 'modos de disparo', 'modos de tiro', 'fire modes',
-    'cano', 'barrel', 'cano interno', 'inner barrel',
-    'gearbox', 'rosca', 'thread', 'peso', 'weight', 'material',
-    'magazine', 'capacidade do magazine', 'capacidade_do_magazine', 'capacidade',
-    'motor', 'hop-up', 'hop_up', 'hopup', 'comprimento', 'length',
-    'marca', 'brand',
-  ]);
-  Object.entries(specs).forEach(([k, v]) => {
-    if (!v || !String(v).trim()) return;
-    if (usedKeys.has(k.toLowerCase().trim())) return;
-    specLines.push(`${prettifySpecLabel(k)}: ${String(v).trim()}`);
-  });
+  if (hasStructuredSpecs) {
+    // Exibe specs reais na ordem que chegaram
+    specBlock = 'Especificações:\n' + Object.entries(specs)
+      .filter(([, v]) => v && String(v).trim())
+      .map(([k, v]) => `${prettifySpecLabel(k)}: ${String(v).trim()}`)
+      .join('\n');
+  } else {
+    // Fallback: spec block gerado por heurística
+    const specLines: string[] = [
+      `Tipo: ${tipo} | Calibre: 6mm BB`,
+      `FPS: ${fps} | Modos: ${modos}`,
+      `Cano: ${barrel} | Alcance: ~40–50 m`,
+      gearbox ? `Gearbox: ${gearbox} | Rosca: ${rosca}` : `Rosca: ${rosca}`,
+      `Peso: ${peso}`,
+      `Material: ${material}`,
+    ];
+    if (magCap) specLines.push(`Magazine: ${magCap}`);
+    if (motor) specLines.push(`Motor: ${motor}`);
+    if (hopup) specLines.push(`Hop-Up: ${hopup}`);
+    if (comprimento) specLines.push(`Comprimento: ${comprimento}`);
 
-  const specBlock = specLines.join('\n');
+    const usedKeys = new Set([
+      'tipo', 'type', 'sistema', 'system', 'fps', 'velocidade',
+      'modos', 'modos de disparo', 'modos de tiro', 'fire modes',
+      'cano', 'barrel', 'cano interno', 'inner barrel',
+      'gearbox', 'rosca', 'thread', 'peso', 'weight', 'material',
+      'magazine', 'capacidade do magazine', 'capacidade_do_magazine', 'capacidade',
+      'motor', 'hop-up', 'hop_up', 'hopup', 'comprimento', 'length',
+      'marca', 'brand',
+    ]);
+    Object.entries(specs).forEach(([k, v]) => {
+      if (!v || !String(v).trim()) return;
+      if (usedKeys.has(k.toLowerCase().trim())) return;
+      specLines.push(`${prettifySpecLabel(k)}: ${String(v).trim()}`);
+    });
+    specBlock = specLines.join('\n');
+  }
 
   // Blocos de features (externas / internas)
   const ext = (externalFeatures || []).filter(f => f && f.trim());

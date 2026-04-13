@@ -55,11 +55,11 @@ export async function scrapeProduct(url: string): Promise<FirecrawlResponse | nu
               },
               description: {
                 type: "string",
-                description: "Descrição completa do produto, incluindo todos os parágrafos descritivos sobre características, uso e design"
+                description: "Descrição completa do produto em português, incluindo TODOS os parágrafos sobre características, design, uso e benefícios. NÃO inclua especificações técnicas aqui — elas vão no campo specifications."
               },
               specifications: {
                 type: "object",
-                description: "Tabela de especificações técnicas do produto. Inclua TODOS os campos disponíveis como: SKU, marca, comprimento, peso, rosca, capacidade do magazine, gearbox, motor, modos de disparo, blowback, calibre, hop-up, material, FPS, cano interno, etc. Use os nomes dos campos como aparecem na página."
+                description: "Extraia TODOS os campos da seção 'Especificações' ou tabela de specs da página. Exemplos de campos: SKU, marca, comprimento (mm), peso líquido (kg), rosca, capacidade do magazine, capacidade (rds), gearbox, motor, modos de disparo, blowback, calibre, hop-up, material, FPS, cano interno, fonte de energia, projéteis, potência, hopup ajustável. Use os nomes dos campos EXATAMENTE como aparecem na página (em português, com unidades se houver)."
               },
               external_features: {
                 type: "array",
