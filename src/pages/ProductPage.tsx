@@ -6,6 +6,7 @@ import { useWishlist } from '../hooks/useWishlist';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../types/database';
 import { SEO } from '../components/SEO';
+import { RelatedProducts } from '../components/RelatedProducts';
 
 export function ProductPage() {
   const { idOrSlug } = useParams<{ idOrSlug: string }>();
@@ -253,6 +254,9 @@ export function ProductPage() {
           )}
         </div>
       </div>
+
+      {/* Itens compatíveis / recomendados */}
+      <RelatedProducts product={product} />
     </div>
     </>
   );

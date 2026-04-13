@@ -248,8 +248,16 @@ export function Layout({ children }: LayoutProps) {
         : systemRaw.includes('spring') ? 'Spring'
         : 'AEG';
 
-      // Gera descrição tática com specs
-      const description = generateTacticalDescription(name, brand, rawDescription, detectedSystem);
+      // Gera descrição tática com specs (usando dados estruturados quando disponíveis)
+      const description = generateTacticalDescription(
+        name,
+        brand,
+        rawDescription,
+        detectedSystem,
+        json.specifications,
+        json.external_features,
+        json.internal_features
+      );
 
       // Tem preço E não tem texto de produto esgotado/sem estoque → disponível
       const unavailableKeywords = ['avise-me', 'avise me', 'avisar quando', 'quando chegar', 'orçamento'];
@@ -278,7 +286,7 @@ export function Layout({ children }: LayoutProps) {
         tax_nf: config.tax_nf,
         condition: 'novo',
         system: 'Eletrica (AEG)',
-        specs: {}
+        specs: json.specifications || {}
       }]).select('id, slug').single();
 
       if (insertError) console.warn('[Quote] Produto não salvo no catálogo:', insertError.message);

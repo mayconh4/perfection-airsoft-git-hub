@@ -259,7 +259,15 @@ export function AdminProducts() {
         // Auto-classify to detect category
         const { wType } = autoClassify(scrapedName, scrapedDesc);
         const detectedSystem = wType.includes('GBB') ? 'GBB' : wType.includes('CO2') ? 'CO2' : wType.includes('Spring') ? 'Spring' : 'AEG';
-        const tacticalDesc = generateTacticalDescription(scrapedName, scrapedBrand, scrapedDesc, detectedSystem);
+        const tacticalDesc = generateTacticalDescription(
+          scrapedName,
+          scrapedBrand,
+          scrapedDesc,
+          detectedSystem,
+          p.specifications,
+          p.external_features,
+          p.internal_features
+        );
 
         // Register brand + ensure category exist in parallel (silent)
         const [, categoryId] = await Promise.all([
@@ -267,18 +275,28 @@ export function AdminProducts() {
           ensureCategoryExists(wType).catch(() => null)
         ]);
 
-        setForm(f => ({
-          ...f,
-          name: scrapedName,
-          price: finalPrice,
-          usd_price: p.price ? String(p.price) : f.usd_price,
-          brand: scrapedBrand,
-          description: tacticalDesc,
-          image_url: (p.image_url as string) || f.image_url,
-          images: (p.images as string[]) || [(p.image_url as string)],
-          source_url: firecrawlUrl,
-          ...(categoryId ? { category_id: categoryId } : {})
-        }));
+        setForm(f => {
+          // Mescla specs estruturadas raspadas com specs existentes do form
+          const mergedSpecs = { ...(f.specs || {}) } as Record<string, string>;
+          if (p.specifications) {
+            Object.entries(p.specifications).forEach(([k, v]) => {
+              if (v && String(v).trim()) mergedSpecs[k] = String(v).trim();
+            });
+          }
+          return {
+            ...f,
+            name: scrapedName,
+            price: finalPrice,
+            usd_price: p.price ? String(p.price) : f.usd_price,
+            brand: scrapedBrand,
+            description: tacticalDesc,
+            image_url: (p.image_url as string) || f.image_url,
+            images: (p.images as string[]) || [(p.image_url as string)],
+            source_url: firecrawlUrl,
+            specs: mergedSpecs,
+            ...(categoryId ? { category_id: categoryId } : {})
+          };
+        });
         if (p.image_url) setImagePreview(p.image_url as string);
         alert('Nossa IA Ghost atualizou o banco de dados');
       } else {
