@@ -8,6 +8,7 @@ import { CartDrawer } from './CartDrawer';
 import { scrapeProduct } from '../services/firecrawl';
 import { supabase } from '../lib/supabase';
 import { ensureBrandExists } from '../hooks/useBrands';
+import { numerologyPrice, generateProductSlug } from '../lib/utils';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -246,12 +247,11 @@ export function Layout({ children }: LayoutProps) {
         usdPrice <= 0 ||
         unavailableKeywords.some(kw => buttonText.includes(kw) || markdownLower.includes(kw));
 
-      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80)
-        + '-' + Math.random().toString(36).slice(2, 6);
+      const slug = generateProductSlug(name);
 
       const { data: inserted, error: insertError } = await supabase.from('products').insert([{
         name, brand,
-        price: Math.round(finalPrice * 100) / 100,
+        price: numerologyPrice(finalPrice),
         usd_price: usdPrice.toString(),
         image_url: imageUrl,
         images: images.length ? images : (imageUrl ? [imageUrl] : []),
