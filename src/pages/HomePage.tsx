@@ -19,6 +19,15 @@ export function HomePage() {
   const [subscribeStatus, setSubscribeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [isHovered, setIsHovered] = useState(false);
   const bannerRef = useRef<HTMLDivElement>(null);
+  const featuredRef = useRef<HTMLDivElement>(null);
+
+  const scrollFeatured = (dir: 'left' | 'right') => {
+    const el = featuredRef.current;
+    if (!el) return;
+    const card = el.querySelector('[data-featured-card]') as HTMLElement | null;
+    const cardW = card ? card.offsetWidth + 12 : 280;
+    el.scrollBy({ left: dir === 'right' ? cardW * 2 : -cardW * 2, behavior: 'smooth' });
+  };
 
   const slides = [
     {
@@ -280,9 +289,9 @@ export function HomePage() {
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 w-full">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="bg-surface/20 border border-white/5 flex flex-col overflow-hidden animate-pulse">
+              <div className="flex gap-3 lg:gap-4 w-full overflow-hidden">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex-shrink-0 w-[calc(50%-6px)] lg:w-[calc(25%-12px)] bg-surface/20 border border-white/5 flex flex-col overflow-hidden animate-pulse">
                     <div className="aspect-square bg-white/5"></div>
                     <div className="p-3 lg:p-6 space-y-3">
                       <div className="h-2 bg-white/5 w-1/3 mx-auto"></div>
@@ -302,44 +311,73 @@ export function HomePage() {
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 w-full">
-                {featured.map(p => (
-                  <div key={p.id} className="group bg-surface/20 border border-white/5 hover:border-primary/40 hover:shadow-[0_0_30px_rgba(255,193,7,0.08)] transition-all duration-300 flex flex-col items-center text-center relative overflow-hidden">
-                    <Link to={`/produto/${p.slug || p.id}`} className="w-full overflow-hidden" aria-label={`Ver ${p.name}`}>
-                      <ProductImageSlider
-                        mainImage={p.image_url}
-                        images={p.images}
-                        alt={p.name}
-                        wrapperClassName="relative aspect-square bg-white flex items-center justify-center p-3 lg:p-4 overflow-hidden"
-                        imgClassName="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
-                      >
-                        <div className="absolute top-0 left-0 bg-primary text-black text-[7px] lg:text-[9px] font-black px-2 lg:px-4 py-1.5 lg:py-2 uppercase z-20 -skew-x-12 -translate-x-1">Drop</div>
-                      </ProductImageSlider>
-                    </Link>
+              <div className="relative w-full">
+                {/* Seta Esquerda */}
+                <button
+                  onClick={() => scrollFeatured('left')}
+                  aria-label="Produtos anteriores"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 lg:-translate-x-5 z-20 bg-background-dark border border-primary/40 hover:border-primary hover:bg-primary/10 text-primary w-9 h-9 lg:w-11 lg:h-11 flex items-center justify-center transition-all shadow-lg"
+                >
+                  <span className="material-symbols-outlined text-xl lg:text-2xl">chevron_left</span>
+                </button>
 
-                    <div className="p-3 lg:p-6 space-y-2 lg:space-y-4 w-full flex flex-col items-center">
-                      <div className="space-y-1">
-                        <span className="text-[8px] lg:text-[9px] font-black text-primary tracking-[0.2em] uppercase">{p.brand}</span>
-                        <Link to={`/produto/${p.slug || p.id}`}>
-                          <h4 className="text-[10px] lg:text-lg font-black text-white hover:text-primary transition-colors leading-tight uppercase italic line-clamp-2 min-h-[2.5em]">{shortName(p.name, 4)}</h4>
-                        </Link>
+                {/* Carrossel */}
+                <div
+                  ref={featuredRef}
+                  className="flex gap-3 lg:gap-4 overflow-x-auto scroll-smooth scrollbar-none snap-x snap-mandatory"
+                  style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
+                >
+                  {featured.map(p => (
+                    <div
+                      key={p.id}
+                      data-featured-card
+                      className="group flex-shrink-0 w-[calc(50%-6px)] lg:w-[calc(25%-9px)] snap-start bg-surface/20 border border-white/5 hover:border-primary/40 hover:shadow-[0_0_30px_rgba(255,193,7,0.08)] transition-all duration-300 flex flex-col items-center text-center relative overflow-hidden"
+                    >
+                      <Link to={`/produto/${p.slug || p.id}`} className="w-full overflow-hidden" aria-label={`Ver ${p.name}`}>
+                        <ProductImageSlider
+                          mainImage={p.image_url}
+                          images={p.images}
+                          alt={p.name}
+                          wrapperClassName="relative aspect-square bg-white flex items-center justify-center p-3 lg:p-4 overflow-hidden"
+                          imgClassName="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
+                        >
+                          <div className="absolute top-0 left-0 bg-primary text-black text-[7px] lg:text-[9px] font-black px-2 lg:px-4 py-1.5 lg:py-2 uppercase z-20 -skew-x-12 -translate-x-1">Drop</div>
+                        </ProductImageSlider>
+                      </Link>
+
+                      <div className="p-3 lg:p-6 space-y-2 lg:space-y-4 w-full flex flex-col items-center">
+                        <div className="space-y-1">
+                          <span className="text-[8px] lg:text-[9px] font-black text-primary tracking-[0.2em] uppercase">{p.brand}</span>
+                          <Link to={`/produto/${p.slug || p.id}`}>
+                            <h4 className="text-[10px] lg:text-lg font-black text-white hover:text-primary transition-colors leading-tight uppercase italic line-clamp-2 min-h-[2.5em]">{shortName(p.name, 4)}</h4>
+                          </Link>
+                        </div>
+
+                        <div className="flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-3">
+                          <span className="text-sm lg:text-2xl font-black text-white tracking-tighter italic">{formatPrice(p.price)}</span>
+                          <span className="text-[8px] lg:text-[10px] font-bold text-white/20 line-through uppercase">{formatPrice(p.price * 1.3)}</span>
+                        </div>
+
+                        <button
+                          onClick={() => addItem(p.id)}
+                          aria-label={`Adicionar ${p.name} ao carrinho`}
+                          className="w-full bg-primary text-black font-black py-3 lg:py-4 uppercase tracking-[0.1em] lg:tracking-[0.2em] text-[8px] lg:text-[10px] italic transition-all hover:bg-amber-300 active:scale-[0.97] truncate px-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark"
+                        >
+                          Adicionar
+                        </button>
                       </div>
-
-                      <div className="flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-3">
-                        <span className="text-sm lg:text-2xl font-black text-white tracking-tighter italic">{formatPrice(p.price)}</span>
-                        <span className="text-[8px] lg:text-[10px] font-bold text-white/20 line-through uppercase">{formatPrice(p.price * 1.3)}</span>
-                      </div>
-
-                      <button
-                        onClick={() => addItem(p.id)}
-                        aria-label={`Adicionar ${p.name} ao carrinho`}
-                        className="w-full bg-primary text-black font-black py-3 lg:py-4 uppercase tracking-[0.1em] lg:tracking-[0.2em] text-[8px] lg:text-[10px] italic transition-all hover:bg-amber-300 active:scale-[0.97] truncate px-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark"
-                      >
-                        Adicionar
-                      </button>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+
+                {/* Seta Direita */}
+                <button
+                  onClick={() => scrollFeatured('right')}
+                  aria-label="Próximos produtos"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 lg:translate-x-5 z-20 bg-background-dark border border-primary/40 hover:border-primary hover:bg-primary/10 text-primary w-9 h-9 lg:w-11 lg:h-11 flex items-center justify-center transition-all shadow-lg"
+                >
+                  <span className="material-symbols-outlined text-xl lg:text-2xl">chevron_right</span>
+                </button>
               </div>
             )}
             
