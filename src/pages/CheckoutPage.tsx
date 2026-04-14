@@ -125,7 +125,7 @@ export function CheckoutPage() {
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
     if (step === 'dados') {
-      if (!form.name || !form.cpf || !form.email) return setError('Preencha todos os campos obrigatórios.');
+      if (!form.name || !form.cpf || !form.email || !form.phone) return setError('Preencha todos os campos obrigatórios (nome, CPF, e-mail e celular).');
       setError(null);
       setStep(isPhysical ? 'endereco' : 'pagamento');
     } else if (step === 'endereco') {
@@ -190,7 +190,7 @@ export function CheckoutPage() {
         })
       });
       const pData = await pResp.json();
-      if (!pResp.ok) throw new Error('Não foi possível processar o pagamento. Verifique os dados e tente novamente.');
+      if (!pResp.ok) throw new Error(pData?.error || 'Não foi possível processar o pagamento. Verifique os dados e tente novamente.');
       setPaymentData(pData);
       if (selectedMethod === 'card') setCardConfirmed(true);
     } catch (err: any) {

@@ -161,9 +161,24 @@ Deno.serve(async (req: Request) => {
       const { orderId, customerData, total, installments } = payloadBody;
       const payMethod = payloadBody.method || (path.includes('pix') ? 'pix' : path.includes('boleto') ? 'boleto' : 'card');
 
+      // Validações básicas antes de chamar a API
+      if (!customerData?.cpf) throw new Error('CPF obrigatório para processar o pagamento.');
+      if (!customerData?.name) throw new Error('Nome obrigatório para processar o pagamento.');
+      if (!customerData?.email) throw new Error('E-mail obrigatório para processar o pagamento.');
+      if (!total || total <= 0) throw new Error('Valor inválido para o pagamento.');
+
       // 1. Cliente (Sync)
       const sanitizedCpf = customerData.cpf.replace(/\D/g, '');
+      const sanitizedPhone = (customerData.phone || '').replace(/\D/g, '');
+
+      if (sanitizedCpf.length < 11) throw new Error('CPF inválido. Verifique os dados e tente novamente.');
+
       const custRes = await fetch(`${ASAAS_API_URL}/customers?cpfCnpj=${sanitizedCpf}`, { headers: { access_token: ASAAS_API_KEY } });
+      if (!custRes.ok) {
+        const custErr = await custRes.json().catch(() => ({}));
+        console.error('[V3] Erro ao buscar cliente:', custErr);
+        throw new Error(custErr.errors?.[0]?.description || 'Falha ao verificar cadastro. Tente novamente.');
+      }
       const customers = await custRes.json();
       let customerId = customers.data?.[0]?.id;
 
@@ -175,11 +190,14 @@ Deno.serve(async (req: Request) => {
             name: customerData.name,
             cpfCnpj: sanitizedCpf,
             email: customerData.email,
-            mobilePhone: customerData.phone.replace(/\D/g, '')
+            ...(sanitizedPhone ? { mobilePhone: sanitizedPhone } : {})
           })
         });
         const newCust = await createCust.json();
-        if (!createCust.ok) throw new Error(newCust.errors?.[0]?.description || 'Erro Cliente Asaas');
+        if (!createCust.ok) {
+          console.error('[V3] Erro ao criar cliente Asaas:', newCust);
+          throw new Error(newCust.errors?.[0]?.description || 'Não foi possível registrar seus dados. Verifique o CPF e tente novamente.');
+        }
         customerId = newCust.id;
       }
 
