@@ -661,6 +661,20 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
             {message}
           </p>
         )}
+
+        {isError && (
+          <p className="text-[9px] text-center text-slate-400 mt-2 tracking-wide">
+            Com dificuldades?{' '}
+            <a
+              href="https://wa.me/5537991065120?text=Preciso+de+ajuda+com+meu+cadastro+no+site"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline hover:text-white transition-colors"
+            >
+              Entre em contato com o suporte
+            </a>
+          </p>
+        )}
       </div>
     </div>
   );
