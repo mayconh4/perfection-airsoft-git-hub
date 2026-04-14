@@ -206,72 +206,88 @@ export function generateTacticalDescription(
   // Comprimento
   const comprimento = specLookup('comprimento', 'length');
 
-  // Texto narrativo completo (sem cortar frases)
+  // ------------------------------------------------------------------
+  // TEXTO DA DESCRIÇÃO:
+  // narrativa completa + características (bullets) — sem specs (ficam
+  // em product.specs e aparecem na aba "Briefing Técnico")
+  // ------------------------------------------------------------------
+
+  // Rodapé padrão de lojas que não deve aparecer
+  const FOOTER_REGEX = /(\*+\s*)?(As descrições e especificações dos produtos são de responsabilidade|As especificações são de responsabilidade|\*\*\s*OPTICS)[\s\S]*$/i;
+
+  // 1) Texto narrativo do campo description
   let narrative = rawDesc?.trim() || '';
-  // Remove o rodapé padrão do fabricante/loja se presente
-  narrative = narrative
-    .replace(/\*?As descrições e especificações dos produtos são de responsabilidade[\s\S]*$/i, '')
-    .replace(/\*?As especificações são de responsabilidade[\s\S]*$/i, '')
-    .trim();
+  narrative = narrative.replace(FOOTER_REGEX, '').trim();
   if (!narrative) narrative = `${name}${brand ? ` — ${brand}` : ''} — equipamento tático de alta performance para uso profissional em campo.`;
 
-  // Se temos especificações estruturadas do Firecrawl, exibimos elas diretamente no formato original
-  // (mais fiel ao fabricante) e omitimos o bloco gerado por heurística
-  let specBlock: string;
-  const hasStructuredSpecs = specifications && Object.keys(specifications).length > 0;
+  // 2) Características (externas + internas) como bullets
+  const ext = (externalFeatures || []).map(f => f?.trim()).filter(Boolean);
+  const int = (internalFeatures || []).map(f => f?.trim()).filter(Boolean);
 
-  if (hasStructuredSpecs) {
-    // Exibe specs reais na ordem que chegaram
-    specBlock = 'Especificações:\n' + Object.entries(specs)
-      .filter(([, v]) => v && String(v).trim())
-      .map(([k, v]) => `${prettifySpecLabel(k)}: ${String(v).trim()}`)
-      .join('\n');
-  } else {
-    // Fallback: spec block gerado por heurística
-    const specLines: string[] = [
+  const characteristicsBlock: string[] = [];
+  if (ext.length || int.length) {
+    const allFeatures = [...ext, ...int];
+    characteristicsBlock.push('Características:\n' + allFeatures.map(f => `• ${f}`).join('\n'));
+  }
+
+  // 3) Quando NÃO há specs estruturadas do Firecrawl, appende um bloco
+  //    gerado por heurística como fallback (evita descrição completamente vazia de specs)
+  const hasStructuredSpecs = specifications && Object.keys(specifications).length > 0;
+  const heuristicLines: string[] = [];
+  if (!hasStructuredSpecs) {
+    heuristicLines.push(
       `Tipo: ${tipo} | Calibre: 6mm BB`,
       `FPS: ${fps} | Modos: ${modos}`,
       `Cano: ${barrel} | Alcance: ~40–50 m`,
       gearbox ? `Gearbox: ${gearbox} | Rosca: ${rosca}` : `Rosca: ${rosca}`,
       `Peso: ${peso}`,
       `Material: ${material}`,
-    ];
-    if (magCap) specLines.push(`Magazine: ${magCap}`);
-    if (motor) specLines.push(`Motor: ${motor}`);
-    if (hopup) specLines.push(`Hop-Up: ${hopup}`);
-    if (comprimento) specLines.push(`Comprimento: ${comprimento}`);
-
-    const usedKeys = new Set([
-      'tipo', 'type', 'sistema', 'system', 'fps', 'velocidade',
-      'modos', 'modos de disparo', 'modos de tiro', 'fire modes',
-      'cano', 'barrel', 'cano interno', 'inner barrel',
-      'gearbox', 'rosca', 'thread', 'peso', 'weight', 'material',
-      'magazine', 'capacidade do magazine', 'capacidade_do_magazine', 'capacidade',
-      'motor', 'hop-up', 'hop_up', 'hopup', 'comprimento', 'length',
-      'marca', 'brand',
-    ]);
-    Object.entries(specs).forEach(([k, v]) => {
-      if (!v || !String(v).trim()) return;
-      if (usedKeys.has(k.toLowerCase().trim())) return;
-      specLines.push(`${prettifySpecLabel(k)}: ${String(v).trim()}`);
-    });
-    specBlock = specLines.join('\n');
+    );
+    if (magCap) heuristicLines.push(`Magazine: ${magCap}`);
+    if (motor)  heuristicLines.push(`Motor: ${motor}`);
+    if (hopup)  heuristicLines.push(`Hop-Up: ${hopup}`);
+    if (comprimento) heuristicLines.push(`Comprimento: ${comprimento}`);
   }
 
-  // Blocos de features (externas / internas)
-  const ext = (externalFeatures || []).filter(f => f && f.trim());
-  const int = (internalFeatures || []).filter(f => f && f.trim());
-  const featureBlocks: string[] = [];
-  if (ext.length) {
-    featureBlocks.push('CARACTERÍSTICAS EXTERNAS:\n' + ext.map(f => `• ${f.trim()}`).join('\n'));
-  }
-  if (int.length) {
-    featureBlocks.push('CARACTERÍSTICAS INTERNAS:\n' + int.map(f => `• ${f.trim()}`).join('\n'));
-  }
-
-  const parts = [narrative, specBlock];
-  if (featureBlocks.length) parts.push(featureBlocks.join('\n\n'));
+  const parts: string[] = [narrative];
+  if (characteristicsBlock.length) parts.push(...characteristicsBlock);
+  if (heuristicLines.length) parts.push('Especificações estimadas:\n' + heuristicLines.join('\n'));
   return parts.join('\n\n');
+}
+
+/**
+ * Constrói o objeto `specs` a ser salvo no banco a partir dos dados do Firecrawl.
+ * Sempre que possível, usa os dados estruturados. Faz fallback com heurísticas.
+ */
+export function buildSpecsObject(
+  name: string,
+  rawDesc: string,
+  system: string,
+  specifications?: Record<string, string> | null
+): Record<string, string> {
+  if (specifications && Object.keys(specifications).length > 0) {
+    // Filtra entradas vazias, aplica nomes amigáveis e converte para string limpa
+    const clean: Record<string, string> = {};
+    Object.entries(specifications).forEach(([k, v]) => {
+      const val = String(v ?? '').trim();
+      if (val) clean[prettifySpecLabel(k)] = val;
+    });
+    return clean;
+  }
+
+  // Fallback: extrai specs básicas do texto por regex
+  const text = (name + ' ' + rawDesc).toLowerCase();
+  const result: Record<string, string> = {};
+  const fpsMatch = rawDesc.match(/(\d{3,4})\s*fps/i);
+  if (fpsMatch) result['FPS'] = fpsMatch[1];
+  const kgMatch = rawDesc.match(/(\d+[.,]\d{1,3})\s*kg/i);
+  if (kgMatch) result['Peso'] = kgMatch[1].replace(',', '.') + ' kg';
+  const mmMatch = rawDesc.match(/(\d{3,4})\s*mm/i);
+  if (mmMatch) result['Comprimento'] = mmMatch[1] + ' mm';
+  result['Sistema'] = (system || '').includes('GBB') ? 'GBB' : 'AEG';
+  result['Calibre'] = '6mm BB';
+  if (text.includes('v2') || text.includes('v3')) result['Gearbox'] = text.includes('v3') ? 'V3' : 'V2';
+  return result;
 }
 
 /**

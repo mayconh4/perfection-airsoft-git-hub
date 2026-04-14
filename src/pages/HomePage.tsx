@@ -148,7 +148,7 @@ export function HomePage() {
     }
   };
 
-  const featured = products.slice(0, 4);
+  const featured = products.slice(0, 8);
 
   return (
     <>
@@ -281,7 +281,7 @@ export function HomePage() {
 
             {loading ? (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 w-full">
-                {Array.from({ length: 4 }).map((_, i) => (
+                {Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="bg-surface/20 border border-white/5 flex flex-col overflow-hidden animate-pulse">
                     <div className="aspect-square bg-white/5"></div>
                     <div className="p-3 lg:p-6 space-y-3">

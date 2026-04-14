@@ -41,6 +41,7 @@ export async function scrapeProduct(url: string): Promise<FirecrawlResponse | nu
         url,
         formats: ['json', 'markdown'],
         jsonOptions: {
+          prompt: "Você está extraindo dados de um produto de airsoft. A página pode ter abas ou seções separadas chamadas 'Descrição', 'Características', 'Especificações' ou 'Specs'. Extraia: (1) o texto descritivo narrativo dos parágrafos para o campo 'description'; (2) todos os itens da seção 'Características' como lista para 'external_features'; (3) TODOS os pares chave-valor da seção 'Especificações' ou tabela de specs (ex: Comprimento: 740mm, Peso: 2015g, FPS: 335, Magazine: 110 rounds, Rosca: 14mm CCW, Gearbox: V2, Motor: Long Type, Modos de Disparo, Bateria, Hopup etc.) para o campo 'specifications'. Não omita nenhum campo de especificação.",
           schema: {
             type: "object",
             properties: {
