@@ -381,10 +381,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                         <div className="flex items-end justify-between mt-3 gap-3">
                           <div>
-                            <p className="text-[7px] text-white/30 uppercase tracking-widest leading-none mb-0.5">Preço Final</p>
-                            <p className="text-xl font-black text-primary leading-none">
-                              R${' '}{quoteResult.finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                            </p>
+                            <p className="text-[9px] font-black text-green-400 uppercase tracking-widest leading-none">Disponível</p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             {quoteResult.productSlug && (
@@ -545,10 +542,7 @@ export function Layout({ children }: LayoutProps) {
                     </div>
                     <div className="flex items-end justify-between mt-2 gap-2">
                       <div>
-                        <p className="text-[7px] text-white/30 uppercase tracking-widest leading-none mb-0.5">Preço Final</p>
-                        <p className="text-lg font-black text-primary leading-none">
-                          R${' '}{quoteResult.finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                        </p>
+                        <p className="text-[9px] font-black text-green-400 uppercase tracking-widest leading-none">Disponível</p>
                       </div>
                       {quoteResult.productSlug && (
                         <Link
