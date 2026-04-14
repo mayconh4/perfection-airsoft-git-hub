@@ -12,6 +12,7 @@
       "source": "/produto/(.*)",
       "destination": "/api/og?type=produto&slug=$1"
     },
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
