@@ -19,8 +19,11 @@ export default async function handler(req: any, res: any) {
   const origin = `${proto}://${host}`;
 
   let originalPath = '/';
-  if (type === 'drop-list') originalPath = '/drop';
-  else if (type && slugOrId) originalPath = `/${type}/${slugOrId}`;
+  if (type === 'drop-list')     originalPath = '/drop';
+  else if (type === 'eventos-list')  originalPath = '/eventos';
+  else if (type === 'produtos-list') originalPath = '/produtos';
+  else if (type === 'marcas-list')   originalPath = '/marcas';
+  else if (type && slugOrId)    originalPath = `/${type}/${slugOrId}`;
   const fullUrl = `${origin}${originalPath}`;
 
   let title = 'Perfection Airsoft | Conectando quem domina o jogo';
@@ -31,9 +34,21 @@ export default async function handler(req: any, res: any) {
     title = 'Perfection Airsoft';
     description = 'Perfection Airsoft | Conectando quem domina o jogo';
   } else if (type === 'drop-list') {
-    title = 'Drops Perfection Airsoft';
-    description = 'Conectando quem joga certo';
+    title = 'Drops Exclusivos | Perfection Airsoft';
+    description = 'Rifas e drops de equipamentos táticos de alta performance. Concorra a itens exclusivos.';
     image = `${origin}/og-drop.jpg`;
+  } else if (type === 'eventos-list') {
+    title = 'Eventos de Airsoft | Perfection Airsoft';
+    description = 'Encontre os melhores eventos e operações de airsoft. Compre seu ingresso e aliste-se.';
+    image = `${origin}/og-home.jpg`;
+  } else if (type === 'produtos-list') {
+    title = 'Loja de Airsoft | Perfection Airsoft';
+    description = 'Rifles, pistolas, snipers, acessórios e equipamentos táticos de alta performance.';
+    image = `${origin}/og-home.jpg`;
+  } else if (type === 'marcas-list') {
+    title = 'Marcas | Perfection Airsoft';
+    description = 'As melhores marcas do airsoft em um só lugar: G&G, Tokyo Marui, VFC, Krytac e muito mais.';
+    image = `${origin}/og-home.jpg`;
   }
 
   const ensureAbsolute = (url: string) =>
