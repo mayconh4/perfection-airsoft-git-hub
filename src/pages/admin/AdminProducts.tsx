@@ -48,6 +48,9 @@ export function AdminProducts() {
   const { categories } = useCategories();
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState('');
+  const [stockEdits, setStockEdits] = useState<Record<string, string>>({});
+  const [savingStock, setSavingStock] = useState<string | null>(null);
   
   const { config, updateConfig, calculateFinalPrice } = usePricing();
 
@@ -242,6 +245,16 @@ export function AdminProducts() {
     if (!confirm('Eliminar este item do arsenal?')) return;
     await supabase.from('products').delete().eq('id', id);
     fetchData();
+  };
+
+  const saveStock = async (id: string) => {
+    const val = parseInt(stockEdits[id] ?? '', 10);
+    if (isNaN(val) || val < 0) return;
+    setSavingStock(id);
+    await supabase.from('products').update({ stock: val }).eq('id', id);
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: val } : p));
+    setStockEdits(prev => { const n = { ...prev }; delete n[id]; return n; });
+    setSavingStock(null);
   };
 
   const handleFirecrawlImport = async () => {
@@ -597,6 +610,22 @@ export function AdminProducts() {
         </div>
       )}
 
+      {/* Search bar */}
+      <div className="flex gap-3 items-center">
+        <div className="relative flex-1">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-sm">search</span>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar produto ou marca..."
+            className="w-full bg-surface border border-white/10 pl-9 pr-4 py-2.5 text-xs text-white focus:border-primary outline-none uppercase tracking-wider placeholder:normal-case placeholder:tracking-normal"
+          />
+        </div>
+        <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest whitespace-nowrap">
+          {products.filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.brand?.toLowerCase().includes(search.toLowerCase())).length} itens
+        </span>
+      </div>
+
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <div className="size-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
@@ -608,61 +637,83 @@ export function AdminProducts() {
             <thead className="bg-background-dark text-white/40 uppercase font-black border-b border-primary/10">
               <tr>
                 <th className="p-4 tracking-widest">Identificação</th>
-                <th className="p-4 tracking-widest">Categoria</th>
-                <th className="p-4 tracking-widest">Preço Arsenal</th>
-                <th className="p-4 tracking-widest text-right">Comandos</th>
+                <th className="p-4 tracking-widest hidden md:table-cell">Categoria</th>
+                <th className="p-4 tracking-widest">Preço</th>
+                <th className="p-4 tracking-widest text-center">Estoque</th>
+                <th className="p-4 tracking-widest text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {products.map(p => (
-                <tr key={p.id} className="hover:bg-white/5 transition-colors group">
-                  <td className="p-4">
-                    <div className="flex items-center gap-4">
-                      {p.image_url ? (
-                        <img src={p.image_url} alt={p.name} className="size-10 object-cover border border-primary/10 rounded-sm"/>
-                      ) : (
-                        <div className="size-10 bg-background-dark flex items-center justify-center text-primary/20"><span className="material-symbols-outlined text-sm">image_not_supported</span></div>
-                      )}
-                      <div>
-                        <p className="text-white font-bold uppercase tracking-wide">{p.name}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <p className="text-[8px] text-primary/60 font-black uppercase tracking-widest flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[10px]">store</span> {p.brand} 
-                            <span className="text-white/20">|</span> 
-                            <span className="text-white/60">{(p as any).specs?.model || 'Auto-Model'}</span>
-                            <span className="text-white/20">|</span> 
-                            <span className="text-secondary">{(p as any).specs?.weapon_type || 'Auto-Type'}</span>
-                          </p>
-                          <span className={`text-[7px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter ${p.stock && p.stock > 0 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-                            {p.stock && p.stock > 0 ? `Disponível (${p.stock})` : 'Esgotado'}
-                          </span>
+              {products
+                .filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.brand?.toLowerCase().includes(search.toLowerCase()))
+                .map(p => {
+                const isEditing = stockEdits[p.id] !== undefined;
+                const stockVal  = isEditing ? stockEdits[p.id] : String(p.stock ?? 0);
+                return (
+                  <tr key={p.id} className="hover:bg-white/5 transition-colors group">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        {p.image_url ? (
+                          <img src={p.image_url} alt={p.name} className="size-10 object-cover border border-primary/10 flex-shrink-0"/>
+                        ) : (
+                          <div className="size-10 bg-background-dark flex items-center justify-center text-primary/20 flex-shrink-0"><span className="material-symbols-outlined text-sm">image_not_supported</span></div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-white font-bold uppercase tracking-wide truncate max-w-[180px] lg:max-w-xs">{p.name}</p>
+                          <p className="text-[8px] text-primary/60 font-black uppercase tracking-widest">{p.brand}</p>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <span className="bg-white/5 px-3 py-1 text-white/60 font-black uppercase tracking-widest text-[8px] rounded-full">
-                      {categories.find(c => c.id === p.category_id)?.label || 'Sem Categoria'}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <p className="text-primary font-black text-xs">{formatPrice(p.price)}</p>
-                    {(p as any).usd_price && (
-                      <p className="text-[8px] text-white/30 uppercase mt-0.5">Base: $ {(p as any).usd_price.toFixed(2)}</p>
-                    )}
-                  </td>
-                  <td className="p-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => handleEdit(p)} className="bg-primary/10 text-primary p-2 hover:bg-primary hover:text-background-dark transition-all rounded-sm flex items-center justify-center">
-                        <span className="material-symbols-outlined text-lg">edit</span>
-                      </button>
-                      <button onClick={() => handleDelete(p.id)} className="bg-red-500/10 text-red-500 p-2 hover:bg-red-500 hover:text-white transition-all rounded-sm flex items-center justify-center">
-                        <span className="material-symbols-outlined text-lg">delete</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="p-4 hidden md:table-cell">
+                      <span className="bg-white/5 px-2 py-1 text-white/60 font-black uppercase tracking-widest text-[8px]">
+                        {categories.find(c => c.id === p.category_id)?.label || '—'}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <p className="text-primary font-black text-xs">{formatPrice(p.price)}</p>
+                      {(p as any).usd_price && (
+                        <p className="text-[8px] text-white/30 font-mono mt-0.5">$ {Number((p as any).usd_price).toFixed(2)}</p>
+                      )}
+                    </td>
+                    {/* Inline stock edit */}
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <input
+                          type="number"
+                          min={0}
+                          value={stockVal}
+                          onChange={e => setStockEdits(prev => ({ ...prev, [p.id]: e.target.value }))}
+                          onKeyDown={e => e.key === 'Enter' && saveStock(p.id)}
+                          aria-label={`Estoque de ${p.name}`}
+                          className={`w-14 text-center font-black text-xs py-1 border outline-none transition-all bg-background-dark font-mono
+                            ${isEditing ? 'border-primary text-primary' : (p.stock ?? 0) === 0 ? 'border-red-500/40 text-red-400' : (p.stock ?? 0) < 4 ? 'border-yellow-500/40 text-yellow-400' : 'border-white/10 text-white/60'}
+                          `}
+                        />
+                        {isEditing && (
+                          <button
+                            onClick={() => saveStock(p.id)}
+                            disabled={savingStock === p.id}
+                            aria-label="Salvar estoque"
+                            className="bg-primary text-black p-1 hover:bg-amber-300 transition-all disabled:opacity-50"
+                          >
+                            <span className="material-symbols-outlined text-sm">{savingStock === p.id ? 'progress_activity' : 'check'}</span>
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => handleEdit(p)} aria-label={`Editar ${p.name}`} className="bg-primary/10 text-primary p-2 hover:bg-primary hover:text-background-dark transition-all flex items-center justify-center">
+                          <span className="material-symbols-outlined text-lg">edit</span>
+                        </button>
+                        <button onClick={() => handleDelete(p.id)} aria-label={`Deletar ${p.name}`} className="bg-red-500/10 text-red-500 p-2 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center">
+                          <span className="material-symbols-outlined text-lg">delete</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {!products.length && (
