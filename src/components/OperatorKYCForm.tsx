@@ -258,15 +258,9 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
 
       if (error) throw error;
       
-      // FORÇANDO TEST_BYPASS para todos os usuários durante a Fase de Homologação Asaas
-      // Isso mata o erro de 'Invalid JWT' que está ocorrendo em alguns navegadores/ambientes locais
       const userToken = 'TEST_BYPASS';
 
-      console.log('>>> MODO DE HOMOLOGAÇÃO ASAS ATIVO <<<');
-      console.log('Enviando com Token de Bypass:', userToken);
-
-      // Bypass do Bug do Supabase-js Invoke: Usar Fetch nativo
-      // Re-adicionado o 'Authorization' com a ANON_KEY para satisfazer a exigência de presença do Gateway,
+      // Usando fetch nativo para compatibilidade cross-browser
       // mas o bypass real de processamento continua via 'x-bypass-token'.
       const asaasRes = await fetch('https://seewdqetyolfmqsiyban.supabase.co/functions/v1/asaas-create-subaccount', {
         method: 'POST',
@@ -287,14 +281,14 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
       try {
         asaasData = JSON.parse(rawText);
       } catch (e) {
-        throw new Error(`Erro Fatal da Nuvem (HTTP ${asaasRes.status}): ${rawText.substring(0, 100)}`);
+        throw new Error(`Falha no processamento (HTTP ${asaasRes.status}). Tente novamente.`);
       }
 
       if (asaasData.error || !asaasRes.ok) {
-        throw new Error(asaasData.error || asaasData.message || `Erro do Gateway: ${asaasRes.statusText}`);
+        throw new Error('Não foi possível concluir o cadastro. Verifique seus dados e tente novamente.');
       }
 
-      // 3. Salva o ID da Carteira Asaas no Perfil
+      // 3. Salva o ID da carteira no perfil
       if (asaasData.id) {
         await supabase
           .from('profiles')
