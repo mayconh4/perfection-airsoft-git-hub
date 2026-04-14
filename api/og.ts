@@ -1,59 +1,74 @@
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
 
-// Motor Server-Side Rendering Vercel (Node.js API)
-// Injeta tags OG/Twitter dinâmicas no index.html antes de servir ao cliente
+// URL canônica — usada para imagens e og:url (nunca depende de headers)
+const BASE_URL = 'https://www.perfectionairsoft.com.br';
+
+// Tenta ler o index.html buildado do filesystem (mais confiável que HTTP self-request)
+function readIndexHtml(): string | null {
+  const candidates = [
+    path.join(process.cwd(), 'dist', 'index.html'),
+    path.join(process.cwd(), 'index.html'),
+    path.join(__dirname, '..', 'dist', 'index.html'),
+    path.join(__dirname, '..', 'index.html'),
+  ];
+  for (const p of candidates) {
+    try {
+      const content = fs.readFileSync(p, 'utf-8');
+      if (content.includes('<html')) return content;
+    } catch { /* try next */ }
+  }
+  return null;
+}
 
 export default async function handler(req: any, res: any) {
-  // Cache no CDN da Vercel
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600');
 
-  const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://seewdqetyolfmqsiyban.supabase.co';
+  const SUPABASE_URL     = process.env.VITE_SUPABASE_URL     || 'https://seewdqetyolfmqsiyban.supabase.co';
   const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlZXdkcWV0eW9sZm1xc2l5YmFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjY3NzksImV4cCI6MjA4OTI0Mjc3OX0.rDUTp0xPGEvnLd-UTw3RqMEquA3lJE4ESIP6dY1VwYY';
 
-  const type = req.query?.type as string | undefined;
+  const type     = req.query?.type as string | undefined;
   const slugOrId = req.query?.slug as string | undefined;
 
-  const host = (req.headers['x-forwarded-host'] || req.headers.host || 'www.perfectionairsoft.com.br') as string;
-  const proto = (req.headers['x-forwarded-proto'] || 'https') as string;
-  const origin = `${proto}://${host}`;
+  // Monta URL canônica da página
+  let pagePath = '/';
+  if (type === 'drop-list')     pagePath = '/drop';
+  else if (type === 'eventos-list')  pagePath = '/eventos';
+  else if (type === 'produtos-list') pagePath = '/produtos';
+  else if (type === 'marcas-list')   pagePath = '/marcas';
+  else if (type && slugOrId)    pagePath = `/${type}/${slugOrId}`;
+  const fullUrl = `${BASE_URL}${pagePath}`;
 
-  let originalPath = '/';
-  if (type === 'drop-list')     originalPath = '/drop';
-  else if (type === 'eventos-list')  originalPath = '/eventos';
-  else if (type === 'produtos-list') originalPath = '/produtos';
-  else if (type === 'marcas-list')   originalPath = '/marcas';
-  else if (type && slugOrId)    originalPath = `/${type}/${slugOrId}`;
-  const fullUrl = `${origin}${originalPath}`;
-
-  let title = 'Perfection Airsoft | Conectando quem domina o jogo';
+  // Defaults
+  let title       = 'Perfection Airsoft | Conectando quem domina o jogo';
   let description = 'O ponto de encontro da elite tática. Onde a irmandade do Airsoft se une por equipamentos de alta performance e drops exclusivos.';
-  let image = `${origin}/og-home.jpg`;
+  let image       = `${BASE_URL}/og-home.jpg`;
 
-  if (!type && !slugOrId) {
-    title = 'Perfection Airsoft';
-    description = 'Perfection Airsoft | Conectando quem domina o jogo';
-  } else if (type === 'drop-list') {
-    title = 'Drops Exclusivos | Perfection Airsoft';
+  // Valores por tipo de página estática
+  if (type === 'drop-list') {
+    title       = 'Drops Exclusivos | Perfection Airsoft';
     description = 'Rifas e drops de equipamentos táticos de alta performance. Concorra a itens exclusivos.';
-    image = `${origin}/og-drop.jpg`;
+    image       = `${BASE_URL}/og-drop.jpg`;
   } else if (type === 'eventos-list') {
-    title = 'Eventos de Airsoft | Perfection Airsoft';
+    title       = 'Eventos de Airsoft | Perfection Airsoft';
     description = 'Encontre os melhores eventos e operações de airsoft. Compre seu ingresso e aliste-se.';
-    image = `${origin}/og-home.jpg`;
+    image       = `${BASE_URL}/og-home.jpg`;
   } else if (type === 'produtos-list') {
-    title = 'Loja de Airsoft | Perfection Airsoft';
+    title       = 'Loja de Airsoft | Perfection Airsoft';
     description = 'Rifles, pistolas, snipers, acessórios e equipamentos táticos de alta performance.';
-    image = `${origin}/og-home.jpg`;
+    image       = `${BASE_URL}/og-home.jpg`;
   } else if (type === 'marcas-list') {
-    title = 'Marcas | Perfection Airsoft';
+    title       = 'Marcas | Perfection Airsoft';
     description = 'As melhores marcas do airsoft em um só lugar: G&G, Tokyo Marui, VFC, Krytac e muito mais.';
-    image = `${origin}/og-home.jpg`;
+    image       = `${BASE_URL}/og-home.jpg`;
   }
 
   const ensureAbsolute = (url: string) =>
-    url?.startsWith('http') ? url : `${origin}${url?.startsWith('/') ? '' : '/'}${url || ''}`;
+    url?.startsWith('http') ? url : `${BASE_URL}${url?.startsWith('/') ? '' : '/'}${url || ''}`;
 
+  // Busca dados dinâmicos (produto, drop, evento individual)
   try {
     if (type && slugOrId) {
       const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -76,45 +91,84 @@ export default async function handler(req: any, res: any) {
         if (data) { title = data.title; description = data.description || description; image = getPrimaryImage(data); }
       }
     }
-  } catch { /* Supabase falhou — continua com defaults */ }
+  } catch { /* Supabase falhou — usa defaults */ }
 
-  // Busca o index.html do próprio deployment (dist é gitignored; usar URL é o único caminho)
-  let html = '';
-  try {
-    const resp = await fetch(`${origin}/index.html`, {
-      headers: { 'x-og-internal': '1' }, // evita loop de rewrite (ver vercel.json)
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    html = await resp.text();
-  } catch {
-    // Último recurso: servir redirect direto para o index.html estático
-    // Evita loop: /index.html serve o arquivo estático, não chama /api/og
-    res.setHeader('Location', '/index.html');
-    return res.status(302).end();
-  }
+  // ─── Injeta as tags OG no HTML ───────────────────────────────────────────
 
-  // Injeção das tags OG
   const injectMeta = (h: string, prop: string, val: string, isName = false) => {
     const attr = isName ? 'name' : 'property';
-    const re = new RegExp(`<meta\\s+${attr}=["']${prop}["']\\s+content=["'].*?["']\\s*/?>`, 'i');
-    const tag = `<meta ${attr}="${prop}" content="${val.replace(/"/g, '&quot;')}" />`;
+    const escaped = val.replace(/"/g, '&quot;');
+    const re = new RegExp(`<meta\\s+${attr}=["']${prop}["'][^>]*>`, 'i');
+    const tag = `<meta ${attr}="${prop}" content="${escaped}" />`;
     if (re.test(h)) return h.replace(re, tag);
-    return h.includes('</head>') ? h.replace('</head>', `${tag}\n</head>`) : h + tag;
+    return h.replace('</head>', `  ${tag}\n</head>`);
   };
 
-  let out = html.replace(/<title>.*?<\/title>/i, `<title>${title}</title>`);
-  out = injectMeta(out, 'description', description, true);
-  out = injectMeta(out, 'og:title', title);
-  out = injectMeta(out, 'og:description', description);
-  out = injectMeta(out, 'og:image', image);
-  out = injectMeta(out, 'og:image:width', '1200');
-  out = injectMeta(out, 'og:image:height', '630');
-  out = injectMeta(out, 'og:url', fullUrl);
-  out = injectMeta(out, 'twitter:card', 'summary_large_image');
-  out = injectMeta(out, 'twitter:title', title);
+  // Tenta ler o index.html do filesystem (mais confiável em Vercel)
+  let html = readIndexHtml();
+
+  // Fallback: HTTP request para si mesmo
+  if (!html) {
+    try {
+      const origin = process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : BASE_URL;
+      const resp = await fetch(`${origin}/index.html`, {
+        signal: AbortSignal.timeout(6000),
+      });
+      if (resp.ok) html = await resp.text();
+    } catch { /* ignore */ }
+  }
+
+  // Último recurso: HTML mínimo que carrega a SPA e já tem os OG tags corretos
+  if (!html) {
+    html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${title}</title>
+  <meta name="description" content="" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Perfection Airsoft" />
+  <meta property="og:title" content="" />
+  <meta property="og:description" content="" />
+  <meta property="og:image" content="" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="" />
+  <meta name="twitter:description" content="" />
+  <meta name="twitter:image" content="" />
+</head>
+<body><div id="root"></div>
+<script>
+  // Carrega a SPA via index.html raiz
+  fetch('/index.html').then(r=>r.text()).then(h=>{
+    const m=h.match(/src="(\/assets\/[^"]+\.js)"/);
+    if(m){const s=document.createElement('script');s.type='module';s.src=m[1];document.head.appendChild(s);}
+    const c=h.match(/href="(\/assets\/[^"]+\.css)"/);
+    if(c){const l=document.createElement('link');l.rel='stylesheet';l.href=c[1];document.head.appendChild(l);}
+  });
+</script>
+</body>
+</html>`;
+  }
+
+  // Aplica todas as injeções
+  let out = html.replace(/<title>.*?<\/title>/is, `<title>${title}</title>`);
+  out = injectMeta(out, 'description',       description,     true);
+  out = injectMeta(out, 'og:title',          title);
+  out = injectMeta(out, 'og:description',    description);
+  out = injectMeta(out, 'og:image',          image);
+  out = injectMeta(out, 'og:image:width',    '1200');
+  out = injectMeta(out, 'og:image:height',   '630');
+  out = injectMeta(out, 'og:url',            fullUrl);
+  out = injectMeta(out, 'twitter:card',      'summary_large_image');
+  out = injectMeta(out, 'twitter:title',     title);
   out = injectMeta(out, 'twitter:description', description);
-  out = injectMeta(out, 'twitter:image', image);
+  out = injectMeta(out, 'twitter:image',     image);
 
   res.status(200).send(out);
 }

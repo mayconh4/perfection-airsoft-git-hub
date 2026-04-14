@@ -19,6 +19,11 @@
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
+  "functions": {
+    "api/og.ts": {
+      "includeFiles": "dist/index.html"
+    }
+  },
   "headers": [
     {
       "source": "/assets/(.*)",
