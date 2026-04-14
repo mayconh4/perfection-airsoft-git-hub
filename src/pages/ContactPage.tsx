@@ -193,7 +193,7 @@ export function ContactPage() {
                 Para situações de urgência crítica ou dúvidas rápidas sobre equipamentos, utilize nosso canal direto via WhatsApp.
               </p>
               <a 
-                href="https://wa.me/551140028922" 
+                href="https://wa.me/5537991065120" 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-3 bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-white border border-green-500/20 py-3 px-6 transition-all font-black text-[10px] uppercase tracking-widest"

@@ -10,6 +10,8 @@ const ASAAS_API_KEY             = Deno.env.get('ASAAS_API_KEY') || '';
 const ASAAS_API_URL             = Deno.env.get('ASAAS_API_URL') || 'https://www.asaas.com/api/v3';
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+// Token configurado no painel Asaas → Integrações → Webhooks → "Token de acesso"
+const ASAAS_WEBHOOK_TOKEN       = Deno.env.get('ASAAS_WEBHOOK_TOKEN') || '';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -61,9 +63,19 @@ Deno.serve(async (req: Request) => {
     // --------------------------------------------------------------------------------------------
     if (path === 'webhook' && method === 'POST') {
       const incomingToken = req.headers.get('asaas-access-token');
-      const payload = await req.json() as AsaasPaymentPayload;
 
-      console.log(`[V3] Evento: ${payload.event} | ID: ${payload.payment?.id} | Token: ${incomingToken?.slice(0, 6) ?? 'N/A'}...`);
+      // Valida o token de segurança configurado no painel Asaas
+      // Se ASAAS_WEBHOOK_TOKEN não estiver configurado ainda, loga aviso mas não bloqueia
+      if (ASAAS_WEBHOOK_TOKEN && incomingToken !== ASAAS_WEBHOOK_TOKEN) {
+        console.warn('[V3] Webhook rejeitado — token inválido:', incomingToken?.slice(0, 6) ?? 'N/A');
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const payload = await req.json() as AsaasPaymentPayload;
+      console.log(`[V3] Evento: ${payload.event} | ID: ${payload.payment?.id}`);
 
       const isConfirmation = [
         'PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED',

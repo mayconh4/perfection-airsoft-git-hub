@@ -177,7 +177,7 @@ export function ProductPage() {
           {/* Linha superior: Tirar Dúvidas + Favoritos (menores) */}
           <div className="flex gap-3 mb-3">
             <a
-              href={`https://wa.me/5511999999999?text=${encodeURIComponent(`Olá Perfection! Tenho interesse no produto *${product.name}* (${window.location.href}). Poderia me dar mais detalhes?`)}`}
+              href={`https://wa.me/5537991065120?text=${encodeURIComponent(`Olá Perfection! Tenho interesse no produto *${product.name}* (${window.location.href}). Poderia me dar mais detalhes?`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] font-black py-3 px-4 flex items-center justify-center gap-2 hover:bg-[#25D366] hover:text-white transition-all uppercase tracking-widest text-[10px]"
