@@ -208,12 +208,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     if (!user) {
       const local = getLocalCart();
-      const existingIndex = local.findIndex(i =>
-        i.product_id === productId &&
-        JSON.stringify(i.metadata || {}) === JSON.stringify(metadata || {})
-      );
+      // Para tickets: deduplica pelo event_id; para outros: pelo productId exato
+      const existingIndex = metadata?.type === 'ticket'
+        ? local.findIndex(i => i.metadata?.type === 'ticket' && i.metadata?.event_id === metadata.event_id)
+        : local.findIndex(i => i.product_id === productId && !i.metadata);
 
-      if (existingIndex > -1 && !metadata) {
+      if (existingIndex > -1) {
         local[existingIndex].quantity += quantity;
         saveLocalCart([...local]);
       } else {
@@ -235,11 +235,31 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     // Para rifas e físicos: product_id = o ID real
     const dbProductId = metadata?.type === 'ticket' ? null : productId;
 
+    // Deduplicação para tickets: se já existe um ingresso do mesmo evento, incrementa quantidade
+    if (metadata?.type === 'ticket' && metadata.event_id) {
+      const { data: existing } = await supabase
+        .from('cart_items')
+        .select('id, quantity')
+        .eq('user_id', user.id)
+        .filter('metadata->>type', 'eq', 'ticket')
+        .filter('metadata->>event_id', 'eq', metadata.event_id)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from('cart_items')
+          .update({ quantity: existing.quantity + quantity })
+          .eq('id', existing.id);
+        await fetchCart();
+        setShowToast(true);
+        return true;
+      }
+    }
+
     const { error } = await supabase.from('cart_items').insert({
       user_id: user.id,
       product_id: dbProductId,
       quantity: quantity,
-      metadata: { ...metadata, _virtual_id: productId } // guarda o ID virtual no metadata
+      metadata: { ...metadata, _virtual_id: productId }
     });
 
     if (error) {
