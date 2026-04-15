@@ -20,7 +20,7 @@ const SMTP_PASSWORD = Deno.env.get('SMTP_PASSWORD') || '';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-const ASAAS_WEBHOOK_TOKEN = 'whsec_gIbrQ_4GgOI6N0pulKcdQs8GVZKYp0swQuzyzuF4N4Q';
+const ASAAS_WEBHOOK_TOKEN = Deno.env.get('ASAAS_WEBHOOK_TOKEN') || '';
 
 const ZAPI_INSTANCE_ID = Deno.env.get('ZAPI_INSTANCE_ID') || '';
 const ZAPI_TOKEN       = Deno.env.get('ZAPI_TOKEN') || '';
