@@ -6,8 +6,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
  * Implementando Realtime, Auditoria e Multi-Checkout (PIX, CARTÃO, BOLETO).
  */
 
-const ASAAS_API_KEY             = Deno.env.get('ASAAS_API_KEY') || '';
-const ASAAS_API_URL             = Deno.env.get('ASAAS_API_URL') || 'https://www.asaas.com/api/v3';
+const ASAAS_API_KEY             = (Deno.env.get('ASAAS_API_KEY') || '').trim();
+// URL sempre derivada do prefixo da chave — elimina mismatch de ambiente por configuração errada
+// $aact_prod_  → produção  |  qualquer outro prefixo → sandbox
+const ASAAS_API_URL             = ASAAS_API_KEY.startsWith('$aact_prod_')
+  ? 'https://www.asaas.com/api/v3'
+  : 'https://sandbox.asaas.com/api/v3';
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 // Token configurado no painel Asaas → Integrações → Webhooks → "Token de acesso"
