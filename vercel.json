@@ -1,27 +1,11 @@
 {
   "rewrites": [
-    { "source": "/drop",     "destination": "/api/og?type=drop-list" },
-    { "source": "/eventos",  "destination": "/api/og?type=eventos-list" },
-    { "source": "/produtos", "destination": "/api/og?type=produtos-list" },
-    { "source": "/marcas",   "destination": "/api/og?type=marcas-list" },
-    {
-      "source": "/drop/(.*)",
-      "destination": "/api/og?type=drop&slug=$1"
-    },
-    {
-      "source": "/eventos/(.*)",
-      "destination": "/api/og?type=eventos&slug=$1"
-    },
-    {
-      "source": "/produto/(.*)",
-      "destination": "/api/og?type=produto&slug=$1"
-    },
-    {
-      "source": "/blog/(.*)",
-      "destination": "/api/og?type=blog&slug=$1"
-    },
-    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
-    { "source": "/(.*)",        "destination": "/index.html" }
+    { "source": "/drop/(.*)",    "destination": "/api/og?type=drop&slug=$1" },
+    { "source": "/eventos/(.*)", "destination": "/api/og?type=eventos&slug=$1" },
+    { "source": "/produto/(.*)", "destination": "/api/og?type=produto&slug=$1" },
+    { "source": "/blog/(.*)",    "destination": "/api/og?type=blog&slug=$1" },
+    { "source": "/sitemap.xml",  "destination": "/api/sitemap" },
+    { "source": "/(.*)",         "destination": "/index.html" }
   ],
   "functions": {
     "api/og.ts": {
