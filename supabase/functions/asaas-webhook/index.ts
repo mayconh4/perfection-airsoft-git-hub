@@ -49,74 +49,209 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// --- HELPER: TEMPLATE DE E-MAIL ---
-function getTicketEmailHtml(data: {
+// --- HELPER: TEMPLATE DE E-MAIL PREMIUM ---
+function buildOrderEmail(data: {
   buyerName: string;
-  eventName: string;
-  eventDate: string;
-  eventLocation: string;
-  tickets: Array<{ qrUuid: string; id: string }>;
-}) {
-  const ticketSections = data.tickets.map((ticket, index) => `
-    <div style="border: 2px solid #ffc107; padding: 25px; margin-bottom: 25px; background: #000; color: #fff; text-align: center;">
-      <h3 style="color: #ffc107; text-transform: uppercase; margin-top: 0; font-size: 14px; letter-spacing: 2px;">Tag de Operador #${index + 1}</h3>
-      <div style="border: 1px solid #ffc10720; padding: 15px; margin: 15px 0; background: #1a1a15;">
-        <p style="margin: 0; font-size: 10px; color: #666; text-transform: uppercase;">Identificação</p>
-        <p style="margin: 5px 0 0 0; font-size: 18px; color: #fff; font-weight: 900; text-transform: uppercase;">${data.buyerName}</p>
-      </div>
-      <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px;">
-        <div style="flex: 1; border-right: 1px solid #333; padding-right: 10px;">
-          <p style="margin: 0; font-size: 8px; color: #666; text-transform: uppercase;">ID Missão</p>
-          <p style="margin: 3px 0 0 0; font-size: 12px; color: #ffc107; font-family: monospace;">#${ticket.qrUuid.slice(0, 8).toUpperCase()}</p>
+  orderId: string;
+  paymentMethod: string;
+  totalValue: number;
+  orderDate: string;
+  type: 'ticket' | 'raffle' | 'product';
+  // tickets de evento
+  eventName?: string;
+  eventDate?: string;
+  eventLocation?: string;
+  ticketIds?: string[];
+  // rifa
+  raffleTitle?: string;
+  raffleNumbers?: number[];
+  // produto
+  items?: Array<{ name: string; qty: number; price: number }>;
+}): string {
+  const ordRef = data.orderId.slice(0, 8).toUpperCase();
+  const payLabel: Record<string, string> = { pix: 'PIX', credit_card: 'Cartão de Crédito', boleto: 'Boleto Bancário', asaas: 'PIX' };
+  const payDisplay = payLabel[data.paymentMethod] || data.paymentMethod?.toUpperCase() || 'PIX';
+  const totalFmt = Number(data.totalValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  // ── Bloco central dependente do tipo ──────────────────────────────────────
+  let mainBlock = '';
+
+  if (data.type === 'ticket' && data.ticketIds?.length) {
+    mainBlock = `
+      <div style="margin:28px 0 0;">
+        <p style="margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:3px;color:#ffc107;text-transform:uppercase;">Suas Tags de Acesso</p>
+        ${data.ticketIds.map((id, i) => `
+        <div style="display:flex;align-items:center;gap:14px;background:#0d0d0d;border:1px solid #ffc10730;border-left:3px solid #ffc107;padding:14px 18px;margin-bottom:10px;">
+          <div style="background:#ffc107;color:#000;font-size:11px;font-weight:900;padding:6px 10px;letter-spacing:1px;white-space:nowrap;">TAG ${String(i + 1).padStart(2, '0')}</div>
+          <div>
+            <p style="margin:0;font-size:9px;color:#555;letter-spacing:2px;text-transform:uppercase;">Operador</p>
+            <p style="margin:2px 0 4px;font-size:15px;font-weight:900;color:#fff;text-transform:uppercase;">${data.buyerName}</p>
+            <p style="margin:0;font-size:10px;color:#ffc107;font-family:monospace;letter-spacing:1px;">#${id.slice(0, 8).toUpperCase()}</p>
+          </div>
+        </div>`).join('')}
+        <div style="background:#0d0d0d;border:1px solid #ffc10720;padding:14px 18px;margin-top:4px;">
+          <p style="margin:0;font-size:10px;color:#888;line-height:1.6;">
+            📍 <strong style="color:#ccc;">${data.eventName}</strong> &nbsp;|&nbsp; 📅 ${data.eventDate} &nbsp;|&nbsp; 🗺 ${data.eventLocation}<br>
+            Apresente este e-mail ou informe seu CPF na entrada do evento.
+          </p>
         </div>
-      </div>
-    </div>
-  `).join('');
+      </div>`;
+  } else if (data.type === 'raffle' && data.raffleNumbers?.length) {
+    const numChunks: number[][] = [];
+    for (let i = 0; i < data.raffleNumbers.length; i += 8) numChunks.push(data.raffleNumbers.slice(i, i + 8));
+    mainBlock = `
+      <div style="margin:28px 0 0;">
+        <p style="margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:3px;color:#ffc107;text-transform:uppercase;">Seus Números da Sorte — ${data.raffleTitle}</p>
+        ${numChunks.map(chunk => `
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+          ${chunk.map(n => `<span style="background:#ffc107;color:#000;font-size:13px;font-weight:900;padding:8px 12px;font-family:monospace;min-width:32px;text-align:center;">${String(n).padStart(2,'0')}</span>`).join('')}
+        </div>`).join('')}
+        <p style="margin:16px 0 0;font-size:10px;color:#666;line-height:1.5;">Acompanhe o resultado em <a href="https://www.perfectionairsoft.com.br/drop" style="color:#ffc107;">perfectionairsoft.com.br/drop</a></p>
+      </div>`;
+  } else if (data.items?.length) {
+    mainBlock = `
+      <div style="margin:28px 0 0;">
+        <p style="margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:3px;color:#ffc107;text-transform:uppercase;">Itens do Pedido</p>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr style="border-bottom:1px solid #222;">
+            <th style="text-align:left;font-size:9px;color:#555;letter-spacing:2px;padding:6px 0;text-transform:uppercase;">Produto</th>
+            <th style="text-align:center;font-size:9px;color:#555;letter-spacing:2px;padding:6px 0;text-transform:uppercase;">Qtd</th>
+            <th style="text-align:right;font-size:9px;color:#555;letter-spacing:2px;padding:6px 0;text-transform:uppercase;">Valor</th>
+          </tr>
+          ${data.items.map(it => `
+          <tr style="border-bottom:1px solid #1a1a1a;">
+            <td style="padding:10px 0;font-size:13px;color:#eee;">${it.name}</td>
+            <td style="padding:10px 0;font-size:13px;color:#aaa;text-align:center;">${it.qty}×</td>
+            <td style="padding:10px 0;font-size:13px;color:#ffc107;text-align:right;font-family:monospace;">${Number(it.price * it.qty).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td>
+          </tr>`).join('')}
+        </table>
+        <p style="margin:14px 0 0;font-size:10px;color:#666;">Acompanhe seu pedido em <a href="https://www.perfectionairsoft.com.br/dashboard" style="color:#ffc107;">perfectionairsoft.com.br/dashboard</a></p>
+      </div>`;
+  }
 
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: 'Inter', Helvetica, Arial, sans-serif; background-color: #0d0d0d; color: #ffffff; margin: 0; padding: 0; }
-    .container { max-width: 600px; margin: 0 auto; background-color: #1a1a15; border: 1px solid #ffc10720; }
-    .header { background-color: #ffc107; padding: 30px; text-align: center; }
-    .content { padding: 30px; line-height: 1.6; }
-    .hud-line { height: 2px; background: linear-gradient(90deg, transparent, #ffc107, transparent); margin: 20px 0; }
-    .footer { padding: 20px; text-align: center; color: #444; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1 style="margin: 0; font-size: 22px; font-weight: 900; color: #0d0d0d; text-transform: uppercase; letter-spacing: -1px;">PERFECTION AIRSOFT</h1>
-    </div>
-    <div class="content">
-      <h2 style="text-transform: uppercase; letter-spacing: 2px; color: #ffc107; font-size: 18px;">Protocolo de Missão Disponível</h2>
-      <p>Operador <strong>${data.buyerName}</strong>,</p>
-      <p>Seu acesso para a missão <strong>${data.eventName}</strong> foi confirmado com sucesso.</p>
-      
-      <div style="background: #000; padding: 15px; border-left: 3px solid #ffc107; margin: 20px 0;">
-        <p style="margin: 0; font-size: 14px;"><strong>Data:</strong> ${data.eventDate}</p>
-        <p style="margin: 0; font-size: 14px;"><strong>Local:</strong> ${data.eventLocation}</p>
-      </div>
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirmação de Pedido — Perfection Airsoft</title></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
 
-      <div class="hud-line"></div>
+<!-- Wrapper -->
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:40px 20px;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
 
-      ${ticketSections}
+  <!-- HEADER AMARELO -->
+  <tr>
+    <td style="background:#ffc107;padding:0;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding:28px 36px 22px;">
+            <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:4px;color:#000;text-transform:uppercase;opacity:0.5;">OPERATIONAL HUB</p>
+            <p style="margin:4px 0 0;font-size:26px;font-weight:900;letter-spacing:-1px;color:#000;text-transform:uppercase;line-height:1;">PERFECTION<br>AIRSOFT</p>
+          </td>
+          <td style="padding:28px 36px 22px;text-align:right;vertical-align:bottom;">
+            <p style="margin:0;font-size:9px;font-weight:700;letter-spacing:3px;color:#00000060;text-transform:uppercase;">Recibo</p>
+            <p style="margin:4px 0 0;font-size:20px;font-weight:900;font-family:monospace;color:#000;letter-spacing:2px;">#${ordRef}</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
 
-      <p style="margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #333; padding-top: 10px;">
-        <strong>Instrução Tática:</strong> Apresente este documento ou informe seu Nome/CPF no QG do evento para validação de entrada. 
-        Sua presença será conferida manualmente em nossa lista de operadores autorizados.
-      </p>
-    </div>
-    <div class="footer">
-      © 2026 PERFECTION AIRSOFT // OPERATIONAL HUB // BRAZIL
-    </div>
-  </div>
+  <!-- STATUS BADGE -->
+  <tr>
+    <td style="background:#111;border-left:1px solid #ffc10720;border-right:1px solid #ffc10720;padding:0 36px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding:18px 0;border-bottom:1px solid #ffc10715;">
+            <table cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="background:#16a34a20;border:1px solid #16a34a40;padding:6px 14px;">
+                  <p style="margin:0;font-size:10px;font-weight:700;letter-spacing:2px;color:#4ade80;text-transform:uppercase;">✓ Pagamento Confirmado</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- CORPO PRINCIPAL -->
+  <tr>
+    <td style="background:#111;border-left:1px solid #ffc10720;border-right:1px solid #ffc10720;padding:28px 36px 0;">
+      <p style="margin:0;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:2px;">Operador</p>
+      <p style="margin:4px 0 24px;font-size:22px;font-weight:900;color:#fff;text-transform:uppercase;">${data.buyerName}</p>
+
+      <!-- Tabela de detalhes do pedido -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #ffc10720;background:#0d0d0d;">
+        <tr>
+          <td style="padding:14px 18px;border-bottom:1px solid #ffc10715;border-right:1px solid #ffc10715;width:50%;">
+            <p style="margin:0;font-size:9px;color:#555;letter-spacing:2px;text-transform:uppercase;">Data do Pedido</p>
+            <p style="margin:4px 0 0;font-size:13px;color:#ccc;font-weight:600;">${data.orderDate}</p>
+          </td>
+          <td style="padding:14px 18px;border-bottom:1px solid #ffc10715;">
+            <p style="margin:0;font-size:9px;color:#555;letter-spacing:2px;text-transform:uppercase;">Forma de Pagamento</p>
+            <p style="margin:4px 0 0;font-size:13px;color:#ccc;font-weight:600;">${payDisplay}</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 18px;border-right:1px solid #ffc10715;">
+            <p style="margin:0;font-size:9px;color:#555;letter-spacing:2px;text-transform:uppercase;">Nº do Pedido</p>
+            <p style="margin:4px 0 0;font-size:13px;color:#ffc107;font-family:monospace;font-weight:700;">#${ordRef}</p>
+          </td>
+          <td style="padding:14px 18px;">
+            <p style="margin:0;font-size:9px;color:#555;letter-spacing:2px;text-transform:uppercase;">Total Pago</p>
+            <p style="margin:4px 0 0;font-size:18px;color:#4ade80;font-family:monospace;font-weight:900;">${totalFmt}</p>
+          </td>
+        </tr>
+      </table>
+
+      ${mainBlock}
+
+      <!-- Separador -->
+      <div style="height:1px;background:linear-gradient(90deg,transparent,#ffc10740,transparent);margin:32px 0;"></div>
+    </td>
+  </tr>
+
+  <!-- RODAPÉ -->
+  <tr>
+    <td style="background:#0d0d0d;border:1px solid #ffc10720;border-top:none;padding:24px 36px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td>
+            <p style="margin:0;font-size:10px;color:#444;line-height:1.7;">
+              Dúvidas? Fale conosco em <a href="https://www.perfectionairsoft.com.br" style="color:#ffc107;text-decoration:none;">perfectionairsoft.com.br</a><br>
+              Este e-mail é o seu comprovante — guarde-o para referência futura.
+            </p>
+          </td>
+          <td style="text-align:right;vertical-align:top;white-space:nowrap;padding-left:20px;">
+            <p style="margin:0;font-size:9px;font-weight:700;color:#ffc10760;letter-spacing:3px;text-transform:uppercase;">PERFECTION<br>AIRSOFT</p>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:16px 0 0;font-size:8px;color:#2a2a2a;letter-spacing:2px;text-transform:uppercase;">© 2026 PERFECTION AIRSOFT — BRAZIL — OPERATIONAL HUB</p>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+
 </body>
-</html>
-  `;
+</html>`;
+}
+
+// Wrapper para enviar email via SMTP
+async function sendOrderEmail(to: string, subject: string, html: string): Promise<void> {
+  if (!SMTP_USERNAME || !SMTP_PASSWORD || !to) return;
+  try {
+    const client = new SmtpClient();
+    await client.connectTLS({ hostname: SMTP_HOSTNAME, port: SMTP_PORT, username: SMTP_USERNAME, password: SMTP_PASSWORD });
+    await client.send({ from: SMTP_USERNAME, to, subject, content: 'Sua compra foi confirmada.', html });
+    await client.close();
+  } catch (err) {
+    console.warn('[EMAIL] Falha ao enviar:', err);
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -178,6 +313,8 @@ Deno.serve(async (req: Request) => {
         .eq('order_id', orderId);
 
       if (orderItems && orderItems.length > 0) {
+        const orderDate = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+
         // Tickets de Eventos
         const ticketItems = orderItems.filter((i: any) => i.metadata?.brand === 'TICKET' || i.metadata?.type === 'ticket');
         for (const item of ticketItems) {
@@ -189,7 +326,10 @@ Deno.serve(async (req: Request) => {
           const buyerEmail = order?.customer_data?.email || '';
 
           // Gerar tickets
+          const generatedUuids: string[] = [];
           for (let i = 0; i < (item.quantity || 1); i++) {
+            const uuid = crypto.randomUUID();
+            generatedUuids.push(uuid);
             await supabase.from('tickets').insert({
               event_id: eventId,
               order_id: orderId,
@@ -199,31 +339,42 @@ Deno.serve(async (req: Request) => {
               buyer_cpf: order?.customer_data?.cpf || '',
               buyer_phone: order?.customer_data?.phone || '',
               status: 'confirmed',
-              qr_uuid: crypto.randomUUID(),
+              qr_uuid: uuid,
             });
           }
 
-            // WhatsApp — Ingresso confirmado
+          const { data: ev } = await supabase.from('events').select('title, date, location, organizer_id, platform_fee').eq('id', eventId).single();
+          const evDate = ev?.date ? new Date(ev.date).toLocaleDateString('pt-BR') : '';
+
+          // E-mail premium de confirmação de ingresso
+          if (buyerEmail) {
+            const html = buildOrderEmail({
+              buyerName, orderId, paymentMethod: paymentType,
+              totalValue: payment.value, orderDate, type: 'ticket',
+              eventName: ev?.title || 'Evento', eventDate: evDate,
+              eventLocation: ev?.location || '',
+              ticketIds: generatedUuids,
+            });
+            await sendOrderEmail(buyerEmail, `✅ Ingresso Confirmado — ${ev?.title || 'Evento'} | Perfection Airsoft`, html);
+          }
+
+          // WhatsApp — Ingresso confirmado
           const phone = order?.customer_data?.phone || '';
           if (phone) {
-            const { data: ev0 } = await supabase.from('events').select('title,date,location').eq('id', eventId).single();
-            const evDate = ev0?.date ? new Date(ev0.date).toLocaleDateString('pt-BR') : '';
             await sendWhatsApp(phone,
-              `✅ *Ingresso Confirmado!*\n\nOlá, ${order?.customer_data?.name || 'Operador'}!\n\nSeu ingresso para *${ev0?.title || 'o evento'}* está confirmado.\n\n📅 Data: ${evDate}\n📍 Local: ${ev0?.location || ''}\n\nAcesse seus ingressos em:\nhttps://www.perfectionairsoft.com.br/meus-ingressos`
+              `✅ *Ingresso Confirmado!*\n\nOlá, ${buyerName}!\n\nSeu ingresso para *${ev?.title || 'o evento'}* está confirmado.\n\n📅 Data: ${evDate}\n📍 Local: ${ev?.location || ''}\n\nAcesse seus ingressos em:\nhttps://www.perfectionairsoft.com.br/meus-ingressos`
             );
           }
 
           // Saldo do Organizador
-          const { data: ev } = await supabase.from('events').select('title, date, location, organizer_id, platform_fee').eq('id', eventId).single();
           if (ev) {
             const amount = Number(payment.value);
             const netAmount = amount - (amount * (ev.platform_fee / 100)) - (payment.billingType === 'PIX' ? 0.99 : 2.49);
-            
             const { data: balance } = await supabase.from('user_balances').select('*').eq('user_id', ev.organizer_id).single();
             if (balance) {
-              await supabase.from('user_balances').update({ 
+              await supabase.from('user_balances').update({
                 total_earned: Number(balance.total_earned || 0) + netAmount,
-                available_balance: Number(balance.available_balance || 0) + netAmount 
+                available_balance: Number(balance.available_balance || 0) + netAmount
               }).eq('user_id', ev.organizer_id);
             }
           }
@@ -233,13 +384,18 @@ Deno.serve(async (req: Request) => {
         const raffleItems = orderItems.filter((i: any) => i.metadata?.brand === 'DROP' || i.metadata?.type === 'raffle');
         if (raffleItems.length > 0) {
           const { data: raffleOrder } = await supabase.from('orders').select('user_id, customer_data').eq('id', orderId).single();
+          const raffleEmail = raffleOrder?.customer_data?.email || '';
+          const raffleName = raffleOrder?.customer_data?.name || 'Operador';
+          const allRaffleNumbers: number[] = [];
+          let raffleTitle = 'Drop';
 
           for (const item of raffleItems) {
             const raffleId = item.product_id || item.metadata?.raffleId;
             const ticketNumbers: number[] = item.metadata?.tickets || [];
+            raffleTitle = item.metadata?.raffleTitle || raffleTitle;
             if (!raffleId || ticketNumbers.length === 0) continue;
 
-            // Inserir cada número como um raffle_ticket (upsert para evitar duplicatas)
+            allRaffleNumbers.push(...ticketNumbers);
             const rows = ticketNumbers.map((num: number) => ({
               raffle_id: raffleId,
               user_id: raffleOrder?.user_id || null,
@@ -249,19 +405,25 @@ Deno.serve(async (req: Request) => {
               purchased_at: new Date().toISOString(),
             }));
             await supabase.from('raffle_tickets').upsert(rows, { onConflict: 'raffle_id,ticket_number' });
+            await supabase.rpc('increment_sold_tickets', { raffle_id_input: raffleId, amount: ticketNumbers.length }).catch(() => null);
+          }
 
-            // Atualiza contador de tickets vendidos na rifa
-            await supabase.rpc('increment_sold_tickets', { raffle_id_input: raffleId, amount: ticketNumbers.length })
-              .catch(() => null); // ignora se RPC não existir
+          // E-mail premium de confirmação de rifa
+          if (raffleEmail && allRaffleNumbers.length > 0) {
+            const html = buildOrderEmail({
+              buyerName: raffleName, orderId, paymentMethod: paymentType,
+              totalValue: payment.value, orderDate, type: 'raffle',
+              raffleTitle, raffleNumbers: allRaffleNumbers,
+            });
+            await sendOrderEmail(raffleEmail, `🎯 Participação Confirmada — ${raffleTitle} | Perfection Airsoft`, html);
           }
 
           // WhatsApp — Drop confirmado
           const rafflePhone = raffleOrder?.customer_data?.phone || '';
           if (rafflePhone) {
-            const raffleTitle = raffleItems[0]?.metadata?.raffleTitle || 'o Drop';
-            const numbers = raffleItems.flatMap((i: any) => i.metadata?.tickets || []).join(', ');
+            const numbers = allRaffleNumbers.join(', ');
             await sendWhatsApp(rafflePhone,
-              `🎯 *Participação Confirmada!*\n\nOlá, ${raffleOrder?.customer_data?.name || 'Operador'}!\n\nSeus números no *${raffleTitle}* estão confirmados.\n\n🔢 Números: ${numbers}\n\nBoa sorte! Acompanhe o resultado em:\nhttps://www.perfectionairsoft.com.br/drop`
+              `🎯 *Participação Confirmada!*\n\nOlá, ${raffleName}!\n\nSeus números no *${raffleTitle}* estão confirmados.\n\n🔢 Números: ${numbers}\n\nBoa sorte! Acompanhe o resultado em:\nhttps://www.perfectionairsoft.com.br/drop`
             );
           }
         }
@@ -270,6 +432,19 @@ Deno.serve(async (req: Request) => {
         const hasOnlyProducts = ticketItems.length === 0 && raffleItems.length === 0;
         if (hasOnlyProducts) {
           const { data: prodOrder } = await supabase.from('orders').select('customer_data, total').eq('id', orderId).single();
+          const prodEmail = prodOrder?.customer_data?.email || '';
+          const prodName = prodOrder?.customer_data?.name || 'Operador';
+
+          // E-mail premium de confirmação de produto
+          if (prodEmail) {
+            const html = buildOrderEmail({
+              buyerName: prodName, orderId, paymentMethod: paymentType,
+              totalValue: payment.value, orderDate, type: 'product',
+              items: orderItems.map((i: any) => ({ name: i.product_name || 'Produto', qty: i.quantity || 1, price: i.product_price || 0 })),
+            });
+            await sendOrderEmail(prodEmail, `✅ Pedido Confirmado #${orderId.slice(0,8).toUpperCase()} | Perfection Airsoft`, html);
+          }
+
           const prodPhone = prodOrder?.customer_data?.phone || '';
           if (prodPhone) {
             const total = Number(prodOrder?.total || payment.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
