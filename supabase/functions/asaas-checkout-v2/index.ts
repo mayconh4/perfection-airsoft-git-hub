@@ -161,6 +161,11 @@ Deno.serve(async (req: Request) => {
       const { orderId, customerData, total, installments } = payloadBody;
       const payMethod = payloadBody.method || (path.includes('pix') ? 'pix' : path.includes('boleto') ? 'boleto' : 'card');
 
+      // Diagnóstico: loga URL e prefixo da chave (nunca loga chave completa)
+      const keyPrefix = ASAAS_API_KEY.slice(0, 22);
+      const isProduction = ASAAS_API_URL.includes('sandbox') === false;
+      console.log(`[V3-DIAG] URL: ${ASAAS_API_URL} | isProd: ${isProduction} | KeyPrefix: ${keyPrefix}... | KeyLen: ${ASAAS_API_KEY.length}`);
+
       // Validações básicas antes de chamar a API
       if (!customerData?.cpf) throw new Error('CPF obrigatório para processar o pagamento.');
       if (!customerData?.name) throw new Error('Nome obrigatório para processar o pagamento.');
@@ -176,8 +181,8 @@ Deno.serve(async (req: Request) => {
       const custRes = await fetch(`${ASAAS_API_URL}/customers?cpfCnpj=${sanitizedCpf}`, { headers: { access_token: ASAAS_API_KEY } });
       if (!custRes.ok) {
         const custErr = await custRes.json().catch(() => ({}));
-        console.error('[V3] Erro ao buscar cliente:', custErr);
-        throw new Error(custErr.errors?.[0]?.description || 'Falha ao verificar cadastro. Tente novamente.');
+        console.error(`[V3] Erro ao buscar cliente (HTTP ${custRes.status}):`, JSON.stringify(custErr));
+        throw new Error(custErr.errors?.[0]?.description || `Falha ao verificar cadastro (HTTP ${custRes.status}). Tente novamente.`);
       }
       const customers = await custRes.json();
       let customerId = customers.data?.[0]?.id;
