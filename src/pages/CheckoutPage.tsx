@@ -77,9 +77,20 @@ export function CheckoutPage() {
     localStorage.setItem('tactical_p_data', JSON.stringify(form));
   }, [form]);
 
-  // Realtime listener de pagamento confirmado
+  // Realtime + polling de fallback para confirmação de pagamento
   useEffect(() => {
     if (!order?.id || isConfirmed) return;
+
+    // Polling a cada 5s como fallback caso o Realtime não dispare
+    const pollInterval = setInterval(async () => {
+      const { data } = await supabase
+        .from('orders')
+        .select('status, pix_confirmado')
+        .eq('id', order.id)
+        .single();
+      if (data?.status === 'pago' || data?.pix_confirmado) setIsConfirmed(true);
+    }, 5000);
+
     const channel = supabase
       .channel(`order-status-${order.id}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${order.id}` },
@@ -87,7 +98,11 @@ export function CheckoutPage() {
           if (payload.new.status === 'pago' || payload.new.pix_confirmado) setIsConfirmed(true);
         })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    return () => {
+      clearInterval(pollInterval);
+      supabase.removeChannel(channel);
+    };
   }, [order?.id, isConfirmed]);
 
   // ViaCEP — máscara + validação + autocomplete
