@@ -135,9 +135,10 @@ Deno.serve(async (req: Request) => {
       if (error) throw error;
 
       if (items?.length > 0) {
+        const isVirtual = (i: any) => i.metadata?.type === 'ticket' || i.metadata?.type === 'raffle' || i.metadata?.brand === 'TICKET' || i.metadata?.brand === 'DROP';
         const orderItems = items.map((i: any) => ({
           order_id: order.id,
-          product_id: i.id || null,
+          product_id: isVirtual(i) ? null : (i.id || null), // itens virtuais não têm FK em products
           product_name: i.name,
           quantity: i.quantity,
           product_price: i.price,
