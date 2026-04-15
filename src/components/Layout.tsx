@@ -39,10 +39,11 @@ export function Layout({ children }: LayoutProps) {
 
   const navigationMenu: NavigationItem[] = [
     {
-      label: 'Marcas',
-      href: '/marcas',
-      icon: 'storefront',
-      subcategories: []
+      label: 'Blog',
+      href: '/blog',
+      icon: 'article',
+      subcategories: [],
+      badge: 'new'
     },
     {
       label: 'Eventos',
@@ -77,13 +78,6 @@ export function Layout({ children }: LayoutProps) {
       label: 'Armaria',
       href: '/armaria',
       icon: 'settings',
-      subcategories: [],
-      badge: 'new'
-    },
-    {
-      label: 'Blog',
-      href: '/blog',
-      icon: 'article',
       subcategories: [],
       badge: 'new'
     }
