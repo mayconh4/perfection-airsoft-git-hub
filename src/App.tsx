@@ -43,6 +43,7 @@ import FinanceDashboard from './pages/FinanceDashboard';
 import { CreateClassPage } from './pages/CreateClassPage';
 import BlogListingPage from './pages/BlogListingPage';
 import BlogDetailPage from './pages/BlogDetailPage';
+import BlogPostPage from './pages/BlogPostPage';
 
 
 import { PricingProvider } from './context/PricingContext';
@@ -107,6 +108,7 @@ function App() {
                   <Route path="/blog" element={<BlogListingPage />} />
                   <Route path="/blog/modalidades/:slug" element={<BlogDetailPage />} />
                   <Route path="/blog/modos/:slug" element={<BlogDetailPage />} />
+                  <Route path="/blog/:slug" element={<BlogPostPage />} />
 
                   {/* Admin Area */}
                   <Route path="/admin" element={<AdminLayout />}>

@@ -63,6 +63,10 @@ export default async function handler(req: any, res: any) {
     title       = 'Marcas | Perfection Airsoft';
     description = 'As melhores marcas do airsoft em um só lugar: G&G, Tokyo Marui, VFC, Krytac e muito mais.';
     image       = `${BASE_URL}/og-home.jpg`;
+  } else if (type === 'blog') {
+    title       = 'Blog & Intel | Perfection Airsoft';
+    description = 'Artigos técnicos, guias de setup, táticas e o manual de operações do campo de airsoft.';
+    image       = `${BASE_URL}/og-home.jpg`;
   }
 
   const ensureAbsolute = (url: string) =>
@@ -89,6 +93,13 @@ export default async function handler(req: any, res: any) {
       } else if (type === 'eventos' && slugOrId !== 'criar') {
         const { data } = await supabase.from('events').select('title,description,image_url,images').eq('id', slugOrId).single();
         if (data) { title = data.title; description = data.description || description; image = getPrimaryImage(data); }
+      } else if (type === 'blog') {
+        const { data } = await supabase.from('blog_posts').select('title,subtitle,cover_image').eq('slug', slugOrId).eq('status', 'published').single();
+        if (data) {
+          title = `${data.title} | Blog Perfection Airsoft`;
+          description = data.subtitle || description;
+          if (data.cover_image) image = ensureAbsolute(data.cover_image);
+        }
       }
     }
   } catch { /* Supabase falhou — usa defaults */ }

@@ -79,6 +79,13 @@ export function Layout({ children }: LayoutProps) {
       icon: 'settings',
       subcategories: [],
       badge: 'new'
+    },
+    {
+      label: 'Blog',
+      href: '/blog',
+      icon: 'article',
+      subcategories: [],
+      badge: 'new'
     }
   ];
 
