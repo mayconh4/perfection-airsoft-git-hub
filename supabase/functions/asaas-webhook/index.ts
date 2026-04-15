@@ -22,6 +22,28 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const ASAAS_WEBHOOK_TOKEN = 'whsec_gIbrQ_4GgOI6N0pulKcdQs8GVZKYp0swQuzyzuF4N4Q';
 
+const ZAPI_INSTANCE_ID = Deno.env.get('ZAPI_INSTANCE_ID') || '';
+const ZAPI_TOKEN       = Deno.env.get('ZAPI_TOKEN') || '';
+
+// ── WhatsApp via Z-API ─────────────────────────────────────────────────────
+async function sendWhatsApp(rawPhone: string, message: string): Promise<void> {
+  if (!ZAPI_INSTANCE_ID || !ZAPI_TOKEN || !rawPhone) return;
+  try {
+    const phone = rawPhone.replace(/\D/g, '');
+    const e164  = phone.startsWith('55') ? phone : `55${phone}`;
+    await fetch(
+      `https://api.z-api.io/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-text`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: e164, message }),
+      }
+    );
+  } catch (err) {
+    console.warn('[WHATSAPP] Falha ao enviar mensagem:', err);
+  }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -181,6 +203,16 @@ Deno.serve(async (req: Request) => {
             });
           }
 
+            // WhatsApp — Ingresso confirmado
+          const phone = order?.customer_data?.phone || '';
+          if (phone) {
+            const { data: ev0 } = await supabase.from('events').select('title,date,location').eq('id', eventId).single();
+            const evDate = ev0?.date ? new Date(ev0.date).toLocaleDateString('pt-BR') : '';
+            await sendWhatsApp(phone,
+              `✅ *Ingresso Confirmado!*\n\nOlá, ${order?.customer_data?.name || 'Operador'}!\n\nSeu ingresso para *${ev0?.title || 'o evento'}* está confirmado.\n\n📅 Data: ${evDate}\n📍 Local: ${ev0?.location || ''}\n\nAcesse seus ingressos em:\nhttps://www.perfectionairsoft.com.br/meus-ingressos`
+            );
+          }
+
           // Saldo do Organizador
           const { data: ev } = await supabase.from('events').select('title, date, location, organizer_id, platform_fee').eq('id', eventId).single();
           if (ev) {
@@ -203,6 +235,31 @@ Deno.serve(async (req: Request) => {
           await supabase.from('raffle_tickets')
             .update({ payment_status: 'pago', purchased_at: new Date().toISOString() })
             .eq('payment_id', orderId);
+
+          // WhatsApp — Drop confirmado
+          const { data: raffleOrder } = await supabase.from('orders').select('customer_data').eq('id', orderId).single();
+          const rafflePhone = raffleOrder?.customer_data?.phone || '';
+          if (rafflePhone) {
+            const raffleTitle = raffleItems[0]?.metadata?.raffleTitle || 'o Drop';
+            const numbers = raffleItems.flatMap((i: any) => i.metadata?.tickets || []).join(', ');
+            await sendWhatsApp(rafflePhone,
+              `🎯 *Participação Confirmada!*\n\nOlá, ${raffleOrder?.customer_data?.name || 'Operador'}!\n\nSeus números no *${raffleTitle}* estão confirmados.\n\n🔢 Números: ${numbers}\n\nBoa sorte! Acompanhe o resultado em:\nhttps://www.perfectionairsoft.com.br/drop`
+            );
+          }
+        }
+
+        // WhatsApp — Produto comprado (pedidos sem ticket/raffle)
+        const hasOnlyProducts = ticketItems.length === 0 && raffleItems.length === 0;
+        if (hasOnlyProducts) {
+          const { data: prodOrder } = await supabase.from('orders').select('customer_data, total').eq('id', orderId).single();
+          const prodPhone = prodOrder?.customer_data?.phone || '';
+          if (prodPhone) {
+            const total = Number(prodOrder?.total || payment.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const itemNames = orderItems.map((i: any) => `• ${i.product_name || i.name || 'Produto'} (x${i.quantity || 1})`).join('\n');
+            await sendWhatsApp(prodPhone,
+              `✅ *Pedido Confirmado!*\n\nOlá, ${prodOrder?.customer_data?.name || 'Operador'}!\n\nSeu pedido *#${orderId.slice(0, 8).toUpperCase()}* foi confirmado.\n\n${itemNames}\n\n💰 Total: ${total}\n\nAcompanhe em:\nhttps://www.perfectionairsoft.com.br/dashboard`
+            );
+          }
         }
       }
     } else if (event === 'PAYMENT_CANCELLED' || event === 'PAYMENT_OVERDUE' || event === 'PAYMENT_REFUNDED') {
