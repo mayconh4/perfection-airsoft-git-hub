@@ -170,7 +170,7 @@ export function CheckoutPage() {
           body: JSON.stringify({
             customerData: form,
             total: chargeTotal,
-            items: items.map(i => ({ id: i.product.id, name: i.product.name, quantity: i.quantity, price: i.product.price }))
+            items: items.map(i => ({ id: i.product.id, name: i.product.name, quantity: i.quantity, price: i.product.price, metadata: i.metadata || null }))
           })
         });
         currentOrder = await oResp.json();

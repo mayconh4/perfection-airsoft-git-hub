@@ -232,12 +232,30 @@ Deno.serve(async (req: Request) => {
         // Tickets de Rifas
         const raffleItems = orderItems.filter((i: any) => i.metadata?.brand === 'DROP' || i.metadata?.type === 'raffle');
         if (raffleItems.length > 0) {
-          await supabase.from('raffle_tickets')
-            .update({ payment_status: 'pago', purchased_at: new Date().toISOString() })
-            .eq('payment_id', orderId);
+          const { data: raffleOrder } = await supabase.from('orders').select('user_id, customer_data').eq('id', orderId).single();
+
+          for (const item of raffleItems) {
+            const raffleId = item.product_id || item.metadata?.raffleId;
+            const ticketNumbers: number[] = item.metadata?.tickets || [];
+            if (!raffleId || ticketNumbers.length === 0) continue;
+
+            // Inserir cada número como um raffle_ticket (upsert para evitar duplicatas)
+            const rows = ticketNumbers.map((num: number) => ({
+              raffle_id: raffleId,
+              user_id: raffleOrder?.user_id || null,
+              ticket_number: num,
+              payment_status: 'pago',
+              payment_id: orderId,
+              purchased_at: new Date().toISOString(),
+            }));
+            await supabase.from('raffle_tickets').upsert(rows, { onConflict: 'raffle_id,ticket_number' });
+
+            // Atualiza contador de tickets vendidos na rifa
+            await supabase.rpc('increment_sold_tickets', { raffle_id_input: raffleId, amount: ticketNumbers.length })
+              .catch(() => null); // ignora se RPC não existir
+          }
 
           // WhatsApp — Drop confirmado
-          const { data: raffleOrder } = await supabase.from('orders').select('customer_data').eq('id', orderId).single();
           const rafflePhone = raffleOrder?.customer_data?.phone || '';
           if (rafflePhone) {
             const raffleTitle = raffleItems[0]?.metadata?.raffleTitle || 'o Drop';

@@ -137,10 +137,11 @@ Deno.serve(async (req: Request) => {
       if (items?.length > 0) {
         const orderItems = items.map((i: any) => ({
           order_id: order.id,
-          product_id: i.id,
+          product_id: i.id || null,
           product_name: i.name,
           quantity: i.quantity,
-          product_price: i.price
+          product_price: i.price,
+          metadata: i.metadata || null
         }));
         await supabase.from('order_items').insert(orderItems);
       }
