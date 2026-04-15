@@ -21,7 +21,7 @@
       "destination": "/api/og?type=blog&slug=$1"
     },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/(.*)",        "destination": "/index.html" }
   ],
   "functions": {
     "api/og.ts": {
