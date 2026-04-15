@@ -49,7 +49,7 @@ export function HomePage() {
       description: "Conecte seu campo à maior rede de operadores do país.",
       buttonText: "Cadastrar Campo",
       link: "/eventos",
-      image: "/assets/field-banner.png",
+      image: "https://raw.githubusercontent.com/mayconh4/perfection-airsoft-git-hub/master/imagens%20site/imagens%20do%20site/Whisk_a5ded420abcd43ca5314eb758b6fa8d1dr.png",
       accent: "text-green-500",
       accentBg: "bg-green-500",
       shadow: "shadow-[0_0_40px_rgba(34,197,94,0.4)]"
@@ -61,7 +61,7 @@ export function HomePage() {
       description: "Organize eventos, defina o briefing e lidere sua equipe.",
       buttonText: "Criar Missão",
       link: "/eventos",
-      image: "/assets/mission-banner.png",
+      image: "https://raw.githubusercontent.com/mayconh4/perfection-airsoft-git-hub/master/imagens%20site/imagens%20do%20site/Whisk_0dd2811ae3b7576904f4b07b79ed208adr.png",
       accent: "text-orange-500",
       accentBg: "bg-orange-500",
       shadow: "shadow-[0_0_40px_rgba(249,115,22,0.4)]"
@@ -73,7 +73,7 @@ export function HomePage() {
       description: "Sua AEG ou GBB sempre pronta para o combate.",
       buttonText: "Solicitar Manutenção",
       link: "/contato",
-      image: "/assets/maintenance-banner.png",
+      image: "https://raw.githubusercontent.com/mayconh4/perfection-airsoft-git-hub/master/imagens%20site/imagens%20do%20site/Whisk_55ac180fdc5ea17ac4e4cb4cf04e54e3dr.png",
       accent: "text-slate-400",
       accentBg: "bg-slate-400",
       shadow: "shadow-[0_0_40px_rgba(148,163,184,0.4)]"
@@ -85,7 +85,7 @@ export function HomePage() {
       description: "Os melhores equipamentos para elevar seu nível operacional.",
       buttonText: "Acessar Loja",
       link: "/produtos",
-      image: "/assets/shop-banner.png",
+      image: "https://raw.githubusercontent.com/mayconh4/perfection-airsoft-git-hub/master/imagens%20site/imagens%20do%20site/Whisk_1359f44c4437df99fe641c9df3d9342cdr.png",
       accent: "text-primary",
       accentBg: "bg-primary",
       shadow: "shadow-[0_0_40px_rgba(255,193,7,0.4)]"
