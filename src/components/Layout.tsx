@@ -39,11 +39,10 @@ export function Layout({ children }: LayoutProps) {
 
   const navigationMenu: NavigationItem[] = [
     {
-      label: 'Blog',
-      href: '/blog',
-      icon: 'article',
-      subcategories: [],
-      badge: 'new'
+      label: 'Marcas',
+      href: '/marcas',
+      icon: 'storefront',
+      subcategories: []
     },
     {
       label: 'Eventos',
@@ -752,6 +751,7 @@ export function Layout({ children }: LayoutProps) {
                 <li><Link to="/mapas" className="text-[10px] text-white/50 hover:text-white uppercase tracking-widest transition-colors font-bold flex items-center gap-2">Mapas de Treinamento</Link></li>
                 <li><Link to="/drop" className="text-[10px] text-primary/80 hover:text-primary uppercase tracking-widest transition-colors font-bold flex items-center gap-2"><span className="size-1.5 rounded-full bg-primary animate-pulse"></span>Drop</Link></li>
                 <li><Link to="/eventos" className="text-[10px] text-white/50 hover:text-white uppercase tracking-widest transition-colors font-bold flex items-center gap-2">Eventos & Missões</Link></li>
+                <li><Link to="/blog" className="text-[10px] text-primary/80 hover:text-primary uppercase tracking-widest transition-colors font-bold flex items-center gap-2"><span className="size-1.5 rounded-full bg-primary animate-pulse"></span>Blog & Intel</Link></li>
               </ul>
             </div>
 
