@@ -8,6 +8,7 @@ export default function SuccessPage() {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('order_id');
   const [orderDetails, setOrderDetails] = useState<any>(null);
+  const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,20 +17,32 @@ export default function SuccessPage() {
       return;
     }
 
-    const fetchOrder = async () => {
-      const { data, error } = await supabase
+    const fetchData = async () => {
+      // 1. Fetch Order Details
+      const { data: orderData, error: orderErr } = await supabase
         .from('orders')
         .select('*, order_items(*)')
         .eq('id', orderId)
         .single();
 
-      if (!error && data) {
-        setOrderDetails(data);
+      if (!orderErr && orderData) {
+        setOrderDetails(orderData);
       }
+
+      // 2. Fetch Raffle Tickets
+      const { data: ticketData, error: ticketErr } = await supabase
+        .from('raffle_tickets')
+        .select('*')
+        .eq('payment_id', orderId);
+
+      if (!ticketErr && ticketData) {
+        setTickets(ticketData);
+      }
+
       setLoading(false);
     };
 
-    fetchOrder();
+    fetchData();
   }, [orderId, navigate]);
 
   const handleProceed = () => {
@@ -87,14 +100,36 @@ export default function SuccessPage() {
         {/* Order Intel HUD */}
         <div className="bg-black/40 border border-white/5 p-6 rounded-sm text-left grid grid-cols-2 gap-4">
           <div>
-            <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest block">ORDEM ID</span>
+            <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest block font-mono">ORDEM ID</span>
             <span className="text-[11px] text-primary font-mono">#{orderId?.slice(0, 12).toUpperCase()}</span>
           </div>
           <div className="text-right">
-            <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest block">STATUS</span>
-            <span className="text-[11px] text-emerald-400 font-black italic">Drop confirmado</span>
+            <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest block font-mono">STATUS</span>
+            <span className="text-[11px] text-emerald-400 font-black italic uppercase">Drop confirmado</span>
           </div>
         </div>
+
+        {/* Tickets Section */}
+        {tickets.length > 0 && (
+          <div className="bg-primary/5 border border-primary/20 p-6 rounded-sm space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex items-center gap-2 border-b border-primary/10 pb-3">
+              <span className="material-symbols-outlined text-primary text-sm">Confirmation_Number</span>
+              <span className="text-[10px] text-primary font-black uppercase tracking-widest">Tickets Adquiridos</span>
+            </div>
+            
+            <div className="flex flex-wrap gap-2 justify-center">
+              {tickets.map(t => (
+                <div key={t.id} className="bg-primary text-black font-black px-4 py-2 text-sm italic shadow-[0_0_15px_rgba(255,193,7,0.3)]">
+                  #{t.ticket_number.toString().padStart(2, '0')}
+                </div>
+              ))}
+            </div>
+
+            <p className="text-[10px] text-white/60 font-black uppercase tracking-widest italic pt-2">
+              Número{tickets.length > 1 ? 's' : ''} ({tickets.map(t => t.ticket_number.toString().padStart(2, '0')).join(', ')}) Adquirido{tickets.length > 1 ? 's' : ''}, aguarde até o dia do sorteio do drop
+            </p>
+          </div>
+        )}
 
         <button
           onClick={handleProceed}

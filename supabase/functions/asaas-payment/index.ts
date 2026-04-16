@@ -31,7 +31,7 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     console.log(`[ASAAS-PAYMENT] Payload Recebido:`, JSON.stringify(body, null, 2));
 
-    const { action, asaasId, orderId, total, items, customerData, isGuest } = body;
+    const { action, asaasId, orderId, userId, total, items, customerData, isGuest } = body;
 
     // ─────────────────────────────────────────────────────────────────────
     // 0. VERIFICAÇÃO MANUAL DE STATUS (Para Localhost/Fallback)
@@ -63,6 +63,20 @@ Deno.serve(async (req: Request) => {
 
         if (updErr) throw new Error(`Erro ao atualizar pedido para PAGO: ${updErr.message}`);
         
+        // --- ATUALIZAÇÃO TÁTICA DE RIFA/TICKETS ---
+        // 1. Marcar tickets como pagos
+        const { data: ticketsUpd } = await supabaseAdmin
+          .from('raffle_tickets')
+          .update({ payment_status: 'pago', purchased_at: new Date().toISOString() })
+          .eq('payment_id', finalOrderId)
+          .select('raffle_id');
+
+        // 2. Incrementar contador na rifa (Barrinha de progresso)
+        if (ticketsUpd && ticketsUpd.length > 0) {
+          const raffleId = ticketsUpd[0].raffle_id;
+          await supabaseAdmin.rpc('increment_raffle_sold_tickets', { rid: raffleId, count_add: ticketsUpd.length });
+        }
+        
         return new Response(JSON.stringify({ status: 'pago', orderId: finalOrderId }), { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         });
@@ -84,7 +98,7 @@ Deno.serve(async (req: Request) => {
       const { data: order, error: orderErr } = await supabaseAdmin
         .from('orders')
         .insert([{
-          user_id: null,
+          user_id: userId || null,
           total: Number(total),
           status: 'pendente',
           customer_data: {
@@ -196,9 +210,8 @@ Deno.serve(async (req: Request) => {
       if ((item.metadata?.type === 'raffle' || item.metadata?.brand === 'DROP') &&
           Array.isArray(item.metadata?.tickets)) {
         for (const tNum of item.metadata.tickets) {
-          ticketsToReserve.push({
-            raffle_id:      item.product_id,
             ticket_number:  Number(tNum),
+            user_id:        userId || null,
             payment_status: 'pendente',
             payment_id:     finalOrderId,
           });

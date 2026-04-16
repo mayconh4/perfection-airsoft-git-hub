@@ -180,7 +180,8 @@ export function CheckoutPage() {
       
       const payload = {
         orderId: isGuestFlow ? 'GUEST_NEW' : orderId,
-        isGuest: isGuestFlow,
+        userId: currentUserId || user?.id,
+        isGuest: !currentUserId && !user?.id,
         total: grandTotal,
         subtotal: total,
         serviceFee: serviceFee,
