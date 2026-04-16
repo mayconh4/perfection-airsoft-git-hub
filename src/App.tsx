@@ -43,6 +43,7 @@ import FinanceDashboard from './pages/FinanceDashboard';
 import { CreateClassPage } from './pages/CreateClassPage';
 import BlogListingPage from './pages/BlogListingPage';
 import BlogDetailPage from './pages/BlogDetailPage';
+import SuccessPage from './pages/SuccessPage';
 
 import { PricingProvider } from './context/PricingContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -92,6 +93,7 @@ function App() {
                   <Route path="/organizador/eventos/:id" element={<CreateEventPage />} />
                   <Route path="/auth/callback" element={<AuthCallbackPage />} />
                   <Route path="/create-class" element={<CreateClassPage />} />
+                  <Route path="/success" element={<SuccessPage />} />
                   
                   {/* Blog & Educational */}
                   <Route path="/blog" element={<BlogListingPage />} />

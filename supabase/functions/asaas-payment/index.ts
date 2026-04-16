@@ -207,6 +207,37 @@ Deno.serve(async (req: Request) => {
     }
 
     if (ticketsToReserve.length > 0) {
+      console.log(`[ASAAS] Verificando disponibilidade e limpando reservas expiradas para ${ticketsToReserve.length} tickets...`);
+      
+      for (const tReq of ticketsToReserve) {
+        // 1. Limpar reservas pendentes expiradas (mais de 5 minutos)
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        
+        await supabaseAdmin
+          .from('raffle_tickets')
+          .delete()
+          .eq('raffle_id', tReq.raffle_id)
+          .eq('ticket_number', tReq.ticket_number)
+          .eq('payment_status', 'pendente')
+          .lt('created_at', fiveMinutesAgo);
+
+        // 2. Verificar se o número ainda está ocupado (reservado < 5min ou já pago)
+        const { data: existing } = await supabaseAdmin
+          .from('raffle_tickets')
+          .select('id, payment_status, created_at')
+          .eq('raffle_id', tReq.raffle_id)
+          .eq('ticket_number', tReq.ticket_number)
+          .maybeSingle();
+
+        if (existing) {
+          if (existing.payment_status === 'pago') {
+             throw new Error(`O número ${tReq.ticket_number} já foi vendido definitivamente.`);
+          } else {
+             throw new Error(`O número ${tReq.ticket_number} está reservado por outro operador. Tente novamente em alguns minutos.`);
+          }
+        }
+      }
+
       console.log(`[ASAAS] Reservando ${ticketsToReserve.length} raffle_tickets...`);
       const { error: reserveErr } = await supabaseAdmin.from('raffle_tickets').insert(ticketsToReserve);
       if (reserveErr) throw new Error(`Erro na reserva: ${reserveErr.message}`);

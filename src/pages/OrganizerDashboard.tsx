@@ -145,18 +145,36 @@ export default function OrganizerDashboard() {
     };
   }, [user]);
 
-  const fetchParticipants = async (eventId: string) => {
+  const fetchParticipants = async (objectId: string, type: 'mission' | 'drop' = 'mission') => {
     setLoadingParticipants(true);
     setIsParticipantsModalOpen(true);
     try {
-      const { data, error } = await supabase
-        .from('tickets')
-        .select('*, events(title, checkin_token)')
-        .eq('event_id', eventId)
-        .eq('status', 'confirmed');
+      if (type === 'mission') {
+        const { data, error } = await supabase
+          .from('tickets')
+          .select('*, events(title, checkin_token)')
+          .eq('event_id', objectId)
+          .eq('status', 'confirmed');
 
-      if (error) throw error;
-      setSelectedEventParticipants(data || []);
+        if (error) throw error;
+        setSelectedEventParticipants((data || []).map(p => ({ ...p, type: 'mission', name: p.buyer_name, contact: p.buyer_phone || p.buyer_email, detail: p.ticket_type })));
+      } else {
+        // Para DROPS (Rifas), buscamos em raffle_tickets e fazemos join com orders
+        const { data, error } = await supabase
+          .from('raffle_tickets')
+          .select('*, raffles(title), orders(name, email, phone, status)')
+          .eq('raffle_id', objectId)
+          .in('status', ['pago', 'confirmed']);
+
+        if (error) throw error;
+        setSelectedEventParticipants((data || []).map(p => ({ 
+          ...p, 
+          type: 'drop', 
+          name: p.orders?.name || 'Operador Anônimo', 
+          contact: p.orders?.phone || p.orders?.email,
+          detail: `Nº ${p.ticket_number}`
+        })));
+      }
     } catch (err: any) {
       console.error('Erro ao buscar participantes:', err.message);
     } finally {
@@ -519,6 +537,13 @@ export default function OrganizerDashboard() {
                           </div>
                         </div>
                         <div className="flex gap-2">
+                          <button 
+                            onClick={() => fetchParticipants(event.id, 'drop')} 
+                            className="p-3 bg-white/5 border border-white/5 text-slate-400 hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all rounded-sm tooltip" 
+                            title="Lista de Compradores"
+                          >
+                            <span className="material-symbols-outlined text-base">groups</span>
+                          </button>
                           <Link to={`/drop/${event.slug || event.id}`} className="p-3 bg-white/5 border border-white/5 text-slate-400 hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all rounded-sm"><span className="material-symbols-outlined text-base">visibility</span></Link>
                           <Link to={`/organizador/drop/${event.id}`} className="p-3 bg-white/5 border border-white/5 text-slate-400 hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all rounded-sm"><span className="material-symbols-outlined text-base">settings</span></Link>
                         </div>
@@ -791,13 +816,17 @@ export default function OrganizerDashboard() {
                         {selectedEventParticipants.length > 0 ? selectedEventParticipants.map(p => (
                           <tr key={p.id} className="text-[11px] hover:bg-primary/[0.02] transition-colors group">
                             <td className="py-5 px-4">
-                              <div className="font-black uppercase text-white tracking-tight text-sm mb-1">{p.buyer_name}</div>
-                              <div className="text-[9px] text-slate-500 font-mono uppercase tracking-widest">{p.buyer_email}</div>
+                              <div className="font-black uppercase text-white tracking-tight text-sm mb-1">{p.name || p.buyer_name}</div>
+                              <div className="text-[9px] text-slate-500 font-mono uppercase tracking-widest">{p.contact || p.buyer_email}</div>
                             </td>
                             <td className="py-5 px-4">
                                <div className="flex items-center gap-2">
-                                  <span className="size-1.5 bg-primary rounded-full shadow-[0_0_8px_rgba(251,191,36,0.5)]"></span>
-                                  <span className="text-[9px] font-black uppercase text-primary tracking-widest">ACTIVE_OPERATOR</span>
+                                  <span className={`size-1.5 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.5)] ${p.type === 'drop' ? 'bg-amber-500' : 'bg-primary'}`}></span>
+                                  <span className={`text-[9px] font-black uppercase tracking-widest ${p.type === 'drop' ? 'text-amber-500' : 'text-primary'}`}>
+                                    {p.detail || 'ACTIVE_OPERATOR'}
+                                  </span>
+                               </div>
+                            </td>
                                </div>
                             </td>
                             <td className="py-5 px-4">

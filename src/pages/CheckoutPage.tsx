@@ -42,6 +42,9 @@ export function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false); // controle local do botão
   const [validatingStatus, setValidatingStatus] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success' | 'expired'>('pending');
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutos em segundos
+  const [pollCount, setPollCount] = useState(0);
   const [form, setForm] = useState({
     name: '', cpf: '', email: user?.email || '', phone: '',
     street: '', number: '', complement: '', district: '', city: '', state: '', cep: '',
@@ -268,11 +271,27 @@ export function CheckoutPage() {
     }
   };
 
-  // Função para forçar a verificação do pagamento (útil para localhost onde não há webhook)
-  const handleVerifyPayment = async () => {
-    if (!paymentData?.asaas_id || validatingStatus) return;
+  // --- CRONÔMETRO DE 5 MINUTOS ---
+  useEffect(() => {
+    if (step !== 3 || paymentStatus !== 'pending' || timeLeft <= 0) {
+      if (timeLeft === 0 && paymentStatus === 'pending') {
+        setPaymentStatus('expired');
+      }
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [step, paymentStatus, timeLeft]);
+
+  // Função para forçar a verificação do pagamento
+  const handleVerifyPayment = async (silent = false) => {
+    if (!paymentData?.asaas_id || validatingStatus || paymentStatus === 'expired') return;
     
-    setValidatingStatus(true);
+    if (!silent) setValidatingStatus(true);
     setError(null);
     
     try {
@@ -295,16 +314,16 @@ export function CheckoutPage() {
       if (data.status === 'pago') {
         const orderId = data.orderId || paymentData.order_id;
         clearCart();
-        // Redirecionamento Assistido: Pagar -> Criar Conta -> Ver Sucesso
-        navigate(`/login?mode=signup&paid=true&email=${encodeURIComponent(form.email)}&name=${encodeURIComponent(form.name)}&redirect=${encodeURIComponent('/sucesso/' + orderId)}`);
-      } else {
+        setPaymentStatus('success');
+        navigate(`/success?order_id=${orderId}`);
+      } else if (!silent) {
         setError('Aguarde o processamento... Se seu pedido não ficar ativo em 5 minutos, contate o suporte');
       }
     } catch (err: any) {
       console.error('Erro ao verificar pagamento:', err);
-      setError('Falha na comunicação com o servidor de validação.');
+      if (!silent) setError('Falha na comunicação com o servidor de validação.');
     } finally {
-      setValidatingStatus(false);
+      if (!silent) setValidatingStatus(false);
     }
   };
 
@@ -328,7 +347,8 @@ export function CheckoutPage() {
             console.log('[REALTIME] Alteração de status detectada:', payload.new.status);
             if (payload.new.status === 'pago') {
               clearCart();
-              navigate(`/sucesso/${paymentData.order_id}`);
+              setPaymentStatus('success');
+              navigate(`/success?order_id=${paymentData.order_id}`);
             }
           }
         )
@@ -349,20 +369,21 @@ export function CheckoutPage() {
             console.log('[POLLING] Pagamento detectado via radar de backup!');
             clearInterval(pollInterval);
             clearCart();
-            navigate(`/sucesso/${paymentData.order_id}`);
+            setPaymentStatus('success');
+            navigate(`/success?order_id=${paymentData.order_id}`);
             return;
           }
 
-          // [AUTOMAÇÃO TÁTICA] Se passarem 9 segundos (3 ciclos) e ainda estiver pendente, 
+          // [AUTOMAÇÃO TÁTICA] Se passarem 6 segundos (3 ciclos de 2s) e ainda estiver pendente, 
           // o próprio sistema tenta uma verificação forçada via API.
           if (pollCount % 3 === 0 && !validatingStatus) {
              console.log('[POLLING] Forçando verificação via API (CHECK_STATUS)...');
-             handleVerifyPayment();
+             handleVerifyPayment(true);
           }
         } catch (err) {
           console.error('[POLLING] Falha no radar de backup:', err);
         }
-      }, 3000);
+      }, 2000); // Polling agressivo a cada 2 segundos
 
       return () => {
         supabase.removeChannel(channel);
@@ -496,15 +517,48 @@ export function CheckoutPage() {
 
           {/* Step 3 — PIX QR Code */}
           {step === 3 && paymentData && (
-            <div className="bg-surface/30 border border-primary/20 p-6 text-center space-y-4 backdrop-blur-md max-w-2xl mx-auto">
+            <div className="bg-surface/30 border border-primary/20 p-6 text-center space-y-6 backdrop-blur-md max-w-2xl mx-auto relative overflow-hidden">
               <div className="space-y-1">
                 <span className="text-secondary text-[8px] font-black uppercase tracking-[0.3em] animate-pulse italic">Aguardando Pagamento</span>
-                <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">PIX Gerado!</h2>
+                <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Protocolo PIX Ativo</h2>
               </div>
 
-              <div className="flex justify-center py-2">
-                <div className="bg-white p-4 rounded-2xl shadow-[0_0_40px_rgba(255,193,7,0.2)] border-[4px] border-primary/30">
-                  <img src={`data:image/png;base64,${paymentData.qr_code_base64}`} alt="QR PIX" className="w-48 h-48" />
+              {/* Countdown HUD */}
+              <div className="flex justify-between items-center bg-black/40 border border-white/5 p-4 rounded-sm">
+                <div className="text-left">
+                  <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest block font-mono">Expiração da Reserva</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`size-2 rounded-full ${timeLeft > 60 ? 'bg-primary animate-pulse' : 'bg-red-500 animate-ping'}`}></span>
+                    <span className="text-xl font-black text-white font-mono italic">
+                      {Math.floor(timeLeft / 60).toString().padStart(2, '0')}:{(timeLeft % 60).toString().padStart(2, '0')}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest block font-mono">Estado Atual</span>
+                  <span className={`text-[10px] font-black italic tracking-widest uppercase ${paymentStatus === 'expired' ? 'text-red-500' : 'text-emerald-500'}`}>
+                    {paymentStatus === 'expired' ? 'MIS-EXPIRED' : 'OPERACIONAL'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex justify-center py-2 relative">
+                <div className="bg-white p-4 rounded-2xl shadow-[0_0_40px_rgba(255,193,7,0.2)] border-[4px] border-primary/30 relative">
+                  <img src={`data:image/png;base64,${paymentData.qr_code_base64}`} alt="QR PIX" className="w-48 h-48 md:w-64 md:h-64" />
+                  
+                  {/* Expired Overlay */}
+                  {paymentStatus === 'expired' && (
+                    <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500 rounded-xl">
+                      <span className="material-symbols-outlined text-red-500 text-6xl mb-4">timer_off</span>
+                      <h3 className="text-lg font-black text-white uppercase italic tracking-tighter mb-2">Reserva Expirada</h3>
+                      <button 
+                        onClick={() => window.location.reload()}
+                        className="px-6 py-3 bg-red-500 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white hover:text-red-500 transition-all italic rounded"
+                      >
+                        REINICIAR
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -512,43 +566,35 @@ export function CheckoutPage() {
                 <p className="text-[8px] font-black tracking-widest text-slate-500 uppercase">Pix Copia e Cola</p>
                 <div className="flex gap-2">
                   <input readOnly value={paymentData.qr_code} className="flex-1 bg-background-dark border border-white/10 px-3 py-2 text-[9px] font-mono text-white/40 truncate outline-none rounded" />
-                  <button onClick={() => {
-                    navigator.clipboard.writeText(paymentData.qr_code || '');
-                    alert('PIX Copiado com Sucesso!');
-                  }} className="px-4 py-2 bg-primary text-black font-black uppercase text-[9px] tracking-widest hover:bg-white transition-all rounded">
+                  <button 
+                    disabled={paymentStatus === 'expired'}
+                    onClick={() => {
+                      navigator.clipboard.writeText(paymentData.qr_code || '');
+                      alert('PIX Copiado com Sucesso!');
+                    }} 
+                    className="px-4 py-2 bg-primary text-black font-black uppercase text-[9px] tracking-widest hover:bg-white transition-all rounded disabled:opacity-20"
+                  >
                     Copiar
                   </button>
                 </div>
               </div>
 
               <div className="pt-4 border-t border-white/10 space-y-4">
-                <div className="flex flex-col items-center gap-3 py-4 bg-black/40 border border-primary/20 rounded-xl shadow-[inset_0_0_15px_rgba(255,193,7,0.03)]">
+                <div className="flex flex-col items-center gap-3 py-4 bg-black/40 border border-primary/20 rounded-xl shadow-[inset_0_0_15px_rgba(255,193,7,0.03)] selection:bg-primary/20">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 border-3 border-primary/10 border-t-primary rounded-full animate-spin"></div>
-                    <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em] animate-pulse">SINCRONIZAÇÃO TÁTICA ATIVA</p>
+                    <div className="w-8 h-8 border-[3px] border-primary/10 border-t-primary rounded-full animate-spin"></div>
+                    <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em] animate-pulse">RADAR DE CONFIRMAÇÃO ATIVO</p>
                   </div>
-                  <p className="text-[8px] text-white/20 uppercase tracking-[0.1em] font-mono">Radar de confirmação operando em tempo real</p>
+                  <p className="text-[8px] text-white/30 font-black uppercase tracking-widest">Aguardando sinal da rede bancária...</p>
                 </div>
 
-                <div className="space-y-3">
-                  <p className="text-[8px] text-white/40 uppercase tracking-widest italic font-bold">Ativação automática após o processamento.</p>
+                <div className="space-y-3 pt-2">
                   <button 
-                    onClick={handleVerifyPayment} 
-                    disabled={validatingStatus}
-                    className="w-full px-6 py-4 bg-primary text-black font-black uppercase tracking-[0.3em] text-[10px] hover:bg-white transition-all rounded flex items-center justify-center gap-2 mb-3 shadow-[0_10px_20px_rgba(255,193,7,0.15)] disabled:opacity-50"
+                    onClick={() => handleVerifyPayment()} 
+                    disabled={validatingStatus || paymentStatus === 'expired'}
+                    className="text-[9px] text-white/20 hover:text-primary font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2 mx-auto disabled:opacity-0"
                   >
-                    {validatingStatus ? (
-                      <>
-                        <div className="w-3 h-3 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
-                        ESCANEANDO REDE...
-                      </>
-                    ) : (
-                      'VERIFICAR PAGAMENTO AGORA →'
-                    )}
-                  </button>
-
-                  <button onClick={() => navigate('/dashboard')} className="w-full px-6 py-4 border border-white/10 text-white/40 font-black uppercase tracking-[0.3em] text-[9px] hover:border-primary hover:text-primary transition-all rounded">
-                    Ir para minha conta →
+                    {validatingStatus ? 'ESCANEANDO REDE...' : 'PROBLEMAS COM O RADAR? CLIQUE PARA FORÇAR VERIFICAÇÃO'}
                   </button>
                 </div>
               </div>

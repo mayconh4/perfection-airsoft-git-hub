@@ -175,7 +175,7 @@ Deno.serve(async (req: Request) => {
       const { data: orderItems, error: itemsErr } = await supabase
         .from('order_items')
         .select('*')
-        .eq('order_id', orderId);
+        .eq('order_id', targetOrderId);
 
       if (itemsErr) {
         console.error('[WEBHOOK] Erro ao buscar order_items:', itemsErr.message);
@@ -216,7 +216,7 @@ Deno.serve(async (req: Request) => {
           for (let i = 0; i < quantity; i++) {
             await supabase.from('tickets').insert({
               event_id: eventId,
-              order_id: orderId,
+              order_id: targetOrderId,
               buyer_id: order?.user_id || null,
               buyer_name: buyerName,
               buyer_email: buyerEmail,
@@ -224,7 +224,7 @@ Deno.serve(async (req: Request) => {
               buyer_phone: buyerPhone,
               quantity: 1,
               price_paid: pricePaid,
-              payment_id: payment.id || orderId,
+              payment_id: payment.id || targetOrderId,
               status: 'confirmed',
               qr_uuid: crypto.randomUUID(),
             });
@@ -270,7 +270,7 @@ Deno.serve(async (req: Request) => {
                 const { data: ticketsCreated } = await supabase
                   .from('tickets')
                   .select('id, qr_uuid')
-                  .eq('order_id', orderId)
+                  .eq('order_id', targetOrderId)
                   .eq('event_id', eventId);
 
                 if (ticketsCreated && ticketsCreated.length > 0) {
@@ -315,7 +315,7 @@ Deno.serve(async (req: Request) => {
           const { data: tickets } = await supabase
             .from('raffle_tickets')
             .update({ payment_status: 'pago', purchased_at: new Date().toISOString() })
-            .eq('payment_id', orderId)
+            .eq('payment_id', targetOrderId)
             .select('raffle_id');
 
           if (tickets && tickets.length > 0) {

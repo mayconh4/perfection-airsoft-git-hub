@@ -61,15 +61,21 @@ export default function RaffleDetailPage() {
             },
             (payload) => {
               console.log('[REALTIME] Update nos tickets:', payload);
-              if (payload.new && (payload.new as any).payment_status === 'pago') {
-                 const ticketNum = (payload.new as any).ticket_number;
-                 setSoldTicketNumbers(prev => [...new Set([...prev, ticketNum])]);
-                 
-                 // Atualiza contador total na rifa
-                 setRaffle(prev => prev ? {
-                   ...prev,
-                   sold_tickets: (prev.sold_tickets || 0) + 1
-                 } : null);
+              if (payload.new) {
+                const ticket = payload.new as any;
+                const isPaid = ticket.payment_status === 'pago';
+                const isRecentPending = ticket.payment_status === 'pendente' && 
+                  (new Date().getTime() - new Date(ticket.created_at).getTime() < 5 * 60 * 1000);
+
+                if (isPaid || isRecentPending) {
+                  setSoldTicketNumbers(prev => [...new Set([...prev, ticket.ticket_number])]);
+                  if (isPaid) {
+                    setRaffle(prev => prev ? {
+                      ...prev,
+                      sold_tickets: (prev.sold_tickets || 0) + 1
+                    } : null);
+                  }
+                }
               }
             }
           )
@@ -106,12 +112,16 @@ export default function RaffleDetailPage() {
         // Carregar tickets já vendidos/reservados
         const { data: tickets } = await supabase
           .from('raffle_tickets')
-          .select('ticket_number')
-          .eq('raffle_id', data.id)
-          .eq('payment_status', 'pago');
+          .select('ticket_number, payment_status, created_at')
+          .eq('raffle_id', data.id);
 
         if (tickets) {
-          setSoldTicketNumbers(tickets.map(t => t.ticket_number));
+          const unavailable = tickets.filter(t => 
+            t.payment_status === 'pago' || 
+            (t.payment_status === 'pendente' && (new Date().getTime() - new Date(t.created_at).getTime() < 5 * 60 * 1000))
+          ).map(t => t.ticket_number);
+          
+          setSoldTicketNumbers(unavailable);
         }
         
         setLoading(false);
