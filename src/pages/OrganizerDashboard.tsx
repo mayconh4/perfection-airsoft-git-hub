@@ -172,6 +172,7 @@ export default function OrganizerDashboard() {
           type: 'drop', 
           name: p.orders?.name || 'Operador Anônimo', 
           contact: p.orders?.phone || p.orders?.email,
+          buyer_phone: p.orders?.phone, // Mapeado para habilitar botão do WhatsApp
           detail: `Nº ${p.ticket_number}`
         })));
       }
@@ -825,8 +826,6 @@ export default function OrganizerDashboard() {
                                   <span className={`text-[9px] font-black uppercase tracking-widest ${p.type === 'drop' ? 'text-amber-500' : 'text-primary'}`}>
                                     {p.detail || 'ACTIVE_OPERATOR'}
                                   </span>
-                               </div>
-                            </td>
                                </div>
                             </td>
                             <td className="py-5 px-4">
