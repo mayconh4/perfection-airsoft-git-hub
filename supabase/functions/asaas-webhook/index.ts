@@ -390,7 +390,7 @@ Deno.serve(async (req: Request) => {
           let raffleTitle = 'Drop';
 
           for (const item of raffleItems) {
-            const raffleId = item.product_id || item.metadata?.raffleId;
+            const raffleId = item.product_id || item.metadata?.raffleId || item.metadata?._virtual_id;
             const ticketNumbers: number[] = item.metadata?.tickets || [];
             raffleTitle = item.metadata?.raffleTitle || raffleTitle;
             if (!raffleId || ticketNumbers.length === 0) continue;

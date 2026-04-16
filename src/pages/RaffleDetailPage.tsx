@@ -172,7 +172,8 @@ export default function RaffleDetailPage() {
         const success = await addItem(raffle.id, selectedTickets.length, {
             type: 'raffle',
             tickets: selectedTickets,
-            raffleTitle: raffle.title
+            raffleTitle: raffle.title,
+            raffleId: raffle.id
         });
 
         if (success) {
