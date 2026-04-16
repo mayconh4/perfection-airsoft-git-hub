@@ -532,8 +532,23 @@ export function CheckoutPage() {
 
                 <div className="space-y-3">
                   <p className="text-[8px] text-white/40 uppercase tracking-widest italic font-bold">Ativação automática após o processamento.</p>
-                  <button onClick={() => navigate('/dashboard')} className="w-full px-6 py-4 border border-primary text-primary font-black uppercase tracking-[0.3em] text-[9px] hover:bg-primary hover:text-black transition-all rounded">
-                    Acessar Meu Painel →
+                  <button 
+                    onClick={handleVerifyPayment} 
+                    disabled={validatingStatus}
+                    className="w-full px-6 py-4 bg-primary text-black font-black uppercase tracking-[0.3em] text-[10px] hover:bg-white transition-all rounded flex items-center justify-center gap-2 mb-3 shadow-[0_10px_20px_rgba(255,193,7,0.15)] disabled:opacity-50"
+                  >
+                    {validatingStatus ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
+                        ESCANEANDO REDE...
+                      </>
+                    ) : (
+                      'VERIFICAR PAGAMENTO AGORA →'
+                    )}
+                  </button>
+
+                  <button onClick={() => navigate('/dashboard')} className="w-full px-6 py-4 border border-white/10 text-white/40 font-black uppercase tracking-[0.3em] text-[9px] hover:border-primary hover:text-primary transition-all rounded">
+                    Ir para minha conta →
                   </button>
                 </div>
               </div>
