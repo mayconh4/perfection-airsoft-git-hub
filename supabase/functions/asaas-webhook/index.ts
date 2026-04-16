@@ -104,46 +104,65 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    console.log('[ASAAS-WEBHOOK] Payload recebido:', JSON.stringify(body));
-
-    // Monitoramento tático: Verificar se o token bate (apenas logamos agora para não travar o Pix do Maycon)
     const asaasToken = req.headers.get('asaas-access-token');
+    
+    console.log(`[ASAAS-WEBHOOK] Evento: ${body.event} | Token Recebido: ${asaasToken?.slice(0, 8)}...`);
+
+    // Validação Tática de Token (Logamos mas não bloqueamos para evitar perda de Pix em migração)
     if (asaasToken && asaasToken !== ASAAS_WEBHOOK_TOKEN) {
-      console.warn(`[ASAAS-WEBHOOK] Token Divergente: ${asaasToken || 'ausente'} vs esperado ${ASAAS_WEBHOOK_TOKEN.slice(0, 10)}... (Prosseguindo em Modo Manutenção)`);
+      console.warn(`[ASAAS-WEBHOOK] ALERTA: Token divergente! Esperado: ${ASAAS_WEBHOOK_TOKEN.slice(0, 8)}...`);
     }
-    console.log('[ASAAS-WEBHOOK] Payload recebido:', JSON.stringify(body));
 
     const event = body.event;
     const payment = body.payment;
-    const orderId = payment?.externalReference;
+    const orderIdRef = payment?.externalReference;
+    const asaasPaymentId = payment?.id;
 
-    if (!orderId) {
-      console.log('[ASAAS-WEBHOOK] Sem externalReference. Ignorando.');
-      return new Response(JSON.stringify({ status: 'ignored' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (!asaasPaymentId && !orderIdRef) {
+      console.log('[ASAAS-WEBHOOK] Payload sem identificação. Ignorando.');
+      return new Response(JSON.stringify({ status: 'ignored' }), { headers: corsHeaders });
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // ─────────────────────────────────────────────────────────────────────
-    // EVENTOS: PAYMENT_CONFIRMED | PAYMENT_RECEIVED | PAYMENT_SETTLED
+    // EVENTOS DE PAGAMENTO CONFIRMADO
     // ─────────────────────────────────────────────────────────────────────
-    if (
-      event === 'PAYMENT_CONFIRMED' ||
-      event === 'PAYMENT_RECEIVED' ||
-      event === 'PAYMENT_SETTLED'
-    ) {
-      console.log(`[ASAAS-WEBHOOK] SINAL DETECTADO: ${event} para Pedido: ${orderId}`);
+    if (['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED', 'PAYMENT_SETTLED'].includes(event)) {
+      console.log(`[ASAAS-WEBHOOK] Pagamento detectado. Ref: ${orderIdRef} | AsaasID: ${asaasPaymentId}`);
 
-      // ── 1. ATUALIZAR STATUS DO PEDIDO ──────────────────────────────────
+      // TENTATIVA 1: Por ID do Pedido (externalReference)
+      let targetOrderId = orderIdRef;
+
+      // TENTATIVA 2: Fallback por ID do Asaas (mercadopago_id no banco)
+      if (!targetOrderId || targetOrderId.startsWith('GUEST_')) {
+        console.log('[ASAAS-WEBHOOK] Buscando pedido por ID do Asaas...');
+        const { data: orderById } = await supabase
+          .from('orders')
+          .select('id')
+          .eq('mercadopago_id', `ASAAS_${asaasPaymentId}`)
+          .single();
+        
+        if (orderById) {
+          targetOrderId = orderById.id;
+          console.log(`[ASAAS-WEBHOOK] Pedido localizado via ID Asaas: ${targetOrderId}`);
+        }
+      }
+
+      if (!targetOrderId) {
+        console.error('[ASAAS-WEBHOOK] ERRO: Não foi possível localizar o pedido no banco de dados.');
+        return new Response(JSON.stringify({ error: 'Order not found' }), { status: 404, headers: corsHeaders });
+      }
+
+      // ── ATUALIZAR STATUS ──────────────────────────────────
       const { data: updatedOrder, error: orderErr } = await supabase
         .from('orders')
         .update({
           status: 'pago',
           payment_type: 'pix',
+          payment_status: 'pago'
         })
-        .eq('id', orderId)
+        .eq('id', targetOrderId)
         .select();
 
       if (orderErr) {

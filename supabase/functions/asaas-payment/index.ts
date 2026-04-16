@@ -15,6 +15,14 @@ const corsHeaders = {
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
+  // Validação Tática de Segredos
+  if (!ASAAS_API_KEY) {
+    return new Response(JSON.stringify({ error: 'Configuração Incompleta: ASAAS_API_KEY não encontrada' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     console.log(`[ASAAS-PAYMENT] Recebida Requisição Operacional: ${req.method}`);
