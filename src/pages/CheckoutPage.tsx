@@ -146,30 +146,58 @@ export function CheckoutPage() {
         }
       }
 
-      // [GUEST TÁTICO] Se for rifa/ticket e não logado, o pedido é criado via Edge Function
+      // [ROTEAMENTO] Escolha do Motor de Pagamento
       let orderId = '';
+      
+      // Verificar se algum item já tem uma ordem vinculada (Reserva Atômica)
+      const existingOrderItem = items.find(i => i.metadata?.orderId);
+      const isPreReserved = !!existingOrderItem;
+
       if (!isGuestFlow) {
-        if (!currentUserId) { setError('Falha na autenticação do operador.'); return; }
+        if (!currentUserId && !isPreReserved) { setError('Falha na autenticação do operador.'); return; }
 
-        const order = await createOrder(
-          { name: form.name, cpf: form.cpf, email: form.email, phone: form.phone, payment_method: methodToUse },
-          {
-            street: isDigitalOnly ? 'Digital' : `${form.street}, ${form.number}${form.complement ? ' - ' + form.complement : ''}`,
-            district: isDigitalOnly ? '-' : form.district,
-            cep: isDigitalOnly ? '00000-000' : form.cep,
-            city: isDigitalOnly ? 'Online' : `${form.city} - ${form.state}`,
-            shipping_method: isDigitalOnly ? 'Entrega Digital' : selectedShipping?.name,
-            shipping_company: isDigitalOnly ? 'DIGITAL' : selectedShipping?.company,
-            shipping_price: isDigitalOnly ? 0 : selectedShipping?.price
-          },
-          currentUserId
-        );
+        if (isPreReserved) {
+          orderId = existingOrderItem.metadata.orderId;
+          console.log('[SISTEMA] Reutilizando Ordem de Reserva:', orderId);
+          
+          // Atualizar a ordem existente com os dados do formulário
+          const { error: updErr } = await supabase
+            .from('orders')
+            .update({
+              customer_data: {
+                name: form.name,
+                email: form.email,
+                phone: form.phone,
+                cpf: form.cpf
+              },
+              payment_method: methodToUse
+            })
+            .eq('id', orderId);
+          
+          if (updErr) console.warn('[AVISO] Falha ao atualizar dados do cliente na ordem:', updErr.message);
+        } else {
+          const order = await createOrder(
+            { name: form.name, cpf: form.cpf, email: form.email, phone: form.phone, payment_method: methodToUse },
+            {
+              street: isDigitalOnly ? 'Digital' : `${form.street}, ${form.number}${form.complement ? ' - ' + form.complement : ''}`,
+              district: isDigitalOnly ? '-' : form.district,
+              cep: isDigitalOnly ? '00000-000' : form.cep,
+              city: isDigitalOnly ? 'Online' : `${form.city} - ${form.state}`,
+              shipping_method: isDigitalOnly ? 'Entrega Digital' : selectedShipping?.name,
+              shipping_company: isDigitalOnly ? 'DIGITAL' : selectedShipping?.company,
+              shipping_price: isDigitalOnly ? 0 : selectedShipping?.price
+            },
+            currentUserId
+          );
 
-        if (!order) {
-          setError('Erro ao criar registro do pedido no banco de dados.');
-          return;
+          if (!order) {
+            setError('Erro ao criar registro do pedido no banco de dados.');
+            return;
+          }
+          orderId = order.id;
         }
-        orderId = order.id;
+      } else if (isPreReserved) {
+          orderId = existingOrderItem.metadata.orderId;
       }
 
       // [ROTEAMENTO] Escolha do Motor de Pagamento

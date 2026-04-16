@@ -3,6 +3,9 @@ import { useParams, Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { BarChart3, ChevronDown, ChevronUp, Users, ShieldCheck, Sword } from 'lucide-react';
+import { RaffleGrid } from '../components/RaffleGrid';
 
 interface Raffle {
   id: string;
@@ -29,6 +32,12 @@ export default function RaffleDetailPage() {
   const [soldTicketNumbers, setSoldTicketNumbers] = useState<number[]>([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
+  // Intel Tática
+  const { isAdmin } = useAuth();
+  const [showIntel, setShowIntel] = useState(false);
+  const [participants, setParticipants] = useState<any[]>([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
+
   const allImages = raffle ? [raffle.image_url, ...(raffle.images || [])].filter(Boolean) as string[] : [];
   
   // Auto-carrossel de 3 segundos
@@ -41,6 +50,39 @@ export default function RaffleDetailPage() {
 
     return () => clearInterval(interval);
   }, [allImages.length]);
+
+  useEffect(() => {
+    if (showIntel) {
+      loadParticipants();
+    }
+  }, [showIntel]);
+
+  const loadParticipants = async () => {
+    if (!raffle?.id) return;
+    setLoadingParticipants(true);
+    try {
+      const { data, error } = await supabase
+        .from('raffle_tickets')
+        .select(`
+          ticket_number,
+          payment_status,
+          user_id,
+          payment_id,
+          created_at,
+          profiles:user_id (full_name, phone),
+          orders:payment_id (customer_data)
+        `)
+        .eq('raffle_id', raffle.id)
+        .order('ticket_number', { ascending: true });
+
+      if (error) throw error;
+      setParticipants(data || []);
+    } catch (err) {
+      console.error('Erro ao carregar participantes:', err);
+    } finally {
+      setLoadingParticipants(false);
+    }
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -160,33 +202,40 @@ export default function RaffleDetailPage() {
   if (loading && !raffle) return <div className="p-20 text-white font-mono uppercase tracking-widest animate-pulse">Sincronizando com o Hub do QG...</div>;
   if (!raffle) return <div className="p-20 text-white font-black uppercase tracking-widest">PROTOCOLO NÃO ENCONTRADO OU DESATIVADO.</div>;
 
-  const toggleTicket = (num: number) => {
-    if (selectedTickets.includes(num)) {
-      setSelectedTickets(selectedTickets.filter(t => t !== num));
-    } else {
-      setSelectedTickets([...selectedTickets, num]);
-    }
-  };
-
   const handlePurchase = async () => {
     if (selectedTickets.length === 0) {
         alert('SELECIONE AO MENOS UM TICKET PARA INICIAR O PROTOCOLO.');
         return;
     }
 
+    if (!raffle?.id) return;
+
     setLoading(true);
     try {
-        console.log('[DEBUG] Adicionando tickets ao carrinho...', selectedTickets);
+        console.log('[DEBUG] Iniciando reserva atômica...', selectedTickets);
         
-        // Adiciona ao carrinho como um produto (raffleId) com metadados (tickets)
+        // 1. Chamar a função de reserva atômica no Supabase
+        const { data: orderId, error: rpcError } = await supabase.rpc('reserve_raffle_numbers', {
+          p_rifa_id: raffle.id,
+          p_user_id: (await supabase.auth.getUser()).data.user?.id,
+          p_numeros: selectedTickets
+        });
+
+        if (rpcError) {
+          throw new Error(rpcError.message || 'Falha ao reservar números. Tente novamente.');
+        }
+
+        console.log('[DEBUG] Reserva concluída. Order ID:', orderId);
+
+        // 2. Adicionar ao carrinho com o ID da ordem para o checkout
         const success = await addItem(raffle.id, selectedTickets.length, {
             type: 'raffle',
             tickets: selectedTickets,
-            raffleTitle: raffle.title
+            raffleTitle: raffle.title,
+            orderId: orderId // Importante para o checkout processar a reserva
         });
 
         if (success) {
-            // [SAMA PROTOCOL] Limpeza imediata para evitar duplicidade reativa
             setSelectedTickets([]);
             setIsCartOpen(true);
         } else {
@@ -338,6 +387,75 @@ export default function RaffleDetailPage() {
           {/* RIGHT COLUMN: Control Panel & Purchase */}
           <div className="lg:col-span-5 space-y-8">
             <div className="sticky top-28 space-y-8">
+            
+            {/* PAINEL DE INTELIGÊNCIA OPERACIONAL [ADMIN ONLY - REPOSICIONADO NO TOPO] */}
+            {isAdmin && (
+              <div className="bg-primary/5 border border-primary/20 p-4 animate-in fade-in slide-in-from-top-4 duration-700">
+                <button 
+                  onClick={() => setShowIntel(!showIntel)}
+                  className={`w-full flex items-center justify-between p-3 border transition-all ${showIntel ? 'bg-primary text-black border-primary font-black' : 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <BarChart3 size={16} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Painel de Comando Intel</span>
+                  </div>
+                  {showIntel ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+
+                {showIntel && (
+                  <div className="mt-2 bg-black/60 border border-white/5 p-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <Users size={12} className="text-primary" />
+                        Status de Extração em Tempo Real
+                      </span>
+                      <span className="text-[10px] text-white font-mono">{participants.length} / {raffle.total_tickets}</span>
+                    </div>
+
+                    {loadingParticipants ? (
+                      <div className="py-8 text-center text-[8px] text-white/20 uppercase tracking-[0.3em] animate-pulse italic">
+                         Capturando feed de dados do grid...
+                      </div>
+                    ) : participants.length > 0 ? (
+                      <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 space-y-1 pr-1">
+                        {participants.map((p, idx) => {
+                            const pName = p.profiles?.full_name || p.orders?.customer_data?.name || 'Operador Desconhecido';
+                            const pPhone = p.profiles?.phone || p.orders?.customer_data?.phone || 'Sem Contato';
+                            const isPaid = p.payment_status === 'pago';
+                            
+                            return (
+                              <div key={idx} className="flex items-center justify-between bg-white/5 p-2 border-l-2 border-transparent hover:border-primary/40 transition-all group/item">
+                                <div className="flex items-center gap-3">
+                                  <span className={`text-[10px] font-black w-7 h-7 flex items-center justify-center rounded-sm ${isPaid ? 'bg-primary text-black' : 'bg-white/10 text-white/40'}`}>
+                                    {p.ticket_number}
+                                  </span>
+                                  <div className="flex flex-col">
+                                    <span className="text-[9px] font-bold text-white uppercase leading-none group-hover/item:text-primary transition-colors">{pName}</span>
+                                    <span className="text-[7px] text-slate-500 font-mono mt-1">{pPhone}</span>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <span className={`text-[7px] font-black uppercase tracking-widest ${isPaid ? 'text-emerald-500' : 'text-amber-500'}`}>
+                                    {p.payment_status}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="py-8 text-center text-[8px] text-slate-600 uppercase italic">
+                        O grid operacional ainda não detectou compras.
+                      </div>
+                    )}
+                    
+                    <div className="pt-2 flex justify-center border-t border-white/5">
+                       <p className="text-[6px] text-white/20 uppercase font-mono tracking-widest italic">Acesso Restrito ao Comando Superior</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
               
               {/* Product Header (Desktop Only) */}
               <div className="hidden lg:block space-y-4 border-b border-white/5 pb-8">
@@ -422,32 +540,27 @@ export default function RaffleDetailPage() {
                     </div>
                 </div>
 
-                {/* Ticket Grid Overlay */}
-                <div className="relative z-10 group/grid">
-                  <div className="grid grid-cols-10 gap-1 overflow-y-auto max-h-64 p-2 bg-black/40 border border-white/5 scrollbar-thin scrollbar-thumb-primary/20">
-                    {Array.from({ length: raffle.total_tickets }).map((_, i) => {
-                      const ticketNum = i + 1;
-                      const isSold = soldTicketNumbers.includes(ticketNum);
-                      const isSelected = selectedTickets.includes(ticketNum);
-
-                      return (
-                        <button
-                          key={i}
-                          disabled={isSold}
-                          onClick={() => toggleTicket(ticketNum)}
-                          className={`aspect-square text-[9px] font-bold transition-all flex items-center justify-center border
-                                ${isSold ? 'bg-red-900/20 text-red-500/20 border-transparent cursor-not-allowed grayscale' :
-                              isSelected ? 'bg-primary text-background-dark border-primary scale-110 z-10 shadow-[0_0_15px_rgba(251,191,36,0.4)] rotate-3' :
-                                'bg-white/5 text-slate-500 border-white/10 hover:border-primary/50 hover:text-white backdrop-blur-sm'}
-                              `}
-                        >
-                          {ticketNum}
-                        </button>
-                      )
-                    })}
+                {/* LEGENDA TÁTICA DO GRID */}
+                <div className="grid grid-cols-2 gap-4 pb-2 relative z-10">
+                  <div className="flex items-center gap-2">
+                      <div className="size-3 bg-red-900/40 border border-red-500/20 rounded-sm" />
+                      <span className="text-[7px] text-slate-500 font-black uppercase tracking-widest">Ocupado</span>
                   </div>
-                  {/* Grid Shadow Overlay to suggest scroll */}
-                  <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-surface to-transparent pointer-events-none opacity-60"></div>
+                  <div className="flex items-center gap-2">
+                      <div className="size-3 bg-white/5 border border-white/20 rounded-sm" />
+                      <span className="text-[7px] text-slate-500 font-black uppercase tracking-widest">Disponível</span>
+                  </div>
+                </div>
+
+                {/* Raffle Grid Component */}
+                <div className="relative z-10">
+                  <RaffleGrid 
+                    raffleId={raffle.id}
+                    totalTickets={raffle.total_tickets}
+                    ticketPrice={raffle.ticket_price}
+                    onSelectionChange={setSelectedTickets}
+                    currentUserId={(supabase.auth.getUser() as any)?.data?.user?.id}
+                  />
                 </div>
 
                 {/* Order Summary & Mobilization */}
@@ -483,16 +596,8 @@ export default function RaffleDetailPage() {
                       COMPRA SEGURA
                     </div>
                   </div>
-
-
-
-
-
-
-
-
-
                 </div>
+              </div>
               </div>
 
             </div>

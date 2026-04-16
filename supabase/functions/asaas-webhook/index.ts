@@ -310,35 +310,50 @@ Deno.serve(async (req: Request) => {
           }
         }
 
-        // ── 2b. PROCESSAR TICKETS DE RIFAS ──────────────────────────────
+        // ── 2b. PROCESSAR TICKETS DE RIFAS (SaaS Multi-tenant) ─────────────────
         if (raffleItems.length > 0) {
           console.log(`[ASAAS-WEBHOOK] Processando ${raffleItems.length} itens de rifa para pedido ${targetOrderId}`);
-          const { data: tickets } = await supabase
+          
+          // 1. Atualizar status na tabela original (compatibilidade)
+          await supabase
             .from('raffle_tickets')
             .update({ payment_status: 'pago', purchased_at: new Date().toISOString() })
-            .eq('payment_id', targetOrderId)
-            .select('raffle_id');
+            .eq('payment_id', targetOrderId);
 
-          console.log(`[ASAAS-WEBHOOK] Raffle Tickets atualizados: ${tickets?.length || 0}`);
+          // 2. Atualizar status na nova tabela 'rifa_numeros' (SaaS LOCK/HOLD)
+          const { data: updatedNumbers, error: numErr } = await supabase
+            .from('rifa_numeros')
+            .update({ status: 'sold' })
+            .eq('order_id', targetOrderId)
+            .select('rifa_id');
 
-          if (tickets && tickets.length > 0) {
-            const raffleId = tickets[0].raffle_id;
-            await supabase.rpc('increment_raffle_sold_tickets', { rid: raffleId, count_add: tickets.length });
+          if (numErr) {
+            console.error('[ASAAS-WEBHOOK] Erro ao atualizar rifa_numeros:', numErr.message);
+          } else {
+            console.log(`[ASAAS-WEBHOOK] rifa_numeros atualizados: ${updatedNumbers?.length || 0}`);
+            
+            if (updatedNumbers && updatedNumbers.length > 0) {
+              const raffleId = updatedNumbers[0].rifa_id;
+              // Incrementar contagem de vendidos na rifa
+              await supabase.rpc('increment_raffle_sold_tickets', { rid: raffleId, count_add: updatedNumbers.length });
 
-            const { data: raffle } = await supabase.from('raffles').select('creator_id').eq('id', raffleId).single();
-            if (raffle) {
-              const amount = Number(payment.value);
-              const operatorShare = amount - (amount * 0.07) - 0.99;
+              // Gerenciar saldo do criador
+              const { data: raffle } = await supabase.from('raffles').select('creator_id').eq('id', raffleId).single();
+              if (raffle) {
+                const amount = Number(payment.value);
+                // Taxa de 7% + custo fixo Pix Asaas
+                const operatorShare = amount - (amount * 0.07) - 0.99;
 
-              const { data: profile } = await supabase.from('profiles').select('trust_level, kyc_status').eq('id', raffle.creator_id).single();
-              const isElite = (profile?.trust_level || 0) >= 3 && profile?.kyc_status === 'approved';
-              const creditField = isElite ? 'available_balance' : 'pending_balance';
+                const { data: profile } = await supabase.from('profiles').select('trust_level, kyc_status').eq('id', raffle.creator_id).single();
+                const isElite = (profile?.trust_level || 0) >= 3 && profile?.kyc_status === 'approved';
+                const creditField = isElite ? 'available_balance' : 'pending_balance';
 
-              const { data: balance } = await supabase.from('user_balances').select('*').eq('user_id', raffle.creator_id).single();
-              if (balance) {
-                const upstate: any = { total_earned: Number(balance.total_earned || 0) + operatorShare };
-                upstate[creditField] = Number(balance[creditField] || 0) + operatorShare;
-                await supabase.from('user_balances').update(upstate).eq('user_id', raffle.creator_id);
+                const { data: balance } = await supabase.from('user_balances').select('*').eq('user_id', raffle.creator_id).single();
+                if (balance) {
+                  const upstate: any = { total_earned: Number(balance.total_earned || 0) + operatorShare };
+                  upstate[creditField] = Number(balance[creditField] || 0) + operatorShare;
+                  await supabase.from('user_balances').update(upstate).eq('user_id', raffle.creator_id);
+                }
               }
             }
           }

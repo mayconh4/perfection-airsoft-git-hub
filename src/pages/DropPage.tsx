@@ -110,6 +110,8 @@ function DrawWarningModal({ onConfirm }: { onConfirm: () => void }) {
 function RaffleCard({ raffle, onDelete, onDraw }: { raffle: Raffle; onDelete?: (id: string) => void; onDraw?: (id: string) => void }) {
   const { user, isAdmin } = useAuth();
   const [showIntel, setShowIntel] = useState(false);
+  const [participants, setParticipants] = useState<any[]>([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
   const percentSold = (raffle.sold_tickets / raffle.total_tickets) * 100;
   const createdAt = new Date(raffle.created_at).toLocaleDateString('pt-BR', {
     day: '2-digit',
@@ -118,6 +120,38 @@ function RaffleCard({ raffle, onDelete, onDraw }: { raffle: Raffle; onDelete?: (
     hour: '2-digit',
     minute: '2-digit'
   });
+
+  useEffect(() => {
+    if (showIntel) {
+      loadParticipants();
+    }
+  }, [showIntel]);
+
+  const loadParticipants = async () => {
+    setLoadingParticipants(true);
+    try {
+      const { data, error } = await supabase
+        .from('raffle_tickets')
+        .select(`
+          ticket_number,
+          payment_status,
+          user_id,
+          payment_id,
+          created_at,
+          profiles:user_id (full_name, phone),
+          orders:payment_id (customer_data)
+        `)
+        .eq('raffle_id', raffle.id)
+        .order('ticket_number', { ascending: true });
+
+      if (error) throw error;
+      setParticipants(data || []);
+    } catch (err) {
+      console.error('Erro ao carregar participantes:', err);
+    } finally {
+      setLoadingParticipants(false);
+    }
+  };
 
   // CARROSSEL TÁTICO: CICLO DE 5 SEGUNDOS
   const allImages = [raffle.image_url, ...(raffle.images || [])].filter(Boolean) as string[];
@@ -154,6 +188,17 @@ function RaffleCard({ raffle, onDelete, onDraw }: { raffle: Raffle; onDelete?: (
             <div className="flex items-center gap-2 text-[8px] font-bold text-white/40 uppercase font-mono">
               <Calendar size={10} />
               <span>{createdAt}</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 pb-2">
+            <div className="bg-black/20 p-2 border border-white/5 rounded">
+              <span className="text-[7px] text-slate-500 uppercase font-black block">Tickets Reservados</span>
+              <span className="text-[12px] text-white font-mono font-bold leading-none">{raffle.sold_tickets} / {raffle.total_tickets}</span>
+            </div>
+            <div className="bg-emerald-500/10 p-2 border border-emerald-500/20 rounded">
+              <span className="text-[7px] text-emerald-500/60 uppercase font-black block">Status de Fluxo</span>
+              <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-tight">{raffle.status === 'ativo' ? 'EM EXTRAÇÃO' : raffle.status}</span>
             </div>
           </div>
           
@@ -209,6 +254,47 @@ function RaffleCard({ raffle, onDelete, onDraw }: { raffle: Raffle; onDelete?: (
                         <span>E-MAIL: {raffle.profiles?.email || 'NÃO INFORMADO'}</span>
                         <span className="mt-1">ID CRIPTOGRAFADO: {raffle.creator_id.substring(0, 8)}...</span>
                     </div>
+                </div>
+
+                {/* LISTA DE PARTICIPANTES (OPERADORES) */}
+                <div className="mt-4 pt-4 border-t border-primary/20">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-[8px] font-black text-primary uppercase tracking-[0.2em]">Manifesto de Operadores</span>
+                        <span className="text-[7px] text-slate-500 font-mono italic">{participants.length} Tickets Encontrados</span>
+                    </div>
+
+                    {loadingParticipants ? (
+                        <div className="text-[8px] text-white/20 animate-pulse py-2">Escaneando dados do grid...</div>
+                    ) : participants.length > 0 ? (
+                        <div className="max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 space-y-1 pr-1">
+                            {participants.map((p, idx) => {
+                                const participantName = p.profiles?.full_name || p.orders?.customer_data?.name || 'Operador Desconhecido';
+                                const participantPhone = p.profiles?.phone || p.orders?.customer_data?.phone || '';
+                                const isPaid = p.payment_status === 'pago';
+                                
+                                return (
+                                    <div key={idx} className="flex items-center justify-between bg-white/5 p-1.5 border-l-2 border-transparent hover:border-primary/40 transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <span className={`text-[9px] font-black w-6 h-6 flex items-center justify-center rounded-sm ${isPaid ? 'bg-primary text-black' : 'bg-white/10 text-white/40'}`}>
+                                                {p.ticket_number}
+                                            </span>
+                                            <div className="flex flex-col">
+                                                <span className="text-[9px] font-bold text-white uppercase leading-none">{participantName}</span>
+                                                <span className="text-[7px] text-slate-500 font-mono mt-0.5">{participantPhone}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[7px] font-black px-1.5 py-0.5 uppercase ${isPaid ? 'text-emerald-500' : 'text-amber-500'}`}>
+                                                {p.payment_status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="text-[8px] text-slate-600 italic py-2">Nenhum operador detectado no grid.</div>
+                    )}
                 </div>
             </div>
           )}

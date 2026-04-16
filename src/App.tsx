@@ -28,6 +28,7 @@ import DropPage from './pages/DropPage';
 import RaffleDetailPage from './pages/RaffleDetailPage';
 import CreateRafflePage from './pages/CreateRafflePage';
 import OrganizerDashboard from './pages/OrganizerDashboard';
+import DashboardRifas from './pages/DashboardRifas';
 import SecurityNoticePage from './pages/SecurityNoticePage';
 import DashboardDemo from './pages/DashboardDemo';
 import AuthCallbackPage from './pages/AuthCallbackPage';
@@ -88,6 +89,7 @@ function App() {
                   <Route path="/seguranca-comunidade" element={<SecurityNoticePage />} />
                   <Route path="/organizador" element={<OrganizerDashboard />} />
                   <Route path="/organizador/financeiro" element={<FinanceDashboard />} />
+                  <Route path="/organizador/rifas" element={<DashboardRifas />} />
                   <Route path="/painel-de-elite" element={<OrganizerDashboard />} />
                   <Route path="/dashboard-demo" element={<DashboardDemo />} />
                   <Route path="/organizador/eventos/:id" element={<CreateEventPage />} />

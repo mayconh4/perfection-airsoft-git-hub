@@ -90,7 +90,7 @@ Deno.serve(async (req: Request) => {
     console.log(`[ASAAS-PAYMENT] Pedido: ${orderId} | Total: R$${total}`);
 
     // ─────────────────────────────────────────────────────────────────────
-    // 1. CRIAR PEDIDO PARA GUESTS
+    // 1. GERENCIAMENTO DE PEDIDO (Criação ou Atualização)
     // ─────────────────────────────────────────────────────────────────────
     let finalOrderId = orderId;
 
@@ -125,7 +125,22 @@ Deno.serve(async (req: Request) => {
       }));
       await supabaseAdmin.from('order_items').insert(orderItems);
     } else {
-      // Garantir que os order_items existentes têm os metadados corretos
+      // Pedido já existe (ex: via reserve_raffle_numbers)
+      // Atualizamos os dados do cliente e metadados
+      const { error: updOrderErr } = await supabaseAdmin
+        .from('orders')
+        .update({
+          customer_data: {
+            ...customerData,
+            cpf:   customerData.cpf?.replace(/\D/g, ''),
+            phone: customerData.phone?.replace(/\D/g, ''),
+          },
+          total: Number(total) // Garantir que o total está correto
+        })
+        .eq('id', finalOrderId);
+
+      if (updOrderErr) console.warn('[ASAAS] Aviso ao atualizar pedido existente:', updOrderErr.message);
+
       for (const item of items) {
         if (item.metadata) {
           await supabaseAdmin
@@ -203,13 +218,17 @@ Deno.serve(async (req: Request) => {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // 3. RESERVAR RAFFLE_TICKETS (apenas para rifas)
+    // 3. LEGACY: RESERVAR RAFFLE_TICKETS (Fallback para o sistema antigo)
+    // No novo sistema (rifa_numeros), a reserva já foi feita pelo frontend via RPC.
     // ─────────────────────────────────────────────────────────────────────
     const ticketsToReserve = [];
     for (const item of items) {
       if ((item.metadata?.type === 'raffle' || item.metadata?.brand === 'DROP') &&
-          Array.isArray(item.metadata?.tickets)) {
+          Array.isArray(item.metadata?.tickets) && 
+          !item.metadata?.orderId) { // Se não tem orderId no metadata, significa que veio pelo fluxo antigo
         for (const tNum of item.metadata.tickets) {
+          ticketsToReserve.push({
+            raffle_id:      raffleId,
             ticket_number:  Number(tNum),
             user_id:        userId || null,
             payment_status: 'pendente',
@@ -220,38 +239,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (ticketsToReserve.length > 0) {
-      console.log(`[ASAAS] Verificando disponibilidade e limpando reservas expiradas para ${ticketsToReserve.length} tickets...`);
-      
-      for (const tReq of ticketsToReserve) {
-        // 1. Limpar reservas pendentes expiradas (mais de 5 minutos)
-        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-        
-        await supabaseAdmin
-          .from('raffle_tickets')
-          .delete()
-          .eq('raffle_id', tReq.raffle_id)
-          .eq('ticket_number', tReq.ticket_number)
-          .eq('payment_status', 'pendente')
-          .lt('created_at', fiveMinutesAgo);
-
-        // 2. Verificar se o número ainda está ocupado (reservado < 5min ou já pago)
-        const { data: existing } = await supabaseAdmin
-          .from('raffle_tickets')
-          .select('id, payment_status, created_at')
-          .eq('raffle_id', tReq.raffle_id)
-          .eq('ticket_number', tReq.ticket_number)
-          .maybeSingle();
-
-        if (existing) {
-          if (existing.payment_status === 'pago') {
-             throw new Error(`O número ${tReq.ticket_number} já foi vendido definitivamente.`);
-          } else {
-             throw new Error(`O número ${tReq.ticket_number} está reservado por outro operador. Tente novamente em alguns minutos.`);
-          }
-        }
-      }
-
-      console.log(`[ASAAS] Reservando ${ticketsToReserve.length} raffle_tickets...`);
+      console.log(`[ASAAS] [LEGACY] Reservando ${ticketsToReserve.length} raffle_tickets...`);
       const { error: reserveErr } = await supabaseAdmin.from('raffle_tickets').insert(ticketsToReserve);
       if (reserveErr) throw new Error(`Erro na reserva: ${reserveErr.message}`);
     }
