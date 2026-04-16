@@ -92,7 +92,7 @@ export default function SuccessPage() {
           </div>
           <div className="text-right">
             <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest block">STATUS</span>
-            <span className="text-[11px] text-emerald-400 font-black italic">DEPLOYMENT READY</span>
+            <span className="text-[11px] text-emerald-400 font-black italic">Drop confirmado</span>
           </div>
         </div>
 

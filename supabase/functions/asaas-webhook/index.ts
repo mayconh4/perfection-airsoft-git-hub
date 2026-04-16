@@ -312,11 +312,14 @@ Deno.serve(async (req: Request) => {
 
         // ── 2b. PROCESSAR TICKETS DE RIFAS ──────────────────────────────
         if (raffleItems.length > 0) {
+          console.log(`[ASAAS-WEBHOOK] Processando ${raffleItems.length} itens de rifa para pedido ${targetOrderId}`);
           const { data: tickets } = await supabase
             .from('raffle_tickets')
             .update({ payment_status: 'pago', purchased_at: new Date().toISOString() })
             .eq('payment_id', targetOrderId)
             .select('raffle_id');
+
+          console.log(`[ASAAS-WEBHOOK] Raffle Tickets atualizados: ${tickets?.length || 0}`);
 
           if (tickets && tickets.length > 0) {
             const raffleId = tickets[0].raffle_id;
@@ -344,9 +347,13 @@ Deno.serve(async (req: Request) => {
 
       // ── CANCELAMENTO ─────────────────────────────────────────────────────
     } else if (event === 'PAYMENT_CANCELLED' || event === 'PAYMENT_OVERDUE') {
-      await supabase.from('orders').update({ status: 'cancelado', payment_status: 'cancelado' }).eq('id', orderId);
-      await supabase.from('tickets').update({ status: 'cancelled' }).eq('order_id', orderId).eq('status', 'pending');
-      await supabase.from('raffle_tickets').update({ payment_status: 'cancelado' }).eq('payment_id', orderId).eq('payment_status', 'pendente');
+      console.log(`[ASAAS-WEBHOOK] Cancelando pedido. Ref: ${targetOrderId || orderIdRef}`);
+      const tid = targetOrderId || orderIdRef;
+      if (tid) {
+        await supabase.from('orders').update({ status: 'cancelado', payment_status: 'cancelado' }).eq('id', tid);
+        await supabase.from('tickets').update({ status: 'cancelled' }).eq('order_id', tid).eq('status', 'pending');
+        await supabase.from('raffle_tickets').update({ payment_status: 'cancelado' }).eq('payment_id', tid).eq('payment_status', 'pendente');
+      }
     }
 
     return new Response(JSON.stringify({ success: true }), {

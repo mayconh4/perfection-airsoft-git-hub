@@ -145,7 +145,7 @@ function OrdersList({ orders, loading, onSelect }: { orders: Order[], loading: b
               <tr key={o.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
                 <td className="p-4">
                   <span className="text-xs font-mono text-primary group-hover:underline uppercase font-bold tracking-widest">{getTacticalCode(o.id)}</span>
-                  <p className="text-[10px] text-white/30 hidden sm:block">{formatPrice(o.total)}</p>
+                  <p className="text-[10px] text-white/30 hidden sm:block">{formatPrice(o.total, true)}</p>
                 </td>
                 <td className="p-4 text-[10px] text-slate-400 hidden sm:table-cell text-center font-bold tracking-widest">
                   {new Date(o.created_at).toLocaleDateString('pt-BR')}
@@ -200,7 +200,7 @@ function OrderDetails({ order, onBack }: { order: Order, onBack: () => void }) {
                     <div className="size-10 bg-white/5 border border-white/10 flex items-center justify-center text-primary/40 text-[9px] font-black italic">KIT</div>
                     <div>
                       <h4 className="text-xs font-bold text-white uppercase tracking-tight">{item.product_name}</h4>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-widest italic">{item.quantity}un x {formatPrice(item.product_price)}</p>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-widest italic">{item.quantity}un x {formatPrice(item.product_price, true)}</p>
                     </div>
                   </div>
                   <p className="text-sm font-bold text-white">{formatPrice(item.product_price * item.quantity)}</p>
@@ -211,7 +211,7 @@ function OrderDetails({ order, onBack }: { order: Order, onBack: () => void }) {
             <div className="mt-8 pt-8 border-t border-white/10 flex flex-col gap-2 items-end">
                <div className="flex justify-between w-full max-w-xs text-[10px] text-slate-500 uppercase font-bold tracking-widest">
                  <span>Subtotal</span>
-                 <span className="text-white">{formatPrice(order.total)}</span>
+                 <span className="text-white">{formatPrice(order.total, true)}</span>
                </div>
                <div className="flex justify-between w-full max-w-xs text-[10px] text-slate-500 uppercase font-bold tracking-widest">
                  <span>Frete e Logística</span>
@@ -219,7 +219,7 @@ function OrderDetails({ order, onBack }: { order: Order, onBack: () => void }) {
                </div>
                <div className="flex justify-between w-full max-w-xs mt-4 pt-4 border-t border-white/10">
                  <span className="text-xs font-black uppercase tracking-widest text-primary">Total da Missão</span>
-                 <span className="text-xl font-black text-white">{formatPrice(order.total)}</span>
+                 <span className="text-xl font-black text-white">{formatPrice(order.total, true)}</span>
                </div>
             </div>
           </div>
