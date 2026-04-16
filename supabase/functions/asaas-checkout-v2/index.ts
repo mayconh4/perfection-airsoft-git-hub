@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
  * PHOENIX UPGRADE (v3 logic on v2 endpoint)
  * Mantendo o endpoint asaas-checkout-v2 para evitar mudanças manuais no dashboard do Asaas.
  * Implementando Realtime, Auditoria e Multi-Checkout (PIX, CARTÃO, BOLETO).
- * deploy: 2026-04-15T00:00:00Z
+ * deploy: 2026-04-16T12:30:00Z
  */
 
 const ASAAS_API_KEY             = (Deno.env.get('ASAAS_API_KEY') || '').trim();
