@@ -33,7 +33,7 @@ export default function RaffleDetailPage() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   // Intel Tática
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [showIntel, setShowIntel] = useState(false);
   const [participants, setParticipants] = useState<any[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
@@ -598,8 +598,6 @@ export default function RaffleDetailPage() {
                   </div>
                 </div>
               </div>
-              </div>
-
             </div>
           </div>
         </div>
@@ -651,4 +649,3 @@ export default function RaffleDetailPage() {
     </div>
   );
 }
-
