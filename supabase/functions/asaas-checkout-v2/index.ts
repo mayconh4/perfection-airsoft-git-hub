@@ -126,15 +126,20 @@ Deno.serve(async (req: Request) => {
 
       console.log(`[V3] create-order | total=${total} | userId=${userId || 'guest'} | items=${items?.length || 0}`);
 
-      const { data: order, error } = await supabase.from('orders').insert({
+      const insertData: any = {
         status: 'pendente',
         total_amount: total,
         customer_email: customerData.email,
         customer_name: customerData.name,
         customer_cpf: (customerData.cpf || '').replace(/\D/g, ''),
         customer_phone: (customerData.phone || '').replace(/\D/g, ''),
-        user_id: userId || null,
-      }).select().single();
+      };
+      // Só inclui user_id se for um UUID válido (evita violação NOT NULL)
+      if (userId && typeof userId === 'string' && userId.length > 10) {
+        insertData.user_id = userId;
+      }
+
+      const { data: order, error } = await supabase.from('orders').insert(insertData).select().single();
 
       if (error) {
         console.error('[V3] create-order DB error:', JSON.stringify(error));

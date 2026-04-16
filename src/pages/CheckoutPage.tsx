@@ -224,7 +224,10 @@ export function CheckoutPage() {
           })
         });
         currentOrder = await oResp.json();
-        if (!oResp.ok) throw new Error(currentOrder.error || 'Erro no protocolo do pedido');
+        if (!oResp.ok) {
+          const serverMsg = currentOrder?.error || currentOrder?.message || currentOrder?.code || JSON.stringify(currentOrder);
+          throw new Error(serverMsg || 'Erro no protocolo do pedido');
+        }
         setOrder(currentOrder);
       }
       const pResp = await fetch(`${API_V2}/generate-payment`, {
@@ -259,10 +262,7 @@ export function CheckoutPage() {
       setPaymentData(pData);
       if (selectedMethod === 'card') setCardConfirmed(true);
     } catch (err: any) {
-      // Nunca expõe erros internos ao cliente
-      const raw = err.message || '';
-      const isInternal = /gateway|asaas|supabase|function|fetch|network|500|502|503/i.test(raw);
-      setError(isInternal ? 'Ocorreu um erro ao processar seu pagamento. Tente novamente ou escolha outro método.' : raw);
+      setError(err.message || 'Erro desconhecido');
     } finally {
       setProcessing(false);
     }
