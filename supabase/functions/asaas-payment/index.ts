@@ -17,7 +17,10 @@ Deno.serve(async (req: Request) => {
 
   try {
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    console.log(`[ASAAS-PAYMENT] Recebida Requisição Operacional: ${req.method}`);
     const body = await req.json();
+    console.log(`[ASAAS-PAYMENT] Payload Recebido:`, JSON.stringify(body, null, 2));
+
     const { action, asaasId, orderId, total, items, customerData, isGuest } = body;
 
     // ─────────────────────────────────────────────────────────────────────

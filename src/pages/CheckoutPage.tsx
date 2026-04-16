@@ -220,15 +220,19 @@ export function CheckoutPage() {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errBody = await response.json().catch(() => ({}));
-        const rawError = errBody.error || '';
-        
-        // Se for o erro de KYC do operador, já vem formatado amigavelmente da Edge Function
-        if (rawError.includes('MANUTENÇÃO FINANCEIRA')) {
-          setError(rawError);
-        } else {
-          setError(`DIFICULDADE TÁTICA NA CONEXÃO (${response.status}). POR FAVOR, TENTE NOVAMENTE EM ALGUNS INSTANTES.`);
+        let errorMessage = `DIFICULDADE TÁTICA NA CONEXÃO (${response.status})`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error) {
+            errorMessage = `ERRO OPERACIONAL: ${errorData.error.toUpperCase()} (${response.status})`;
+          }
+        } catch (e) {
+          const errorText = await response.text();
+          console.error('[CHECKOUT] Erro Bruto no Servidor:', errorText);
         }
+        
+        setError(`${errorMessage}. POR FAVOR, TENTE NOVAMENTE OU CONTATE O SUPORTE.`);
+        setProcessing(false);
         return;
       }
 
