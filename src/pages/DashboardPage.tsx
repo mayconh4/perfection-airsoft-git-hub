@@ -173,6 +173,19 @@ function OrdersList({ orders, loading, onSelect }: { orders: Order[], loading: b
 // Sub-component: Order Details
 function OrderDetails({ order, onBack }: { order: Order, onBack: () => void }) {
   const st = statusLabels[order.status] || statusLabels.pendente;
+  const [raffleTickets, setRaffleTickets] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchRaffleTickets = async () => {
+      const { data } = await supabase
+        .from('raffle_tickets')
+        .select('ticket_number, raffle_id')
+        .eq('payment_id', order.id);
+      
+      if (data) setRaffleTickets(data);
+    };
+    fetchRaffleTickets();
+  }, [order.id]);
   
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -194,18 +207,49 @@ function OrderDetails({ order, onBack }: { order: Order, onBack: () => void }) {
             </div>
 
             <div className="space-y-4">
-              {order.items?.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between border-t border-white/5 pt-4">
-                  <div className="flex gap-4">
-                    <div className="size-10 bg-white/5 border border-white/10 flex items-center justify-center text-primary/40 text-[9px] font-black italic">KIT</div>
-                    <div>
-                      <h4 className="text-xs font-bold text-white uppercase tracking-tight">{item.product_name}</h4>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-widest italic">{item.quantity}un x {formatPrice(item.product_price, true)}</p>
+              {order.items?.map((item, idx) => {
+                const isRaffle = item.metadata?.type === 'raffle' || 
+                               item.product_name.toLowerCase().includes('drop') ||
+                               item.metadata?.event_title;
+
+                return (
+                  <div key={idx} className="flex flex-col border-t border-white/5 pt-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-4">
+                        <div className="size-10 bg-white/5 border border-white/10 flex items-center justify-center text-primary/40 text-[9px] font-black italic">
+                          {isRaffle ? 'DROP' : 'KIT'}
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-white uppercase tracking-tight">{item.product_name}</h4>
+                          <p className="text-[10px] text-slate-500 uppercase tracking-widest italic">{item.quantity}un x {formatPrice(item.product_price, true)}</p>
+                        </div>
+                      </div>
+                      <p className="text-sm font-bold text-white">{formatPrice(item.product_price * item.quantity)}</p>
                     </div>
+
+                    {isRaffle && raffleTickets.length > 0 && (
+                      <div className="mt-4 ml-14">
+                        <p className="text-[8px] font-black text-primary/60 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                          <span className="h-px w-4 bg-primary/20"></span>
+                          Números de Extração Reservados
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {raffleTickets.map((t, tIdx) => (
+                            <div 
+                              key={tIdx} 
+                              className="bg-primary/10 border border-primary/30 px-2 py-1 flex items-center gap-2 group hover:bg-primary transition-all cursor-default"
+                            >
+                              <span className="text-primary group-hover:text-black font-mono text-[10px] font-black transition-colors">
+                                #{t.ticket_number.toString().padStart(3, '0')}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm font-bold text-white">{formatPrice(item.product_price * item.quantity)}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="mt-8 pt-8 border-t border-white/10 flex flex-col gap-2 items-end">
