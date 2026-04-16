@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - claude/review-project-fixes-WvOZl
     paths:
       - 'supabase/functions/**'
   workflow_dispatch:
