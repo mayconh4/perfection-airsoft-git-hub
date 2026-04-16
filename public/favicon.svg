@@ -1,9 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <path d="M16 2a14 14 0 1 0 14 14A14 14 0 0 0 16 2zm0 26a12 12 0 1 1 12-12 12 12 0 0 1-12 12z" fill="#ff1111"/>
-  <path d="M16 10a6 6 0 1 0 6 6 6 6 0 0 0-6-6zm0 10a4 4 0 1 1 4-4 4 4 0 0 1-4 4z" fill="#ff1111"/>
-  <circle cx="16" cy="16" r="2" fill="#ff1111"/>
-  <rect x="15" y="0" width="2" height="6" fill="#ff1111"/>
-  <rect x="15" y="26" width="2" height="6" fill="#ff1111"/>
-  <rect x="0" y="15" width="6" height="2" fill="#ff1111"/>
-  <rect x="26" y="15" width="6" height="2" fill="#ff1111"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="45" fill="none" stroke="#be1212" stroke-width="6" />
+  <circle cx="50" cy="50" r="30" fill="none" stroke="#be1212" stroke-width="6" />
+  <circle cx="50" cy="50" r="15" fill="none" stroke="#be1212" stroke-width="6" />
+  <circle cx="50" cy="50" r="6" fill="#be1212" />
+  <line x1="50" y1="0" x2="50" y2="100" stroke="#be1212" stroke-width="4" />
+  <line x1="0" y1="50" x2="100" y2="50" stroke="#be1212" stroke-width="4" />
 </svg>

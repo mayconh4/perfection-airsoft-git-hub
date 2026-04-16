@@ -198,7 +198,7 @@ export function Layout({ children }: LayoutProps) {
           <div className={`flex items-center justify-between gap-4 sm:gap-8 transition-all duration-500 ${isScrolled ? 'h-14 sm:h-16' : 'h-16 sm:h-24'}`}>
             {/* Logo */}
             <a href="/" className="flex items-center gap-2 sm:gap-3 group cursor-pointer flex-shrink-0">
-              <div className={`flex items-center justify-center bg-red-600 text-white rounded-full shadow-[0_0_15px_rgba(220,38,38,0.5)] transition-all duration-500 ${isScrolled ? 'size-8 sm:size-10' : 'size-9 sm:size-12'}`}>
+              <div className={`flex items-center justify-center bg-primary text-black rounded-full shadow-[0_0_15px_rgba(255,193,7,0.4)] transition-all duration-500 ${isScrolled ? 'size-8 sm:size-10' : 'size-9 sm:size-12'}`}>
                 <span className={`material-symbols-outlined font-black transition-all ${isScrolled ? 'text-lg sm:text-2xl' : 'text-xl sm:text-3xl'}`}>target</span>
               </div>
               <div className="flex flex-col">
