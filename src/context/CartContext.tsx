@@ -193,7 +193,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         JSON.stringify(i.metadata || {}) === JSON.stringify(metadata || {})
       );
 
-      if (existingIndex > -1 && !metadata) {
+      if (existingIndex > -1) {
         local[existingIndex].quantity += quantity;
         saveLocalCart([...local]);
       } else {
@@ -214,6 +214,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     // Para tickets: product_id = null (produto virtual sem FK)
     // Para rifas e físicos: product_id = o ID real
     const dbProductId = metadata?.type === 'ticket' ? null : productId;
+
+    // [SAMA_PROTOCOL] Lógica de Merge: verifica se já existe o item no carrinho do DB
+    const { data: existingEntry } = await supabase
+      .from('cart_items')
+      .select('id, quantity, metadata')
+      .eq('user_id', user.id)
+      .eq('product_id', dbProductId)
+      .maybeSingle();
+
+    // Se o metadata for igual (comparação de string), apenas aumenta a quantidade
+    if (existingEntry && JSON.stringify(existingEntry.metadata || {}) === JSON.stringify({ ...metadata, _virtual_id: productId })) {
+      const { error: updateError } = await supabase
+        .from('cart_items')
+        .update({ quantity: existingEntry.quantity + quantity })
+        .eq('id', existingEntry.id);
+      
+      if (!updateError) {
+        await fetchCart();
+        setShowToast(true);
+        return true;
+      }
+    }
 
     const { error } = await supabase.from('cart_items').insert({
       user_id: user.id,

@@ -186,9 +186,9 @@ export default function RaffleDetailPage() {
         });
 
         if (success) {
-            setIsCartOpen(true);
-            // Limpa seleção após adicionar ao carrinho
+            // [SAMA PROTOCOL] Limpeza imediata para evitar duplicidade reativa
             setSelectedTickets([]);
+            setIsCartOpen(true);
         } else {
             throw new Error('Falha ao adicionar ao carrinho operacional.');
         }
