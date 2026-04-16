@@ -128,15 +128,12 @@ Deno.serve(async (req: Request) => {
 
       const { data: order, error } = await supabase.from('orders').insert({
         status: 'pendente',
-        total: total,
+        total_amount: total,
+        customer_email: customerData.email,
+        customer_name: customerData.name,
+        customer_cpf: (customerData.cpf || '').replace(/\D/g, ''),
+        customer_phone: (customerData.phone || '').replace(/\D/g, ''),
         user_id: userId || null,
-        customer_data: {
-          name: customerData.name,
-          email: customerData.email,
-          cpf: (customerData.cpf || '').replace(/\D/g, ''),
-          phone: (customerData.phone || '').replace(/\D/g, '')
-        },
-        shipping_address: {}
       }).select().single();
 
       if (error) {
@@ -157,7 +154,6 @@ Deno.serve(async (req: Request) => {
         const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
         if (itemsError) {
           console.error('[V3] order_items insert error:', JSON.stringify(itemsError));
-          // Não falha o pedido por causa dos items — o pedido em si foi criado
         }
       }
 

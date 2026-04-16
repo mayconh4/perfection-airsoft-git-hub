@@ -321,9 +321,9 @@ Deno.serve(async (req: Request) => {
           const eventId = item.metadata?.event_id;
           if (!eventId) continue;
 
-          const { data: order } = await supabase.from('orders').select('user_id, customer_data').eq('id', orderId).single();
-          const buyerName = order?.customer_data?.name || 'Operador';
-          const buyerEmail = order?.customer_data?.email || '';
+          const { data: order } = await supabase.from('orders').select('user_id, customer_name, customer_email, customer_phone, customer_data').eq('id', orderId).single();
+          const buyerName = order?.customer_data?.name || order?.customer_name || 'Operador';
+          const buyerEmail = order?.customer_data?.email || order?.customer_email || '';
 
           // Gerar tickets
           const generatedUuids: string[] = [];
@@ -336,8 +336,8 @@ Deno.serve(async (req: Request) => {
               buyer_id: order?.user_id || null,
               buyer_name: buyerName,
               buyer_email: buyerEmail,
-              buyer_cpf: order?.customer_data?.cpf || '',
-              buyer_phone: order?.customer_data?.phone || '',
+              buyer_cpf: order?.customer_data?.cpf || order?.customer_cpf || '',
+              buyer_phone: order?.customer_data?.phone || order?.customer_phone || '',
               status: 'confirmed',
               qr_uuid: uuid,
             });
@@ -359,7 +359,7 @@ Deno.serve(async (req: Request) => {
           }
 
           // WhatsApp — Ingresso confirmado
-          const phone = order?.customer_data?.phone || '';
+          const phone = order?.customer_data?.phone || order?.customer_phone || '';
           if (phone) {
             await sendWhatsApp(phone,
               `✅ *Ingresso Confirmado!*\n\nOlá, ${buyerName}!\n\nSeu ingresso para *${ev?.title || 'o evento'}* está confirmado.\n\n📅 Data: ${evDate}\n📍 Local: ${ev?.location || ''}\n\nAcesse seus ingressos em:\nhttps://www.perfectionairsoft.com.br/meus-ingressos`
@@ -383,9 +383,9 @@ Deno.serve(async (req: Request) => {
         // Tickets de Rifas
         const raffleItems = orderItems.filter((i: any) => i.metadata?.brand === 'DROP' || i.metadata?.type === 'raffle');
         if (raffleItems.length > 0) {
-          const { data: raffleOrder } = await supabase.from('orders').select('user_id, customer_data').eq('id', orderId).single();
-          const raffleEmail = raffleOrder?.customer_data?.email || '';
-          const raffleName = raffleOrder?.customer_data?.name || 'Operador';
+          const { data: raffleOrder } = await supabase.from('orders').select('user_id, customer_name, customer_email, customer_phone, customer_data').eq('id', orderId).single();
+          const raffleEmail = raffleOrder?.customer_data?.email || raffleOrder?.customer_email || '';
+          const raffleName = raffleOrder?.customer_data?.name || raffleOrder?.customer_name || 'Operador';
           const allRaffleNumbers: number[] = [];
           let raffleTitle = 'Drop';
 
@@ -419,7 +419,7 @@ Deno.serve(async (req: Request) => {
           }
 
           // WhatsApp — Drop confirmado
-          const rafflePhone = raffleOrder?.customer_data?.phone || '';
+          const rafflePhone = raffleOrder?.customer_data?.phone || raffleOrder?.customer_phone || '';
           if (rafflePhone) {
             const numbers = allRaffleNumbers.join(', ');
             await sendWhatsApp(rafflePhone,
@@ -431,9 +431,9 @@ Deno.serve(async (req: Request) => {
         // WhatsApp — Produto comprado (pedidos sem ticket/raffle)
         const hasOnlyProducts = ticketItems.length === 0 && raffleItems.length === 0;
         if (hasOnlyProducts) {
-          const { data: prodOrder } = await supabase.from('orders').select('customer_data, total').eq('id', orderId).single();
-          const prodEmail = prodOrder?.customer_data?.email || '';
-          const prodName = prodOrder?.customer_data?.name || 'Operador';
+          const { data: prodOrder } = await supabase.from('orders').select('customer_name, customer_email, customer_phone, customer_data, total_amount').eq('id', orderId).single();
+          const prodEmail = prodOrder?.customer_data?.email || prodOrder?.customer_email || '';
+          const prodName = prodOrder?.customer_data?.name || prodOrder?.customer_name || 'Operador';
 
           // E-mail premium de confirmação de produto
           if (prodEmail) {
@@ -445,12 +445,12 @@ Deno.serve(async (req: Request) => {
             await sendOrderEmail(prodEmail, `✅ Pedido Confirmado #${orderId.slice(0,8).toUpperCase()} | Perfection Airsoft`, html);
           }
 
-          const prodPhone = prodOrder?.customer_data?.phone || '';
+          const prodPhone = prodOrder?.customer_data?.phone || prodOrder?.customer_phone || '';
           if (prodPhone) {
-            const total = Number(prodOrder?.total || payment.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const total = Number(prodOrder?.total_amount || payment.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             const itemNames = orderItems.map((i: any) => `• ${i.product_name || i.name || 'Produto'} (x${i.quantity || 1})`).join('\n');
             await sendWhatsApp(prodPhone,
-              `✅ *Pedido Confirmado!*\n\nOlá, ${prodOrder?.customer_data?.name || 'Operador'}!\n\nSeu pedido *#${orderId.slice(0, 8).toUpperCase()}* foi confirmado.\n\n${itemNames}\n\n💰 Total: ${total}\n\nAcompanhe em:\nhttps://www.perfectionairsoft.com.br/dashboard`
+              `✅ *Pedido Confirmado!*\n\nOlá, ${prodName}!\n\nSeu pedido *#${orderId.slice(0, 8).toUpperCase()}* foi confirmado.\n\n${itemNames}\n\n💰 Total: ${total}\n\nAcompanhe em:\nhttps://www.perfectionairsoft.com.br/dashboard`
             );
           }
         }
