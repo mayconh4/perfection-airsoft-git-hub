@@ -2,7 +2,9 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const ASAAS_API_KEY             = Deno.env.get('ASAAS_API_KEY') || '';
-const ASAAS_API_URL             = Deno.env.get('ASAAS_API_URL') || 'https://sandbox.asaas.com/api/v3';
+// Detecção Tática de Ambiente: Prioriza Produção se a chave estiver presente e a URL não for explicitamente definida para Sandbox
+const DEFAULT_API_URL           = 'https://www.asaas.com/api/v3';
+const ASAAS_API_URL             = Deno.env.get('ASAAS_API_URL') || DEFAULT_API_URL;
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
