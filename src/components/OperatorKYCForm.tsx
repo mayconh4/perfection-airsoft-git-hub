@@ -268,7 +268,8 @@ export function OperatorKYCForm({ onComplete }: { onComplete?: () => void }) {
       // Bypass do Bug do Supabase-js Invoke: Usar Fetch nativo
       // Re-adicionado o 'Authorization' com a ANON_KEY para satisfazer a exigência de presença do Gateway,
       // mas o bypass real de processamento continua via 'x-bypass-token'.
-      const asaasRes = await fetch('https://seewdqetyolfmqsiyban.supabase.co/functions/v1/asaas-create-subaccount', {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://seewdqetyolfmqsiyban.supabase.co';
+      const asaasRes = await fetch(`${supabaseUrl}/functions/v1/asaas-create-subaccount`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

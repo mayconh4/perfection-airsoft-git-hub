@@ -172,7 +172,8 @@ export function CheckoutPage() {
       // [ROTEAMENTO] Escolha do Motor de Pagamento
       // Rifas e Tickets → Asaas | Produtos físicos → MercadoPago
       const motorPath = isDigitalOnly ? 'asaas-payment' : 'mercadopago-payment';
-      const functionUrl = `https://seewdqetyolfmqsiyban.supabase.co/functions/v1/${motorPath}?t=${Date.now()}`;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://seewdqetyolfmqsiyban.supabase.co';
+      const functionUrl = `${supabaseUrl}/functions/v1/${motorPath}?t=${Date.now()}`;
       
       const payload = {
         orderId: isGuestFlow ? 'GUEST_NEW' : orderId,
@@ -199,7 +200,9 @@ export function CheckoutPage() {
         }))
       };
 
-      console.log(`[CHECKOUT] Redirecionando para Motor: ${motorPath}`);
+      console.log(`[CHECKOUT] Iniciando Protocolo de Pagamento via ${motorPath}`);
+      console.log(`[CHECKOUT] URL de Destino: ${functionUrl}`);
+      console.log(`[CHECKOUT] Payload Tático:`, payload);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
@@ -269,7 +272,8 @@ export function CheckoutPage() {
     setError(null);
     
     try {
-      const response = await fetch('https://seewdqetyolfmqsiyban.supabase.co/functions/v1/asaas-payment', {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://seewdqetyolfmqsiyban.supabase.co';
+      const response = await fetch(`${supabaseUrl}/functions/v1/asaas-payment`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
