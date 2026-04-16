@@ -122,30 +122,43 @@ Deno.serve(async (req: Request) => {
     // ROUTE: create-order
     // --------------------------------------------------------------------------------------------
     if (path === 'create-order' && method === 'POST') {
-      const { customerData, total, items } = await req.json();
+      const { customerData, total, items, userId } = await req.json();
+
+      console.log(`[V3] create-order | total=${total} | userId=${userId || 'guest'} | items=${items?.length || 0}`);
 
       const { data: order, error } = await supabase.from('orders').insert({
         status: 'pendente',
-        total_amount: total,
-        customer_email: customerData.email,
-        customer_name: customerData.name,
-        customer_cpf: customerData.cpf.replace(/\D/g, ''),
-        customer_phone: customerData.phone.replace(/\D/g, '')
+        total: total,
+        user_id: userId || null,
+        customer_data: {
+          name: customerData.name,
+          email: customerData.email,
+          cpf: (customerData.cpf || '').replace(/\D/g, ''),
+          phone: (customerData.phone || '').replace(/\D/g, '')
+        },
+        shipping_address: {}
       }).select().single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[V3] create-order DB error:', JSON.stringify(error));
+        throw new Error(error.message || 'Falha ao criar pedido no banco de dados');
+      }
 
       if (items?.length > 0) {
         const isVirtual = (i: any) => i.metadata?.type === 'ticket' || i.metadata?.type === 'raffle' || i.metadata?.brand === 'TICKET' || i.metadata?.brand === 'DROP';
         const orderItems = items.map((i: any) => ({
           order_id: order.id,
-          product_id: isVirtual(i) ? null : (i.id || null), // itens virtuais não têm FK em products
+          product_id: isVirtual(i) ? null : (i.id || null),
           product_name: i.name,
           quantity: i.quantity,
           product_price: i.price,
           metadata: i.metadata || null
         }));
-        await supabase.from('order_items').insert(orderItems);
+        const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
+        if (itemsError) {
+          console.error('[V3] order_items insert error:', JSON.stringify(itemsError));
+          // Não falha o pedido por causa dos items — o pedido em si foi criado
+        }
       }
 
       return new Response(JSON.stringify(order), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -156,7 +169,7 @@ Deno.serve(async (req: Request) => {
     // --------------------------------------------------------------------------------------------
     if (path.startsWith('status/') && method === 'GET') {
       const orderId = path.split('/').pop();
-      const { data } = await supabase.from('orders').select('status, pix_confirmado').eq('id', orderId).single();
+      const { data } = await supabase.from('orders').select('status').eq('id', orderId).single();
       return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 

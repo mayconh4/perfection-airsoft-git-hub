@@ -60,6 +60,9 @@ export function CheckoutPage() {
   const [order, setOrder] = useState<any>(null);
   const [paymentData, setPaymentData] = useState<any>(null);
   const [isConfirmed, setIsConfirmed] = useState(false);
+  const [authMode, setAuthMode] = useState<'register' | 'login'>('register');
+  const [password, setPassword] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
 
   const [form, setForm] = useState(() => {
     const saved = localStorage.getItem('tactical_p_data');
@@ -81,21 +84,20 @@ export function CheckoutPage() {
   useEffect(() => {
     if (!order?.id || isConfirmed) return;
 
-    // Polling a cada 5s como fallback caso o Realtime não dispare
     const pollInterval = setInterval(async () => {
       const { data } = await supabase
         .from('orders')
-        .select('status, pix_confirmado')
+        .select('status')
         .eq('id', order.id)
         .single();
-      if (data?.status === 'pago' || data?.pix_confirmado) setIsConfirmed(true);
+      if (data?.status === 'pago') setIsConfirmed(true);
     }, 5000);
 
     const channel = supabase
       .channel(`order-status-${order.id}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${order.id}` },
         (payload) => {
-          if (payload.new.status === 'pago' || payload.new.pix_confirmado) setIsConfirmed(true);
+          if (payload.new.status === 'pago') setIsConfirmed(true);
         })
       .subscribe();
 
@@ -137,11 +139,58 @@ export function CheckoutPage() {
     }
   };
 
-  const handleNextStep = (e: React.FormEvent) => {
+  const handleNextStep = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step === 'dados') {
       if (!form.name || !form.cpf || !form.email || !form.phone) return setError('Preencha todos os campos obrigatórios (nome, CPF, e-mail e celular).');
       setError(null);
+
+      // Se já está logado, avança direto
+      if (user) {
+        setStep(isPhysical ? 'endereco' : 'pagamento');
+        return;
+      }
+
+      // Criação de conta ou login
+      if (!password || password.length < 6) return setError('Crie uma senha com no mínimo 6 caracteres para acessar seus ingressos.');
+
+      setAuthLoading(true);
+      try {
+        if (authMode === 'register') {
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: form.email,
+            password,
+            options: { data: { name: form.name, phone: form.phone } }
+          });
+          if (signUpError) {
+            if (signUpError.message.includes('already registered') || signUpError.message.includes('already exists')) {
+              // E-mail já existe → tenta login
+              const { error: signInError } = await supabase.auth.signInWithPassword({ email: form.email, password });
+              if (signInError) {
+                setError('E-mail já cadastrado. Verifique a senha e tente novamente, ou clique em "Já tenho conta".');
+                setAuthLoading(false);
+                return;
+              }
+            } else {
+              setError(signUpError.message);
+              setAuthLoading(false);
+              return;
+            }
+          }
+        } else {
+          const { error: signInError } = await supabase.auth.signInWithPassword({ email: form.email, password });
+          if (signInError) {
+            setError('E-mail ou senha incorretos. Verifique e tente novamente.');
+            setAuthLoading(false);
+            return;
+          }
+        }
+      } catch {
+        setError('Erro ao criar conta. Tente novamente.');
+        setAuthLoading(false);
+        return;
+      }
+      setAuthLoading(false);
       setStep(isPhysical ? 'endereco' : 'pagamento');
     } else if (step === 'endereco') {
       if (cepError) return setError('CEP inválido. Verifique e tente novamente.');
@@ -170,6 +219,7 @@ export function CheckoutPage() {
           body: JSON.stringify({
             customerData: form,
             total: chargeTotal,
+            userId: user?.id || null,
             items: items.map(i => ({ id: i.product.id, name: i.product.name, quantity: i.quantity, price: i.product.price, metadata: i.metadata || null }))
           })
         });
@@ -297,8 +347,37 @@ export function CheckoutPage() {
                       <Input label="CPF *" name="cpf" autoComplete="off" value={form.cpf} onChange={v => setForm({...form, cpf: v})} placeholder="000.000.000-00" />
                       <Input label="E-mail *" name="email" autoComplete="email" value={form.email} onChange={v => setForm({...form, email: v})} type="email" />
                       <Input label="WhatsApp" name="tel" autoComplete="tel" value={form.phone} onChange={v => setForm({...form, phone: v})} placeholder="(00) 00000-0000" />
-                      <button type="submit" className="col-span-1 md:col-span-2 bg-primary text-black font-black py-4 uppercase tracking-[0.2em] text-xs hover:bg-amber-300 transition-all mt-2">
-                        {isPhysical ? 'Próximo: Endereço →' : 'Próximo: Pagamento →'}
+
+                      {/* Bloco de autenticação — só aparece se não está logado */}
+                      {!user && (
+                        <div className="col-span-1 md:col-span-2 space-y-4 border-t border-primary/20 pt-5 mt-1">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                              {authMode === 'register' ? '🔐 Criar conta para acessar seus ingressos' : '🔑 Entrar na minha conta'}
+                            </p>
+                            <button type="button" onClick={() => { setAuthMode(m => m === 'register' ? 'login' : 'register'); setPassword(''); setError(null); }}
+                              className="text-[9px] uppercase tracking-widest text-white/30 hover:text-primary transition-all underline">
+                              {authMode === 'register' ? 'Já tenho conta' : 'Criar conta'}
+                            </button>
+                          </div>
+                          <p className="text-[9px] text-white/30 -mt-2">
+                            {authMode === 'register'
+                              ? 'Crie uma conta para acompanhar seus pedidos e ingressos no dashboard.'
+                              : 'Entre com sua conta para vincular o pedido ao seu histórico.'}
+                          </p>
+                          <Input label={authMode === 'register' ? 'Criar Senha *' : 'Senha *'} name="new-password" autoComplete={authMode === 'register' ? 'new-password' : 'current-password'} value={password} onChange={setPassword} type="password" placeholder="Mínimo 6 caracteres" />
+                        </div>
+                      )}
+                      {user && (
+                        <div className="col-span-1 md:col-span-2 bg-green-500/10 border border-green-500/20 px-4 py-3 flex items-center gap-3">
+                          <span className="material-symbols-outlined text-green-400 text-base">verified_user</span>
+                          <span className="text-[9px] font-black uppercase tracking-widest text-green-400">Logado como {user.email} — pedido vinculado à sua conta</span>
+                        </div>
+                      )}
+
+                      <button type="submit" disabled={authLoading} className="col-span-1 md:col-span-2 bg-primary text-black font-black py-4 uppercase tracking-[0.2em] text-xs hover:bg-amber-300 transition-all mt-2 disabled:opacity-60 flex items-center justify-center gap-2">
+                        {authLoading && <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />}
+                        {authLoading ? 'Verificando...' : (isPhysical ? 'Próximo: Endereço →' : 'Próximo: Pagamento →')}
                       </button>
                     </form>
                   </div>
