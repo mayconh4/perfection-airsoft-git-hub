@@ -42,16 +42,25 @@ export default function MyTicketsPage() {
 
   const loadTickets = async () => {
     setLoading(true);
+    // Busca por buyer_id OU buyer_email para capturar compras feitas como guest
     const { data, error } = await supabase
       .from('tickets')
       .select(`
         *,
         event:events(id, title, event_date, location, image_url)
       `)
-      .eq('buyer_id', user!.id)
+      .or(`buyer_id.eq.${user!.id},buyer_email.eq.${user!.email}`)
       .order('created_at', { ascending: false });
 
-    if (!error && data) setTickets(data as Ticket[]);
+    if (!error && data) {
+      // Vincula automaticamente tickets pelo email que ainda não têm buyer_id
+      const unlinked = data.filter((t: any) => !t.buyer_id && t.buyer_email === user!.email);
+      if (unlinked.length > 0) {
+        const ids = unlinked.map((t: any) => t.id);
+        await supabase.from('tickets').update({ buyer_id: user!.id }).in('id', ids);
+      }
+      setTickets(data as Ticket[]);
+    }
     
     // Carregar avaliações já feitas
     const { data: reviewData } = await supabase
